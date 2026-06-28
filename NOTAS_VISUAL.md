@@ -5,6 +5,32 @@
 > **testar todos os personagens**. Trabalhei com autonomia, em 2D, commitando por
 > partes. Este doc resume tudo e as decisões.
 
+## >>> ATUALIZAÇÃO 4: FOCO GREGO + sistemas + reskin Kingdom Rush
+(sessão com brainstorm; referência **Kingdom Rush**; pixel mantido com "energia
+Brawlhalla"; tom divertido)
+
+- **Captura de tela p/ eu ver o jogo**: `Godot --path . -- --shot <title|worldmap|
+  heroes|collection|gacha|quests>` salva `_shot_<tela>.png`. (Agora eu vejo cada
+  tela e itero o visual. Você também pode jogar prints em `C:\Users\leoar\Downloads`.)
+- **Foco grego**: `Roster.defs()` = só os 8 gregos (elenco completo em `defs_all()`);
+  5 fases gregas; Zeus desbloqueia ao vencer a fase 5 (Olimpo).
+- **Elementos** (🔥💧⛰🌪✨🌑): ciclo Água>Fogo>Terra>Ar>Água + Luz↔Trevas (+50%/-25%),
+  por herói e inimigo, no combate (`elements.gd`).
+- **Sets de equipamento** (2/4 peças): Olimpo/Asgard/Nilo (`equip_sets.gd`).
+- **Sinergia de equipe**: mitologia / classe / elemento / duplas-trios icônicos
+  (`synergy.gd`) — aparece na tela de Heróis.
+- **3 equipes salvas** (abas Equipe 1/2/3) + tela de Heróis intuitiva (clicar p/
+  entrar/sair, X fácil no rodapé, elemento e sinergias visíveis).
+- **Menu reestruturado**: Tela-título (logo cartoon centralizado) → Mapa-múndi
+  (nós com **estrelas** + **moldura de madeira** ornamentada estilo KR) / Heróis /
+  Loja / Missões / Altar.
+- **Reskin KR**: texturas geradas por IA (`gen_ui.py`): **madeira** (fundo),
+  **pergaminho** (painel 9-slice), **moldura** (cantos dourados, centro vazado).
+  Aplicado em Heróis/Loja/Gacha/Missões + moldura no mapa.
+- **Aprendizado**: IA é ótima p/ arte orgânica (heróis, banner, emblema, texturas)
+  e RUIM p/ botão/painel retangular limpo → use kit/StyleBox p/ botões.
+- **183/183 testes.**
+
 ## >>> ATUALIZAÇÃO 3: UI nova, Poder Supremo, esquadrão salvo, mapa e padronização
 (sessão com você saindo 1h; autonomia total)
 
