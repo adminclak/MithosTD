@@ -29,6 +29,14 @@ static func title_font() -> Font:
 	return _font_title
 
 
+## Fonte de título elegante (serifada, mitológica) para logos/cabeçalhos grandes.
+static var _font_fancy: Font = null
+static func fancy_font() -> Font:
+	if _font_fancy == null:
+		_font_fancy = _load("res://assets/fonts/CinzelDecorative-Bold.ttf")
+	return _font_fancy
+
+
 static func _sb(path: String, tm: int, cl: int, ct: int, cr: int, cb: int) -> StyleBox:
 	var tex = _load(path)
 	if tex == null:

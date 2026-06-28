@@ -42,3 +42,7 @@ static func item(icon_id: String) -> Texture2D:
 	if icon_id == "":
 		return null
 	return _load("res://assets/items/%s.png" % icon_id)
+
+
+static func ui(name: String) -> Texture2D:
+	return _load("res://assets/ui/%s.png" % name)

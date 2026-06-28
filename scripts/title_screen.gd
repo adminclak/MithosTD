@@ -32,28 +32,57 @@ func _ready() -> void:
 	scrim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(scrim)
 
-	# Logo.
+	# Banner ornamentado segurando o título.
+	var banner_tex := Art.ui("ui_banner")
+	if banner_tex != null:
+		var bn := TextureRect.new()
+		bn.texture = banner_tex
+		bn.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		bn.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT
+		bn.position = Vector2(340, 30)
+		bn.size = Vector2(600, 210)
+		add_child(bn)
+	# Emblema acima do título.
+	var emblem_tex := Art.ui("ui_emblem")
+	if emblem_tex != null:
+		var em := TextureRect.new()
+		em.texture = emblem_tex
+		em.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		em.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT
+		em.position = Vector2(584, 8)
+		em.size = Vector2(112, 112)
+		add_child(em)
+
+	# Logo (fonte elegante, dourado com contorno).
 	var logo := Label.new()
-	logo.position = Vector2(0, 70)
-	logo.size = Vector2(1280, 120)
+	logo.position = Vector2(0, 96)
+	logo.size = Vector2(1280, 110)
 	logo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	logo.text = "MITHOS TD"
-	var tf := UiTheme.title_font()
+	logo.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	logo.text = "Mithos TD"
+	var tf := UiTheme.fancy_font()
 	if tf != null:
 		logo.add_theme_font_override("font", tf)
-	logo.add_theme_font_size_override("font_size", 64)
-	logo.add_theme_color_override("font_color", Color(1.0, 0.86, 0.42))
-	logo.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
-	logo.add_theme_constant_override("shadow_offset_x", 3)
-	logo.add_theme_constant_override("shadow_offset_y", 5)
+	logo.add_theme_font_size_override("font_size", 58)
+	logo.add_theme_color_override("font_color", Color(1.0, 0.88, 0.45))
+	logo.add_theme_color_override("font_outline_color", Color(0.25, 0.12, 0.02))
+	logo.add_theme_constant_override("outline_size", 8)
+	logo.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	logo.add_theme_constant_override("shadow_offset_y", 4)
 	add_child(logo)
 
 	var sub := Label.new()
-	sub.position = Vector2(0, 188)
+	sub.position = Vector2(0, 250)
 	sub.size = Vector2(1280, 30)
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	sub.text = "Mitologias em guerra"
-	sub.add_theme_color_override("font_color", Color(0.92, 0.92, 0.95))
+	var ff := UiTheme.fancy_font()
+	if ff != null:
+		sub.add_theme_font_override("font", ff)
+	sub.add_theme_font_size_override("font_size", 20)
+	sub.add_theme_color_override("font_color", Color(0.95, 0.92, 0.85))
+	sub.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
+	sub.add_theme_constant_override("outline_size", 4)
 	add_child(sub)
 
 	# Botões centrais (verticais).
