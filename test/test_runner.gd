@@ -23,6 +23,9 @@ func _initialize() -> void:
 	_test_build_menu_ui()
 	_test_progression()
 	_test_squad_uniqueness()
+	_test_abilities()
+	_test_equipment()
+	_test_shop_evolution()
 	print("\n=== RESULTADO: %d passou, %d falhou ===" % [_passed, _failed])
 	quit(0 if _failed == 0 else 1)
 
@@ -335,3 +338,108 @@ func _test_squad_uniqueness() -> void:
 	bm.sell(bm._slots[0])
 	_check(bm._available_squad().size() == 1, "apos vender, o personagem volta a ficar disponivel")
 	bm.free()
+
+func _test_abilities() -> void:
+	print("\nHabilidades ativas:")
+	# DAMAGE_AOE (Flecha Perfurante da Artemis): power 30, raio 230.
+	var t = Tower.new()
+	t.setup(GreekRoster.by_id("artemis").tower_data_for_level(1))
+	root.add_child(t)
+	t.global_position = Vector2(0, 0)
+	var e1 = Enemy.new(); e1.max_hp = 100
+	var e2 = Enemy.new(); e2.max_hp = 100
+	root.add_child(e1); root.add_child(e2)
+	e1.global_position = Vector2(60, 0)  # dentro do raio
+	e2.global_position = Vector2(500, 0) # fora do raio
+	_check(t.has_ability(), "Artemis tem habilidade")
+	_check(t.ability_cooldown_left() == 0.0, "habilidade comeca pronta")
+	_check(t.use_ability() == true, "use_ability dispara")
+	_check(e1.hp == 70, "DAMAGE_AOE fere inimigo no raio (-30)")
+	_check(e2.hp == 100, "DAMAGE_AOE nao fere inimigo fora do raio")
+	_check(t.ability_cooldown_left() > 0.0, "entra em cooldown apos o uso")
+	_check(t.use_ability() == false, "nao dispara enquanto em cooldown")
+
+	# STUN_AOE (Olhar Petrificante da Medusa): atordoa e fere leve.
+	var tm = Tower.new()
+	tm.setup(GreekRoster.by_id("medusa").tower_data_for_level(1))
+	root.add_child(tm)
+	tm.global_position = Vector2(0, 0)
+	var e3 = Enemy.new(); e3.max_hp = 100
+	root.add_child(e3)
+	e3.global_position = Vector2(40, 0)
+	tm.use_ability()
+	_check(e3.is_stunned() == true, "STUN_AOE atordoa o inimigo")
+
+	# BUFF_TOWER (Velocidade Divina do Hermes): buff temporario na propria torre.
+	var th = Tower.new()
+	th.setup(GreekRoster.by_id("hermes").tower_data_for_level(1))
+	root.add_child(th)
+	th.global_position = Vector2(0, 0)
+	th.use_ability()
+	_check(th._temp_mult() == 2.0, "BUFF_TOWER aplica buff temporario (x2)")
+
+	# Escudo e cura nos bloqueadores.
+	var b = BlockerUnit.new()
+	b.setup(40, 5, 1.0, 50.0, Vector2.ZERO)
+	root.add_child(b)
+	b.apply_shield(5.0)
+	b.take_damage(20)
+	_check(b.hp == 40, "bloqueador com escudo ignora o dano")
+	var b2 = BlockerUnit.new()
+	b2.setup(40, 5, 1.0, 50.0, Vector2.ZERO)
+	root.add_child(b2)
+	b2.take_damage(30)
+	b2.heal(15)
+	_check(b2.hp == 25, "heal cura o bloqueador (10 -> 25)")
+
+	t.free(); tm.free(); th.free(); e1.free(); e2.free(); e3.free(); b.free(); b2.free()
+
+func _test_equipment() -> void:
+	print("\nEquipamentos (bonus nos stats):")
+	var d = TowerData.archer() # alcance 200
+	EquipmentList.by_id("olho_aguia").apply_to(d) # RANGE +14%
+	_check(abs(d.attack_range - 228.0) < 0.01, "Olho de Aguia: +14% no alcance (200 -> 228)")
+
+	var d2 = TowerData.mage() # dano 6
+	EquipmentList.by_id("gladio_olimpico").apply_to(d2) # DAMAGE +38%
+	_check(d2.damage == 8, "Gladio Olimpico: +38% no dano (6 -> 8)")
+
+	var pr = root.get_node_or_null(^"/root/Progression")
+	pr.reset()
+	pr.meta_gold = 1000
+	_check(pr.buy_item("espada_bronze") == true, "compra item com ouro meta")
+	_check(pr.owns_item("espada_bronze") == true, "passa a possuir o item")
+	_check(pr.meta_gold == 880, "compra desconta o preco (120)")
+	_check(pr.buy_item("espada_bronze") == false, "nao compra item ja possuido")
+
+	_check(pr.equip("artemis", EquipmentData.Slot.WEAPON, "espada_bronze") == true, "equipa arma compativel")
+	_check(pr.is_item_available("espada_bronze") == false, "item equipado fica indisponivel")
+	_check(pr.equip("hermes", EquipmentData.Slot.WEAPON, "espada_bronze") == false, "nao equipa item ja em outro personagem")
+	_check(pr.equip("artemis", EquipmentData.Slot.RELIC, "espada_bronze") == false, "nao equipa arma no slot de reliquia")
+	pr.unequip("artemis", EquipmentData.Slot.WEAPON)
+	_check(pr.is_item_available("espada_bronze") == true, "desequipar devolve a disponibilidade")
+
+func _test_shop_evolution() -> void:
+	print("\nLoja / evolucao de estrela:")
+	var pr = root.get_node_or_null(^"/root/Progression")
+	pr.reset()
+	pr.meta_essence = 50
+	pr.meta_gold = 2000
+	_check(pr.stars_of("artemis") == 1, "comeca com 1 estrela")
+	_check(pr.level_cap("artemis") == 10, "teto de nivel 10 na estrela 1")
+	_check(pr.can_evolve("artemis") == true, "pode evoluir com recursos")
+	_check(pr.evolve("artemis") == true, "evolui")
+	_check(pr.stars_of("artemis") == 2, "sobe para 2 estrelas")
+	_check(pr.level_cap("artemis") == 20, "teto de nivel sobe para 20")
+	_check(pr.meta_essence == 40 and pr.meta_gold == 1700, "evolucao gasta 10 essencia + 300 ouro")
+	pr.meta_essence = 0
+	_check(pr.can_evolve("artemis") == false, "sem essencia nao evolui")
+
+	# Recompensas de fim de fase.
+	pr.reset()
+	var r = pr.grant_rewards(1, true)
+	_check(r["gold"] == 45, "vitoria na fase 1 da 45 de ouro meta")
+	_check(r["essence"] == 3, "vitoria na fase 1 da 3 de essencia")
+	var r2 = pr.grant_rewards(1, false)
+	_check(r2["gold"] == 10, "derrota da 10 de ouro meta")
+	pr.reset()

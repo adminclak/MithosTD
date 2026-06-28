@@ -29,6 +29,11 @@ var _cooldown: float = 0.0
 var _aura_damage_mult: float = 1.0
 var _aura_fire_rate_mult: float = 1.0
 
+# Habilidade ativa de assinatura (cooldown) e buff temporário que ela concede.
+var _ability_cd: float = 0.0
+var _temp_buff_mult: float = 1.0
+var _temp_buff_timer: float = 0.0
+
 # Guerreiro
 var _blockers: Array = []
 var _respawn_timers: Array = [] ## itens: { "time": float, "slot": int }
@@ -55,6 +60,10 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if data == null or (_state != null and _state.is_over()):
 		return
+	if _ability_cd > 0.0:
+		_ability_cd -= delta
+	if _temp_buff_timer > 0.0:
+		_temp_buff_timer -= delta
 	match data.tower_class:
 		TowerData.TowerClass.ARCHER, TowerData.TowerClass.MAGE:
 			_recompute_aura_buffs()
@@ -131,7 +140,7 @@ func _process_attacker(delta: float) -> void:
 	var target := _find_target()
 	if target != null and _cooldown <= 0.0:
 		_shoot(target)
-		var eff_fire_rate: float = data.fire_rate * _stat_mult() * _aura_fire_rate_mult
+		var eff_fire_rate: float = data.fire_rate * _stat_mult() * _aura_fire_rate_mult * _temp_mult()
 		_cooldown = 1.0 / max(0.1, eff_fire_rate)
 
 
@@ -152,8 +161,76 @@ func _shoot(target: Node2D) -> void:
 	var p := Projectile.new()
 	get_parent().add_child(p)
 	p.global_position = global_position
-	var eff_damage: int = int(round(data.damage * _stat_mult() * _aura_damage_mult))
+	var eff_damage: int = int(round(data.damage * _stat_mult() * _aura_damage_mult * _temp_mult()))
 	p.setup(target, eff_damage, data.splash_radius, data.projectile_color)
+
+
+func _temp_mult() -> float:
+	return _temp_buff_mult if _temp_buff_timer > 0.0 else 1.0
+
+
+# --- Habilidade ativa ---
+func has_ability() -> bool:
+	return data != null and data.ability != null
+
+
+func ability_cooldown_left() -> float:
+	return max(0.0, _ability_cd)
+
+
+func apply_temp_buff(mult: float, dur: float) -> void:
+	var current := _temp_buff_mult if _temp_buff_timer > 0.0 else 1.0
+	_temp_buff_mult = max(current, mult)
+	_temp_buff_timer = max(_temp_buff_timer, dur)
+
+
+## Dispara a habilidade do personagem (se houver e fora de cooldown).
+func use_ability() -> bool:
+	if not has_ability() or _ability_cd > 0.0:
+		return false
+	var ab: AbilityData = data.ability
+	_ability_cd = ab.cooldown
+	match ab.kind:
+		AbilityData.Kind.DAMAGE_AOE:
+			for e in _enemies_in(ab.radius):
+				e.take_damage(int(round(ab.power)))
+		AbilityData.Kind.STUN_AOE:
+			for e in _enemies_in(ab.radius):
+				e.take_damage(int(round(ab.power)))
+				if e.has_method("apply_stun"):
+					e.apply_stun(ab.duration)
+		AbilityData.Kind.BUFF_TOWER:
+			for t in _towers_in(ab.radius):
+				t.apply_temp_buff(ab.power, ab.duration)
+		AbilityData.Kind.HEAL_BLOCKERS:
+			for b in _blockers_in(ab.radius):
+				b.heal(int(round(ab.power)))
+			for e in _enemies_in(ab.radius):
+				e.take_damage(int(round(ab.power * 0.4)))
+		AbilityData.Kind.SHIELD_BLOCKERS:
+			for b in _blockers_in(ab.radius):
+				b.apply_shield(ab.duration)
+	return true
+
+
+func _enemies_in(r: float) -> Array:
+	return _nodes_in_group_within("enemies", r)
+
+
+func _blockers_in(r: float) -> Array:
+	return _nodes_in_group_within("blockers", r)
+
+
+func _towers_in(r: float) -> Array:
+	return _nodes_in_group_within("towers", r)
+
+
+func _nodes_in_group_within(group: String, r: float) -> Array:
+	var out: Array = []
+	for n in get_tree().get_nodes_in_group(group):
+		if is_instance_valid(n) and global_position.distance_to(n.global_position) <= r:
+			out.append(n)
+	return out
 
 
 # --- Guerreiro ---

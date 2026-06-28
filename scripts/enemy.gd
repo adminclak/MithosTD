@@ -17,6 +17,9 @@ var _index: int = 0
 var _blocked_by: Node2D = null
 var _attack_cd: float = 0.0
 
+# Atordoamento (habilidade Olhar Petrificante da Medusa): para tudo enquanto > 0.
+var _stun_timer: float = 0.0
+
 # Estado global resolvido pelo nó autoload (/root/GameState). Acessar por nó em
 # vez do identificador global deixa a entidade compilável fora do jogo (testes
 # headless com -s), onde o global não é registrado mas o nó existe.
@@ -43,6 +46,12 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	if _state != null and _state.is_over():
+		return
+
+	# Atordoado: não move, não luta.
+	if _stun_timer > 0.0:
+		_stun_timer -= delta
+		queue_redraw()
 		return
 
 	# Preso por um bloqueador: para e luta em vez de andar.
@@ -97,6 +106,15 @@ func is_blocked() -> bool:
 	return _blocked_by != null and is_instance_valid(_blocked_by)
 
 
+func apply_stun(duration: float) -> void:
+	_stun_timer = max(_stun_timer, duration)
+	queue_redraw()
+
+
+func is_stunned() -> bool:
+	return _stun_timer > 0.0
+
+
 func take_damage(amount: int) -> void:
 	hp -= amount
 	queue_redraw()
@@ -132,3 +150,6 @@ func _draw() -> void:
 	if max_hp > 0:
 		ratio = clampf(float(hp) / float(max_hp), 0.0, 1.0)
 	draw_rect(Rect2(bar_pos, Vector2(bar_width * ratio, bar_height)), Color(0.2, 0.8, 0.2))
+	# Atordoado: anel ciano em volta.
+	if _stun_timer > 0.0:
+		draw_arc(Vector2.ZERO, 16.0, 0.0, TAU, 20, Color(0.6, 0.9, 1.0), 2.0)

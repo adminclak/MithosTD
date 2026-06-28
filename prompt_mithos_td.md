@@ -232,8 +232,8 @@ Single-player, **mundo grego completo** como fatia vertical do jogo final:
 2. ✅ **As 4 classes** — Arqueiro (alvo único), Mago (AoE), Guerreiro (bloqueadores) e Sacerdote (aura de buff/lentidão/cura). **CONCLUÍDA**: comportamento data-driven via `TowerData`, validada (smoke test + 40 testes).
 3. ✅ **Economia da partida** — invocar torres clicando nos slots (painel das 4 classes + custo), upgrade temporário (Nv 1→2→3) e venda; bônus de ouro por onda. **CONCLUÍDA**: `BuildManager`/`BuildMenu`/`TowerSlot`, validada (smoke test + 63 testes). Montagem de esquadrão movida para a Camada 4.
 4. ✅ **Meta-progressão** — 8 personagens gregos, XP/níveis permanentes, desbloqueio por fase, montagem de esquadrão (Hub) e save local em `user://` (JSON). 5 fases com dificuldade crescente. **CONCLUÍDA**: autoload `Progression`, fluxo Hub→Partida→Resultado, validada (smoke + 83 testes).
-5. ⏭️ **Equipamentos + habilidades + loja** (PRÓXIMA).
-6. **Conteúdo** — completar o mundo grego (5 fases + inimigos), balancear.
+5. ✅ **Equipamentos + habilidades + loja** — habilidade ativa de assinatura por personagem (botão no HUD com cooldown; 5 tipos de efeito: dano/atordoar/buff/cura/escudo), equipamentos (Arma+Relíquia, raridades, bônus nos stats), loja com ouro meta, evolução de estrela por Essência (tetos 10/20/30). **CONCLUÍDA**: `AbilityData`/`AbilityBar`, `EquipmentData`/`EquipmentList`, `CollectionScreen`, validada (smoke + 116 testes).
+6. ⏭️ **Conteúdo** (PRÓXIMA) — completar o mundo grego (7 inimigos temáticos, 5 fases com rotas próprias), balancear.
 
 ---
 

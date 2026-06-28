@@ -21,6 +21,7 @@ var _target_enemy: Node2D = null
 var _attack_cd: float = 0.0
 var _at_hold: bool = false
 var _heal_accum: float = 0.0
+var _shield_timer: float = 0.0 ## invulnerável enquanto > 0 (Força Indomável)
 
 # Estado global via nó autoload (compilável fora do jogo — ver enemy.gd).
 @onready var _state: Node = get_node_or_null(^"/root/GameState")
@@ -47,6 +48,8 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if _state != null and _state.is_over():
 		return
+	if _shield_timer > 0.0:
+		_shield_timer -= delta
 	_heal_from_auras(delta)
 
 	# Vai até o ponto de bloqueio no caminho antes de combater.
@@ -109,10 +112,22 @@ func _heal_from_auras(delta: float) -> void:
 
 
 func take_damage(amount: int) -> void:
+	if _shield_timer > 0.0:
+		return # invulnerável
 	hp -= amount
 	queue_redraw()
 	if hp <= 0:
 		_die()
+
+
+func heal(amount: int) -> void:
+	hp = min(max_hp, hp + amount)
+	queue_redraw()
+
+
+func apply_shield(duration: float) -> void:
+	_shield_timer = max(_shield_timer, duration)
+	queue_redraw()
 
 
 func _die() -> void:
@@ -134,3 +149,6 @@ func _draw() -> void:
 	if max_hp > 0:
 		ratio = clampf(float(hp) / float(max_hp), 0.0, 1.0)
 	draw_rect(Rect2(bar_pos, Vector2(bar_w * ratio, bar_h)), Color(0.95, 0.75, 0.2))
+	# Escudo ativo: anel dourado.
+	if _shield_timer > 0.0:
+		draw_arc(Vector2.ZERO, 15.0, 0.0, TAU, 20, Color(1.0, 0.95, 0.5), 2.0)

@@ -15,8 +15,11 @@ const LEVEL_CAP := {1: 10, 2: 20, 3: 30}
 signal progress_changed
 
 var highest_stage_unlocked: int = 1 ## maior fase liberada para jogar
-var meta_essence: int = 0           ## recurso de evolução (gasto na Camada 5)
+var meta_essence: int = 0           ## recurso de evolução (estrelas)
+var meta_gold: int = 0              ## ouro meta (loja), ganho ao concluir fases
 var characters: Dictionary = {}     ## id -> { unlocked, level, xp, stars }
+var inventory: Array = []           ## ids de equipamentos possuídos (sem repetição)
+var equipped: Dictionary = {}       ## char_id -> { weapon: id, relic: id }
 
 
 func _ready() -> void:
@@ -110,6 +113,153 @@ func mark_stage_cleared(index: int) -> Array:
 	return newly
 
 
+# --- Recursos meta (loja) ---
+func add_meta_gold(amount: int) -> void:
+	meta_gold += amount
+	emit_signal("progress_changed")
+
+
+func spend_meta_gold(amount: int) -> bool:
+	if meta_gold < amount:
+		return false
+	meta_gold -= amount
+	emit_signal("progress_changed")
+	return true
+
+
+# --- Equipamentos ---
+func _ensure_equip(char_id: String) -> void:
+	if not equipped.has(char_id):
+		equipped[char_id] = {"weapon": "", "relic": ""}
+
+
+func owns_item(item_id: String) -> bool:
+	return inventory.has(item_id)
+
+
+func add_item(item_id: String) -> void:
+	if not inventory.has(item_id):
+		inventory.append(item_id)
+	emit_signal("progress_changed")
+
+
+func _item_owner(item_id: String) -> String:
+	for cid in equipped.keys():
+		var e: Dictionary = equipped[cid]
+		if e.get("weapon", "") == item_id or e.get("relic", "") == item_id:
+			return cid
+	return ""
+
+
+func is_item_available(item_id: String) -> bool:
+	return owns_item(item_id) and _item_owner(item_id) == ""
+
+
+func available_items() -> Array:
+	var out: Array = []
+	for id in inventory:
+		if _item_owner(id) == "":
+			out.append(id)
+	return out
+
+
+func equipped_ids(char_id: String) -> Dictionary:
+	_ensure_equip(char_id)
+	return equipped[char_id].duplicate()
+
+
+func equipped_data(char_id: String) -> Array:
+	var out: Array = []
+	var ids := equipped_ids(char_id)
+	for key in ["weapon", "relic"]:
+		var item_id: String = ids.get(key, "")
+		if item_id != "":
+			var item := EquipmentList.by_id(item_id)
+			if item != null:
+				out.append(item)
+	return out
+
+
+func equip(char_id: String, slot: int, item_id: String) -> bool:
+	var item := EquipmentList.by_id(item_id)
+	if item == null or item.slot != slot or not owns_item(item_id):
+		return false
+	var owner := _item_owner(item_id)
+	if owner != "" and owner != char_id:
+		return false # equipado em outro personagem
+	_ensure_equip(char_id)
+	var key := "weapon" if slot == EquipmentData.Slot.WEAPON else "relic"
+	equipped[char_id][key] = item_id
+	emit_signal("progress_changed")
+	return true
+
+
+func unequip(char_id: String, slot: int) -> void:
+	_ensure_equip(char_id)
+	var key := "weapon" if slot == EquipmentData.Slot.WEAPON else "relic"
+	equipped[char_id][key] = ""
+	emit_signal("progress_changed")
+
+
+func buy_item(item_id: String) -> bool:
+	var item := EquipmentList.by_id(item_id)
+	if item == null or owns_item(item_id):
+		return false
+	if not spend_meta_gold(EquipmentList.price(item.rarity)):
+		return false
+	add_item(item_id)
+	return true
+
+
+# --- Evolução de estrela ---
+func evolve_cost(char_id: String) -> Dictionary:
+	match stars_of(char_id):
+		1: return {"essence": 10, "gold": 300}
+		2: return {"essence": 25, "gold": 800}
+	return {} # já no máximo
+
+
+func can_evolve(char_id: String) -> bool:
+	var cost := evolve_cost(char_id)
+	if cost.is_empty():
+		return false
+	return meta_essence >= cost["essence"] and meta_gold >= cost["gold"]
+
+
+func evolve(char_id: String) -> bool:
+	if not can_evolve(char_id):
+		return false
+	var cost := evolve_cost(char_id)
+	meta_essence -= cost["essence"]
+	meta_gold -= cost["gold"]
+	characters[char_id]["stars"] += 1
+	emit_signal("progress_changed")
+	return true
+
+
+# --- Recompensas de fim de fase ---
+func grant_rewards(stage_index: int, victory: bool) -> Dictionary:
+	_ensure_defaults()
+	var r := {"gold": 0, "essence": 0, "item_id": ""}
+	if victory:
+		r["gold"] = 30 + stage_index * 15
+		r["essence"] = 2 + stage_index
+		if randf() < 0.6:
+			var id := EquipmentList.random_drop_id(stage_index)
+			if owns_item(id):
+				r["essence"] += 3 # duplicado vira essência
+			else:
+				add_item(id)
+				r["item_id"] = id
+	else:
+		r["gold"] = 10
+		r["essence"] = 1
+	meta_gold += r["gold"]
+	meta_essence += r["essence"]
+	emit_signal("progress_changed")
+	return r
+
+
 # --- Defaults / persistência ---
 func _ensure_defaults() -> void:
 	for c in GreekRoster.all():
@@ -126,6 +276,9 @@ func reset() -> void:
 	characters = {}
 	highest_stage_unlocked = 1
 	meta_essence = 0
+	meta_gold = 0
+	inventory = []
+	equipped = {}
 	_ensure_defaults()
 	emit_signal("progress_changed")
 
@@ -144,7 +297,10 @@ func save_to(path: String) -> void:
 		"version": 1,
 		"highest_stage_unlocked": highest_stage_unlocked,
 		"meta_essence": meta_essence,
+		"meta_gold": meta_gold,
 		"characters": characters,
+		"inventory": inventory,
+		"equipped": equipped,
 	}
 	var f := FileAccess.open(path, FileAccess.WRITE)
 	if f != null:
@@ -168,6 +324,7 @@ func load_from(path: String) -> void:
 		return
 	highest_stage_unlocked = int(data.get("highest_stage_unlocked", 1))
 	meta_essence = int(data.get("meta_essence", 0))
+	meta_gold = int(data.get("meta_gold", 0))
 	characters = {}
 	var saved: Dictionary = data.get("characters", {})
 	for id in saved.keys():
@@ -178,4 +335,12 @@ func load_from(path: String) -> void:
 			"xp": int(e.get("xp", 0)),
 			"stars": int(e.get("stars", 1)),
 		}
+	inventory = []
+	for it in data.get("inventory", []):
+		inventory.append(str(it))
+	equipped = {}
+	var saved_eq: Dictionary = data.get("equipped", {})
+	for cid in saved_eq.keys():
+		var e: Dictionary = saved_eq[cid]
+		equipped[cid] = {"weapon": str(e.get("weapon", "")), "relic": str(e.get("relic", ""))}
 	_ensure_defaults() # garante personagens novos que não estavam no save

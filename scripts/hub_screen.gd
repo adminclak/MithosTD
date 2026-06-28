@@ -5,6 +5,7 @@ extends CanvasLayer
 ## escolhe a fase a jogar. Emite start_stage(stage, squad_ids).
 
 signal start_stage(stage: StageData, squad_ids: Array)
+signal open_collection
 
 const CLASS_NAMES := ["Arqueiro", "Mago", "Guerreiro", "Sacerdote"]
 
@@ -31,9 +32,15 @@ func _ready() -> void:
 	root.add_child(title)
 
 	var meta := Label.new()
-	meta.text = "Fase mais alta liberada: %d/%d    Essencia: %d" % \
-		[Progression.highest_stage_unlocked, StageList.count(), Progression.meta_essence]
+	meta.text = "Fase mais alta liberada: %d/%d    Ouro meta: %d    Essencia: %d" % \
+		[Progression.highest_stage_unlocked, StageList.count(), Progression.meta_gold, Progression.meta_essence]
 	root.add_child(meta)
+
+	var collection_btn := Button.new()
+	collection_btn.custom_minimum_size = Vector2(220, 34)
+	collection_btn.text = "Colecao / Loja"
+	collection_btn.pressed.connect(func(): open_collection.emit())
+	root.add_child(collection_btn)
 
 	var cols := HBoxContainer.new()
 	cols.add_theme_constant_override("separation", 64)

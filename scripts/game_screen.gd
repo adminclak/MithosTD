@@ -28,6 +28,9 @@ func _ready() -> void:
 	var hud := Hud.new()
 	add_child(hud)
 
+	var ability_bar := AbilityBar.new()
+	add_child(ability_bar)
+
 	var enemies_root := Node2D.new()
 	enemies_root.name = "Enemies"
 	add_child(enemies_root)

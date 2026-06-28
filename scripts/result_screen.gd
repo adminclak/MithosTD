@@ -10,13 +10,15 @@ var _victory: bool = false
 var _xp: int = 0
 var _summary: Dictionary = {}
 var _newly: Array = []
+var _rewards: Dictionary = {}
 
 
-func setup(victory: bool, xp: int, summary: Dictionary, newly: Array) -> void:
+func setup(victory: bool, xp: int, summary: Dictionary, newly: Array, rewards: Dictionary = {}) -> void:
 	_victory = victory
 	_xp = xp
 	_summary = summary
 	_newly = newly
+	_rewards = rewards
 
 
 func _ready() -> void:
@@ -40,6 +42,21 @@ func _ready() -> void:
 	var xp_label := Label.new()
 	xp_label.text = "XP concedido ao esquadrao: +%d cada" % _xp
 	box.add_child(xp_label)
+
+	if not _rewards.is_empty():
+		var rew := Label.new()
+		rew.text = "Recompensas: +%d ouro, +%d essencia" % \
+			[_rewards.get("gold", 0), _rewards.get("essence", 0)]
+		rew.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
+		box.add_child(rew)
+		var item_id: String = _rewards.get("item_id", "")
+		if item_id != "":
+			var item := EquipmentList.by_id(item_id)
+			if item != null:
+				var il := Label.new()
+				il.text = "ITEM encontrado: %s (%s)!" % [item.display_name, EquipmentData.rarity_name(item.rarity)]
+				il.add_theme_color_override("font_color", Color(0.6, 0.9, 1.0))
+				box.add_child(il)
 
 	for id in _summary.keys():
 		var ch := GreekRoster.by_id(id)

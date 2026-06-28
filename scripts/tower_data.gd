@@ -12,6 +12,7 @@ enum TowerClass { ARCHER, MAGE, WARRIOR, PRIEST }
 @export var cost: int = 100
 @export var body_color: Color = Color(0.3, 0.5, 0.9)
 @export var char_id: String = "" ## id do personagem (vazio = torre genérica); garante unicidade em campo
+@export var ability: AbilityData = null ## habilidade ativa de assinatura (null = torre genérica)
 
 ## Ataque (Arqueiro / Mago)
 @export var attack_range: float = 190.0

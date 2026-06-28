@@ -31,6 +31,9 @@ static func _artemis() -> CharacterData:
 	d.attack_range = 270.0
 	d.fire_rate = 1.3
 	d.damage = 7
+	# Flecha Perfurante: dano pesado em área longa.
+	d.ability = AbilityData.make("flecha_perfurante", "Flecha Perfurante", \
+		AbilityData.Kind.DAMAGE_AOE, 28.0, 230.0, 30.0, 0.0)
 	return CharacterData.make("artemis", "Artemis", d, 0)
 
 
@@ -40,6 +43,9 @@ static func _hermes() -> CharacterData:
 	d.attack_range = 175.0
 	d.fire_rate = 4.0
 	d.damage = 2
+	# Velocidade Divina: frenesi de tiros (buff de cadência/dano por alguns s).
+	d.ability = AbilityData.make("velocidade_divina", "Velocidade Divina", \
+		AbilityData.Kind.BUFF_TOWER, 25.0, 30.0, 2.0, 5.0)
 	return CharacterData.make("hermes", "Hermes", d, 1)
 
 
@@ -49,6 +55,9 @@ static func _hercules() -> CharacterData:
 	var d := TowerData.warrior()
 	d.blocker_hp = 60
 	d.blocker_damage = 4
+	# Força Indomável: bloqueadores invulneráveis por alguns segundos.
+	d.ability = AbilityData.make("forca_indomavel", "Forca Indomavel", \
+		AbilityData.Kind.SHIELD_BLOCKERS, 35.0, 220.0, 0.0, 5.0)
 	return CharacterData.make("hercules", "Hercules", d, 0)
 
 
@@ -57,6 +66,9 @@ static func _ares() -> CharacterData:
 	var d := TowerData.warrior()
 	d.blocker_hp = 30
 	d.blocker_damage = 9
+	# Fúria de Guerra: golpe giratório em área.
+	d.ability = AbilityData.make("furia_de_guerra", "Furia de Guerra", \
+		AbilityData.Kind.DAMAGE_AOE, 30.0, 170.0, 24.0, 0.0)
 	return CharacterData.make("ares", "Ares", d, 2)
 
 
@@ -67,6 +79,9 @@ static func _atena() -> CharacterData:
 	d.aura_damage_mult = 1.4
 	d.aura_fire_rate_mult = 1.3
 	d.aura_heal_per_sec = 3.0
+	# Égide de Atena: buff forte de dano e cadência nas torres da área.
+	d.ability = AbilityData.make("egide_de_atena", "Egide de Atena", \
+		AbilityData.Kind.BUFF_TOWER, 32.0, 210.0, 1.7, 8.0)
 	return CharacterData.make("atena", "Atena", d, 0)
 
 
@@ -76,6 +91,9 @@ static func _apolo() -> CharacterData:
 	d.aura_damage_mult = 1.15
 	d.aura_fire_rate_mult = 1.1
 	d.aura_heal_per_sec = 14.0
+	# Luz Solar: cura em área dos bloqueadores + queima inimigos.
+	d.ability = AbilityData.make("luz_solar", "Luz Solar", \
+		AbilityData.Kind.HEAL_BLOCKERS, 28.0, 210.0, 40.0, 0.0)
 	return CharacterData.make("apolo", "Apolo", d, 3)
 
 
@@ -85,6 +103,9 @@ static func _medusa() -> CharacterData:
 	var d := TowerData.mage()
 	d.splash_radius = 90.0
 	d.damage = 5
+	# Olhar Petrificante: paralisa (e fere) inimigos numa área.
+	d.ability = AbilityData.make("olhar_petrificante", "Olhar Petrificante", \
+		AbilityData.Kind.STUN_AOE, 38.0, 180.0, 10.0, 3.0)
 	return CharacterData.make("medusa", "Medusa", d, 0)
 
 
@@ -95,4 +116,7 @@ static func _zeus() -> CharacterData:
 	d.splash_radius = 55.0
 	d.damage = 8
 	d.fire_rate = 1.0
+	# Tempestade do Olimpo: raios que ferem vários inimigos numa área ampla.
+	d.ability = AbilityData.make("tempestade_olimpo", "Tempestade do Olimpo", \
+		AbilityData.Kind.DAMAGE_AOE, 34.0, 210.0, 35.0, 0.0)
 	return CharacterData.make("zeus", "Zeus", d, 4)
