@@ -139,6 +139,12 @@ func _ready() -> void:
 	_ult_box.add_theme_constant_override("separation", 4)
 	add_child(_ult_box)
 
+	# Carrega o esquadrão salvo (a "comp" montada antes).
+	for id in Progression.squad:
+		if Progression.is_unlocked(id) and not _selected.has(id):
+			_selected.append(id)
+	_ult_id = Progression.squad_ult
+
 	_refresh_list()
 	_refresh()
 
@@ -165,8 +171,13 @@ func _refresh_list() -> void:
 		if not Progression.is_unlocked(ch.id):
 			continue
 		var cb := CheckButton.new()
+		cb.custom_minimum_size = Vector2(0, 44)
 		cb.text = "%s  [%s]  (%s)  Nv %d" % [ch.display_name, ch.mythology, \
 			CLASS_NAMES[ch.tower_class], Progression.level_of(ch.id)]
+		var tex := Art.hero(ch.id)
+		if tex != null:
+			cb.icon = tex
+			cb.add_theme_constant_override("icon_max_width", 36)
 		cb.set_pressed_no_signal(_selected.has(ch.id))
 		cb.toggled.connect(_on_char_toggled.bind(ch.id, cb))
 		_list_box.add_child(cb)
@@ -181,6 +192,8 @@ func _on_char_toggled(pressed: bool, id: String, cb: CheckButton) -> void:
 			_selected.append(id)
 	else:
 		_selected.erase(id)
+	Progression.set_squad(_selected, _ult_id) ## persiste a comp
+	_ult_id = Progression.squad_ult
 	_refresh()
 
 
@@ -230,5 +243,6 @@ func _refresh_ult_box() -> void:
 			b.add_theme_color_override("font_color", ult.color)
 		b.pressed.connect(func():
 			_ult_id = id
+			Progression.set_squad(_selected, _ult_id) ## persiste a escolha
 			_refresh_ult_box())
 		_ult_box.add_child(b)

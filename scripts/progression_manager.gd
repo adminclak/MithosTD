@@ -24,7 +24,11 @@ var ambrosia: int = 0              ## moeda do gacha, ganha jogando
 var characters: Dictionary = {}     ## id -> { unlocked, level, xp, stars }
 var fragments: Dictionary = {}      ## id -> quantidade de fragmentos (evoluem estrelas)
 var inventory: Array = []           ## ids de equipamentos possuídos (sem repetição)
-var equipped: Dictionary = {}       ## char_id -> { weapon: id, relic: id }
+var equipped: Dictionary = {}       ## char_id -> { slot_index: item_id }
+
+# Esquadrão salvo (a "comp" montada pelo jogador) + Poder Supremo escolhido.
+var squad: Array = []               ## ids dos heróis no esquadrão (até SQUAD_MAX)
+var squad_ult: String = ""          ## id do herói cujo Poder Supremo será usado
 
 # Quests / contadores.
 var stats: Dictionary = {"wins": 0, "gacha": 0, "evolves": 0}
@@ -152,6 +156,17 @@ func _ensure_equip(char_id: String) -> void:
 		for s in range(EquipmentData.SLOT_NAMES.size()):
 			if not equipped[char_id].has(str(s)):
 				equipped[char_id][str(s)] = ""
+
+
+## Salva o esquadrão montado (heróis válidos/desbloqueados) + o Poder Supremo.
+func set_squad(ids: Array, ult: String) -> void:
+	var clean: Array = []
+	for id in ids:
+		if is_unlocked(id) and not clean.has(id) and clean.size() < SQUAD_MAX:
+			clean.append(id)
+	squad = clean
+	squad_ult = ult if clean.has(ult) else (clean[0] if not clean.is_empty() else "")
+	save_game()
 
 
 func owns_item(item_id: String) -> bool:
@@ -450,6 +465,8 @@ func reset() -> void:
 	fragments = {}
 	inventory = []
 	equipped = {}
+	squad = []
+	squad_ult = ""
 	stats = {"wins": 0, "gacha": 0, "evolves": 0}
 	daily = {"wins": 0, "gacha": 0}
 	quests_claimed = []
@@ -478,6 +495,8 @@ func save_to(path: String) -> void:
 		"fragments": fragments,
 		"inventory": inventory,
 		"equipped": equipped,
+		"squad": squad,
+		"squad_ult": squad_ult,
 		"stats": stats,
 		"daily": daily,
 		"quests_claimed": quests_claimed,
@@ -532,6 +551,10 @@ func load_from(path: String) -> void:
 		for s in range(EquipmentData.SLOT_NAMES.size()):
 			slots[str(s)] = str(e.get(str(s), ""))
 		equipped[cid] = slots
+	squad = []
+	for sid in data.get("squad", []):
+		squad.append(str(sid))
+	squad_ult = str(data.get("squad_ult", ""))
 	var sv_stats: Dictionary = data.get("stats", {})
 	stats = {"wins": int(sv_stats.get("wins", 0)), "gacha": int(sv_stats.get("gacha", 0)), "evolves": int(sv_stats.get("evolves", 0))}
 	var sv_daily: Dictionary = data.get("daily", {})
