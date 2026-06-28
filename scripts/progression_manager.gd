@@ -14,10 +14,15 @@ const LEVEL_CAP := {1: 10, 2: 20, 3: 30}
 
 signal progress_changed
 
+const GACHA_COST := 100 ## Ambrosia por giro
+const STAGE_UNLOCKS := {1: "ares", 2: "medusa", 3: "thor", 4: "ra", 5: "sunwukong"}
+
 var highest_stage_unlocked: int = 1 ## maior fase liberada para jogar
-var meta_essence: int = 0           ## recurso de evolução (estrelas)
+var meta_essence: int = 0           ## recurso secundário (loja)
 var meta_gold: int = 0              ## ouro meta (loja), ganho ao concluir fases
+var ambrosia: int = 0              ## moeda do gacha, ganha jogando
 var characters: Dictionary = {}     ## id -> { unlocked, level, xp, stars }
+var fragments: Dictionary = {}      ## id -> quantidade de fragmentos (evoluem estrelas)
 var inventory: Array = []           ## ids de equipamentos possuídos (sem repetição)
 var equipped: Dictionary = {}       ## char_id -> { weapon: id, relic: id }
 
@@ -105,10 +110,12 @@ func mark_stage_cleared(index: int) -> Array:
 	if index + 1 > highest_stage_unlocked and index < StageList.count():
 		highest_stage_unlocked = index + 1
 	var newly: Array = []
-	for c in Roster.all():
-		if c.unlock_stage == index and not characters[c.id]["unlocked"]:
-			characters[c.id]["unlocked"] = true
-			newly.append(c.id)
+	# Cada fase concluída desbloqueia um personagem de campanha.
+	if STAGE_UNLOCKS.has(index):
+		var rid: String = STAGE_UNLOCKS[index]
+		if characters.has(rid) and not characters[rid]["unlocked"]:
+			characters[rid]["unlocked"] = true
+			newly.append(rid)
 	emit_signal("progress_changed")
 	return newly
 
@@ -211,11 +218,11 @@ func buy_item(item_id: String) -> bool:
 	return true
 
 
-# --- Evolução de estrela ---
+# --- Evolução de estrela (gasta FRAGMENTOS do personagem + ouro) ---
 func evolve_cost(char_id: String) -> Dictionary:
 	match stars_of(char_id):
-		1: return {"essence": 10, "gold": 300}
-		2: return {"essence": 25, "gold": 800}
+		1: return {"frag": 10, "gold": 300}
+		2: return {"frag": 25, "gold": 800}
 	return {} # já no máximo
 
 
@@ -223,27 +230,114 @@ func can_evolve(char_id: String) -> bool:
 	var cost := evolve_cost(char_id)
 	if cost.is_empty():
 		return false
-	return meta_essence >= cost["essence"] and meta_gold >= cost["gold"]
+	return fragments_of(char_id) >= cost["frag"] and meta_gold >= cost["gold"]
 
 
 func evolve(char_id: String) -> bool:
 	if not can_evolve(char_id):
 		return false
 	var cost := evolve_cost(char_id)
-	meta_essence -= cost["essence"]
+	fragments[char_id] = fragments_of(char_id) - cost["frag"]
 	meta_gold -= cost["gold"]
 	characters[char_id]["stars"] += 1
 	emit_signal("progress_changed")
 	return true
 
 
+# --- Moedas e fragmentos ---
+func add_ambrosia(amount: int) -> void:
+	ambrosia += amount
+	emit_signal("progress_changed")
+
+func spend_ambrosia(amount: int) -> bool:
+	if ambrosia < amount:
+		return false
+	ambrosia -= amount
+	emit_signal("progress_changed")
+	return true
+
+func fragments_of(char_id: String) -> int:
+	return int(fragments.get(char_id, 0))
+
+func add_fragments(char_id: String, amount: int) -> void:
+	fragments[char_id] = fragments_of(char_id) + amount
+	emit_signal("progress_changed")
+
+func unlock_character(char_id: String) -> void:
+	_ensure_defaults()
+	if characters.has(char_id):
+		characters[char_id]["unlocked"] = true
+	emit_signal("progress_changed")
+
+
+# --- Gacha (gasta Ambrosia; novo = desbloqueia, repetido = fragmentos) ---
+func gacha_roll() -> Dictionary:
+	_ensure_defaults()
+	var result := {"ok": false}
+	if not spend_ambrosia(GACHA_COST):
+		return result
+	var rarity := _roll_rarity()
+	var pool: Array = Roster.ids_by_rarity(rarity)
+	if pool.is_empty():
+		pool = Roster.ids_by_rarity(Roster.Rarity.RARE)
+	var id: String = pool[randi() % pool.size()]
+	result["ok"] = true
+	result["id"] = id
+	result["rarity"] = rarity
+	if not is_unlocked(id):
+		unlock_character(id)
+		result["is_new"] = true
+		result["fragments"] = 0
+	else:
+		var f := _frag_amount(rarity)
+		add_fragments(id, f)
+		result["is_new"] = false
+		result["fragments"] = f
+	return result
+
+func _roll_rarity() -> int:
+	var r := randf()
+	if r < 0.03:
+		return Roster.Rarity.LEGENDARY
+	if r < 0.15:
+		return Roster.Rarity.EPIC
+	if r < 0.50:
+		return Roster.Rarity.RARE
+	return Roster.Rarity.COMMON
+
+func _frag_amount(rarity: int) -> int:
+	match rarity:
+		Roster.Rarity.LEGENDARY: return 20
+		Roster.Rarity.EPIC: return 12
+		Roster.Rarity.RARE: return 8
+	return 5
+
+
+# --- Loja: comprar personagem direto com Ambrosia ---
+func character_price(char_id: String) -> int:
+	match Roster.rarity_of(char_id):
+		Roster.Rarity.LEGENDARY: return 1500
+		Roster.Rarity.EPIC: return 800
+		Roster.Rarity.RARE: return 400
+	return 200
+
+func buy_character(char_id: String) -> bool:
+	if is_unlocked(char_id):
+		return false
+	if not spend_ambrosia(character_price(char_id)):
+		return false
+	unlock_character(char_id)
+	return true
+
+
 # --- Recompensas de fim de fase ---
 func grant_rewards(stage_index: int, victory: bool) -> Dictionary:
 	_ensure_defaults()
-	var r := {"gold": 0, "essence": 0, "item_id": ""}
+	var r := {"gold": 0, "essence": 0, "ambrosia": 0, "item_id": ""}
 	if victory:
 		r["gold"] = 30 + stage_index * 15
 		r["essence"] = 2 + stage_index
+		r["ambrosia"] = 25 + stage_index * 10
 		if randf() < 0.6:
 			var id := EquipmentList.random_drop_id(stage_index)
 			if owns_item(id):
@@ -254,8 +348,10 @@ func grant_rewards(stage_index: int, victory: bool) -> Dictionary:
 	else:
 		r["gold"] = 10
 		r["essence"] = 1
+		r["ambrosia"] = 8
 	meta_gold += r["gold"]
 	meta_essence += r["essence"]
+	ambrosia += r["ambrosia"]
 	emit_signal("progress_changed")
 	return r
 
@@ -265,7 +361,7 @@ func _ensure_defaults() -> void:
 	for c in Roster.all():
 		if not characters.has(c.id):
 			characters[c.id] = {
-				"unlocked": c.unlock_stage == 0,
+				"unlocked": Roster.is_starter(c.id),
 				"level": 1,
 				"xp": 0,
 				"stars": 1,
@@ -277,6 +373,8 @@ func reset() -> void:
 	highest_stage_unlocked = 1
 	meta_essence = 0
 	meta_gold = 0
+	ambrosia = 0
+	fragments = {}
 	inventory = []
 	equipped = {}
 	_ensure_defaults()
@@ -294,11 +392,13 @@ func load_game() -> void:
 func save_to(path: String) -> void:
 	_ensure_defaults()
 	var payload := {
-		"version": 1,
+		"version": 2,
 		"highest_stage_unlocked": highest_stage_unlocked,
 		"meta_essence": meta_essence,
 		"meta_gold": meta_gold,
+		"ambrosia": ambrosia,
 		"characters": characters,
+		"fragments": fragments,
 		"inventory": inventory,
 		"equipped": equipped,
 	}
@@ -325,6 +425,11 @@ func load_from(path: String) -> void:
 	highest_stage_unlocked = int(data.get("highest_stage_unlocked", 1))
 	meta_essence = int(data.get("meta_essence", 0))
 	meta_gold = int(data.get("meta_gold", 0))
+	ambrosia = int(data.get("ambrosia", 0))
+	fragments = {}
+	var saved_frags: Dictionary = data.get("fragments", {})
+	for fid in saved_frags.keys():
+		fragments[fid] = int(saved_frags[fid])
 	characters = {}
 	var saved: Dictionary = data.get("characters", {})
 	for id in saved.keys():

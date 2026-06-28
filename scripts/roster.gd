@@ -9,6 +9,47 @@ extends RefCounted
 
 const MYTHOLOGIES := ["Grega", "Nordica", "Japonesa", "Brasileira", "Egipcia", "Chinesa", "Asteca"]
 
+enum Rarity { COMMON, RARE, EPIC, LEGENDARY }
+
+## Personagens iniciais: 1 por mitologia (variando classes). O resto é conquistado.
+const STARTERS := ["artemis", "odin", "benkei", "iara", "horus", "longwang", "huitzilo"]
+
+
+static func is_starter(id: String) -> bool:
+	return STARTERS.has(id)
+
+
+static func rarity_of(id: String) -> int:
+	var legendary := ["zeus", "odin", "ra", "thor", "amaterasu", "sunwukong", "quetzal", "susanoo"]
+	var epic := ["hercules", "ares", "medusa", "atena", "loki", "freya", "raijin", "set",
+		"sekhmet", "houyi", "guanyu", "nuwa", "huitzilo", "tlaloc", "anubis", "hachiman"]
+	var common := ["hermes", "ullr", "saci", "boto", "neith", "nezha", "camazotz",
+		"mixcoatl", "cuca", "kannon", "frigg", "tezca"]
+	if legendary.has(id):
+		return Rarity.LEGENDARY
+	if epic.has(id):
+		return Rarity.EPIC
+	if common.has(id):
+		return Rarity.COMMON
+	return Rarity.RARE
+
+
+static func rarity_name(r: int) -> String:
+	match r:
+		Rarity.COMMON: return "Comum"
+		Rarity.RARE: return "Raro"
+		Rarity.EPIC: return "Epico"
+		Rarity.LEGENDARY: return "Lendario"
+	return "?"
+
+
+static func ids_by_rarity(r: int) -> Array:
+	var out: Array = []
+	for d in defs():
+		if rarity_of(d[0]) == r:
+			out.append(d[0])
+	return out
+
 
 # [id, nome, mitologia, arquétipo]. Função (não const) porque referencia enums
 # de outra classe, que não são expressões constantes em GDScript.

@@ -22,6 +22,7 @@ func _initialize() -> void:
 	_test_economy()
 	_test_build_menu_ui()
 	_test_progression()
+	_test_gacha()
 	_test_squad_uniqueness()
 	_test_abilities()
 	_test_equipment()
@@ -293,10 +294,11 @@ func _test_progression() -> void:
 		return
 	pr.reset()
 
-	# Roster grande, todos desbloqueados (decisao da madrugada — livre escolha).
+	# Roster grande; comeca com os iniciais (1 por mitologia).
 	_check(Roster.count() >= 50, "roster tem 50+ personagens")
-	_check(pr.unlocked_ids().size() == Roster.count(), "todos os personagens comecam desbloqueados")
-	_check(pr.is_unlocked("artemis") == true, "Artemis desbloqueada")
+	_check(pr.unlocked_ids().size() == Roster.STARTERS.size(), "comeca com os iniciais (1 por mitologia)")
+	_check(pr.is_unlocked("artemis") == true, "Artemis (inicial) desbloqueada")
+	_check(pr.is_unlocked("zeus") == false, "Zeus comeca bloqueado")
 	_check(pr.highest_stage_unlocked == 1, "comeca com a fase 1 liberada")
 
 	# XP sobe de nivel: xp_to_next(1) = 40, entao 100 sobe ao menos 1 nivel.
@@ -304,9 +306,10 @@ func _test_progression() -> void:
 	_check(pr.level_of("artemis") >= 2, "100 de XP sobe Artemis de nivel")
 	_check(s["artemis"]["new_level"] == pr.level_of("artemis"), "resumo bate com o nivel novo")
 
-	# Concluir a fase 1 libera a fase 2.
-	pr.mark_stage_cleared(1)
+	# Concluir a fase 1 libera a fase 2 e desbloqueia o personagem de campanha.
+	var newly = pr.mark_stage_cleared(1)
 	_check(pr.highest_stage_unlocked == 2, "fase 2 liberada apos concluir a 1")
+	_check(newly.has("ares"), "fase 1 desbloqueia Ares (campanha)")
 
 	# Save/load roundtrip num arquivo temporario (nao toca o save real).
 	var tmp = "user://test_save_%d.json" % Time.get_ticks_usec()
@@ -423,17 +426,17 @@ func _test_shop_evolution() -> void:
 	print("\nLoja / evolucao de estrela:")
 	var pr = root.get_node_or_null(^"/root/Progression")
 	pr.reset()
-	pr.meta_essence = 50
+	pr.add_fragments("artemis", 50)
 	pr.meta_gold = 2000
 	_check(pr.stars_of("artemis") == 1, "comeca com 1 estrela")
 	_check(pr.level_cap("artemis") == 10, "teto de nivel 10 na estrela 1")
-	_check(pr.can_evolve("artemis") == true, "pode evoluir com recursos")
+	_check(pr.can_evolve("artemis") == true, "pode evoluir com fragmentos + ouro")
 	_check(pr.evolve("artemis") == true, "evolui")
 	_check(pr.stars_of("artemis") == 2, "sobe para 2 estrelas")
 	_check(pr.level_cap("artemis") == 20, "teto de nivel sobe para 20")
-	_check(pr.meta_essence == 40 and pr.meta_gold == 1700, "evolucao gasta 10 essencia + 300 ouro")
-	pr.meta_essence = 0
-	_check(pr.can_evolve("artemis") == false, "sem essencia nao evolui")
+	_check(pr.fragments_of("artemis") == 40 and pr.meta_gold == 1700, "evolucao gasta 10 fragmentos + 300 ouro")
+	pr.fragments["artemis"] = 0
+	_check(pr.can_evolve("artemis") == false, "sem fragmentos nao evolui")
 
 	# Recompensas de fim de fase.
 	pr.reset()
@@ -442,6 +445,36 @@ func _test_shop_evolution() -> void:
 	_check(r["essence"] == 3, "vitoria na fase 1 da 3 de essencia")
 	var r2 = pr.grant_rewards(1, false)
 	_check(r2["gold"] == 10, "derrota da 10 de ouro meta")
+	_check(r2["ambrosia"] > 0, "fase concede Ambrosia (gacha)")
+	pr.reset()
+
+func _test_gacha() -> void:
+	print("\nGacha / loja de personagens / fragmentos:")
+	var pr = root.get_node_or_null(^"/root/Progression")
+	pr.reset()
+
+	# Sem Ambrosia, gacha nao roda.
+	_check(pr.gacha_roll().get("ok", false) == false, "gacha sem Ambrosia nao roda")
+	pr.add_ambrosia(1000)
+	var r = pr.gacha_roll()
+	_check(r["ok"] == true, "gacha roda com Ambrosia")
+	_check(pr.ambrosia == 900, "gacha gasta 100 de Ambrosia")
+
+	# Repetido vira fragmentos: com todos desbloqueados, todo giro da fragmentos.
+	pr.reset()
+	for c in Roster.all():
+		pr.unlock_character(c.id)
+	pr.add_ambrosia(500)
+	var r2 = pr.gacha_roll()
+	_check(r2["is_new"] == false and r2["fragments"] > 0, "gacha repetido vira fragmentos")
+
+	# Comprar personagem na loja com Ambrosia.
+	pr.reset()
+	pr.add_ambrosia(5000)
+	_check(pr.is_unlocked("zeus") == false, "Zeus comeca bloqueado")
+	_check(pr.buy_character("zeus") == true, "compra Zeus com Ambrosia")
+	_check(pr.is_unlocked("zeus") == true, "Zeus desbloqueado apos a compra")
+	_check(pr.buy_character("zeus") == false, "nao compra Zeus de novo")
 	pr.reset()
 
 func _test_bestiary() -> void:
