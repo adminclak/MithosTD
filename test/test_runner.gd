@@ -2,13 +2,23 @@ extends SceneTree
 ## Test runner próprio (sem dependências externas).
 ## Roda com:  godot --headless --path . -s res://test/test_runner.gd
 ## Sai com código 0 se tudo passar, 1 se algo falhar (bom pra CI).
+##
+## Nota: o autoload `GameState` NÃO existe neste modo `-s`, então os testes
+## evitam caminhos que tocam esse identificador (ex.: mortes que dão ouro).
 
 var _passed := 0
 var _failed := 0
 
 func _initialize() -> void:
+	# No modo -s a árvore só fica ativa a partir do 1º frame; sem isso os nós
+	# adicionados ao root não ficam "inside tree" e get_tree() retorna null.
+	await process_frame
 	print("=== Testes Mithos TD ===")
 	_test_game_state()
+	_test_tower_data()
+	_test_projectile_aoe()
+	_test_blocking()
+	_test_priest_aura()
 	print("\n=== RESULTADO: %d passou, %d falhou ===" % [_passed, _failed])
 	quit(0 if _failed == 0 else 1)
 
@@ -58,3 +68,127 @@ func _test_game_state() -> void:
 	gs2.win()
 	_check(win["victory"] == true, "win() => game_over com victory = true")
 	gs2.free()
+
+func _test_tower_data() -> void:
+	print("\nTowerData (as 4 classes):")
+	var a = TowerData.archer()
+	_check(a.tower_class == TowerData.TowerClass.ARCHER, "archer() tem classe ARCHER")
+	_check(a.cost == 100, "Arqueiro custa 100")
+	_check(a.splash_radius == 0.0, "Arqueiro e alvo unico (sem splash)")
+
+	var m = TowerData.mage()
+	_check(m.tower_class == TowerData.TowerClass.MAGE, "mage() tem classe MAGE")
+	_check(m.splash_radius > 0.0, "Mago tem dano em area (splash > 0)")
+	_check(m.cost == 150, "Mago custa 150")
+
+	var w = TowerData.warrior()
+	_check(w.tower_class == TowerData.TowerClass.WARRIOR, "warrior() tem classe WARRIOR")
+	_check(w.blocker_count >= 1, "Guerreiro invoca >= 1 bloqueador")
+	_check(w.blocker_hp > 0, "bloqueador tem vida")
+
+	var p = TowerData.priest()
+	_check(p.tower_class == TowerData.TowerClass.PRIEST, "priest() tem classe PRIEST")
+	_check(p.aura_radius > 0.0, "Sacerdote tem aura")
+	_check(p.aura_damage_mult > 1.0, "Sacerdote buffa dano (mult > 1)")
+	_check(p.aura_slow_mult < 1.0, "Sacerdote tem lentidao (mult < 1)")
+
+func _test_projectile_aoe() -> void:
+	print("\nProjectile (dano em area do Mago):")
+	var e1 = Enemy.new(); e1.max_hp = 100
+	var e2 = Enemy.new(); e2.max_hp = 100
+	var e3 = Enemy.new(); e3.max_hp = 100
+	root.add_child(e1)
+	root.add_child(e2)
+	root.add_child(e3)
+	e1.global_position = Vector2(100, 100)
+	e2.global_position = Vector2(130, 100) # dentro do splash (72)
+	e3.global_position = Vector2(400, 400) # fora do splash
+
+	var proj = Projectile.new()
+	root.add_child(proj)
+	proj.global_position = Vector2(100, 100)
+	proj.setup(e1, 10, 72.0, Color.WHITE)
+	proj._impact()
+
+	_check(e1.hp == 90, "AoE atinge o alvo (-10)")
+	_check(e2.hp == 90, "AoE atinge inimigo proximo dentro do raio")
+	_check(e3.hp == 100, "AoE nao atinge inimigo fora do raio")
+
+	e1.free(); e2.free(); e3.free()
+
+func _test_blocking() -> void:
+	print("\nBloqueio do Guerreiro (combate corpo-a-corpo):")
+	var enemy = Enemy.new()
+	enemy.max_hp = 100
+	enemy.attack_damage = 7
+	enemy.attack_rate = 100.0
+	root.add_child(enemy)
+	enemy.global_position = Vector2(500, 420)
+
+	var blocker = BlockerUnit.new()
+	blocker.setup(40, 5, 100.0, 60.0, Vector2(500, 420))
+	root.add_child(blocker)
+	blocker.global_position = Vector2(500, 420)
+
+	_check(enemy.is_blocked() == false, "inimigo comeca livre")
+
+	# O bloqueador encontra e prende o inimigo no raio.
+	var found = blocker._find_enemy()
+	_check(found == enemy, "bloqueador encontra o inimigo no raio")
+	blocker._target_enemy = found
+	found.engage(blocker)
+	_check(enemy.is_blocked() == true, "engage prende o inimigo")
+
+	# Inimigo bloqueado dá dano corpo-a-corpo no bloqueador.
+	enemy._attack_cd = 0.0
+	enemy._fight(0.016)
+	_check(blocker.hp == 33, "inimigo bloqueado causa dano no bloqueador (40-7)")
+
+	# Outro bloqueador não pega um inimigo já bloqueado.
+	var blocker2 = BlockerUnit.new()
+	blocker2.setup(40, 5, 1.0, 60.0, Vector2(500, 420))
+	root.add_child(blocker2)
+	blocker2.global_position = Vector2(500, 420)
+	_check(blocker2._find_enemy() == null, "inimigo ja bloqueado nao e pego por outro bloqueador")
+
+	# Morte do bloqueador libera o inimigo.
+	blocker.take_damage(999)
+	_check(enemy.is_blocked() == false, "morte do bloqueador libera o inimigo")
+
+	enemy.free()
+	blocker2.free()
+
+func _test_priest_aura() -> void:
+	print("\nAura do Sacerdote (buff / lentidao):")
+	var priest = Tower.new()
+	priest.setup(TowerData.priest())
+	root.add_child(priest)
+	priest.global_position = Vector2(0, 0)
+
+	var archer = Tower.new()
+	archer.setup(TowerData.archer())
+	root.add_child(archer)
+	archer.global_position = Vector2(50, 0) # dentro da aura (170)
+	archer._recompute_aura_buffs()
+	_check(archer._aura_damage_mult > 1.0, "Arqueiro dentro da aura recebe buff de dano")
+	_check(is_equal_approx(archer._aura_fire_rate_mult, 1.25), "buff de cadencia aplicado (1.25)")
+
+	var far = Tower.new()
+	far.setup(TowerData.archer())
+	root.add_child(far)
+	far.global_position = Vector2(600, 0) # fora da aura
+	far._recompute_aura_buffs()
+	_check(is_equal_approx(far._aura_damage_mult, 1.0), "Arqueiro fora da aura nao recebe buff")
+
+	# Lentidão nos inimigos.
+	var enemy = Enemy.new(); enemy.max_hp = 50
+	root.add_child(enemy)
+	enemy.global_position = Vector2(40, 0)
+	_check(enemy._aura_speed_mult() < 1.0, "inimigo dentro da aura fica mais lento")
+
+	var enemy2 = Enemy.new(); enemy2.max_hp = 50
+	root.add_child(enemy2)
+	enemy2.global_position = Vector2(700, 0)
+	_check(is_equal_approx(enemy2._aura_speed_mult(), 1.0), "inimigo fora da aura mantem velocidade")
+
+	priest.free(); archer.free(); far.free(); enemy.free(); enemy2.free()

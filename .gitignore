@@ -5,6 +5,9 @@
 Godot-Claude-Skills/
 .gdunit4_tmp/
 
+# Config local do Claude Code (permissões privadas desta máquina)
+.claude/settings.local.json
+
 # Sistema / temporários
 *.tmp
 Thumbs.db
