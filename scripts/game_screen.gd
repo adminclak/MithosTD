@@ -27,6 +27,8 @@ var _ended: bool = false
 # Poder Supremo escolhido para a partida (1 por partida) e sua carga (0..1).
 var _ult: UltimateData = null
 var _ult_charge: float = 1.0 ## começa carregado para a 1ª investida
+var _ult_layer: CanvasLayer = null
+var _aimer: UltAimer = null
 
 
 func setup(stage: StageData, squad_datas: Array, ult_char_id: String = "") -> void:
@@ -90,6 +92,14 @@ func _ready() -> void:
 
 	GameState.game_over.connect(_on_game_over)
 
+	# Camada do Poder Supremo (acima de tudo) + sobreposição de mira.
+	_ult_layer = CanvasLayer.new()
+	_ult_layer.layer = 11
+	add_child(_ult_layer)
+	_aimer = UltAimer.new()
+	_aimer.aimed.connect(_fire_ult_at)
+	_ult_layer.add_child(_aimer)
+
 	if auto_start:
 		_auto_place_demo()
 		_wave_manager.player_advance()
@@ -128,19 +138,27 @@ func _process(delta: float) -> void:
 		if _ult_charge < 1.0:
 			_ult_charge = min(1.0, _ult_charge + delta / ULT_CHARGE_TIME)
 		_match_hud.set_ult_charge(_ult_charge)
-		# Smoke/demo: dispara sozinho quando carregado (exercita a animação).
+		# Smoke/demo: dispara sozinho no centro quando carregado.
 		if auto_start and _ult_charge >= 1.0:
-			_on_ult()
+			_fire_ult_at(UltimateEffect.CENTER)
 
 
+## Botão da ult: entra no modo de mira (escolher onde lançar no mapa).
 func _on_ult() -> void:
+	if _ult == null or _ult_charge < 1.0 or _ended:
+		return
+	_aimer.start(_ult.color)
+
+
+## Lança a ult no ponto escolhido (anima na camada de cima + aplica o efeito).
+func _fire_ult_at(pos: Vector2) -> void:
 	if _ult == null or _ult_charge < 1.0 or _ended:
 		return
 	_ult_charge = 0.0
 	_match_hud.set_ult_charge(0.0)
 	var fx := UltimateEffect.new()
-	add_child(fx)
-	fx.play(_ult)
+	_ult_layer.add_child(fx)
+	fx.play(_ult, pos)
 
 
 func _on_advance() -> void:

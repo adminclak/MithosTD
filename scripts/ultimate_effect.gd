@@ -12,10 +12,12 @@ var _t: float = 0.0
 var _dur: float = 1.8
 var _impact_at: float = 0.55
 var _applied: bool = false
+var _center: Vector2 = CENTER
 
 
-func play(ult: UltimateData) -> void:
+func play(ult: UltimateData, center: Vector2 = CENTER) -> void:
 	_ult = ult
+	_center = center
 	z_index = 200
 	queue_redraw()
 
@@ -113,8 +115,8 @@ func _hash(i: int) -> float:
 
 func _draw_meteor(t: float, col: Color) -> void:
 	for i in 8:
-		var x: float = 120.0 + _hash(i) * 1040.0
-		var ty: float = 200.0 + _hash(i + 50) * 380.0
+		var x: float = _center.x + (_hash(i) - 0.5) * 460.0
+		var ty: float = _center.y + (_hash(i + 50) - 0.5) * 220.0
 		var prog: float = clampf(t * 1.6 - _hash(i) * 0.3, 0.0, 1.0)
 		var y: float = lerp(-60.0, ty, prog)
 		if prog < 1.0:
@@ -160,8 +162,8 @@ func _draw_divine(t: float, env: float, col: Color) -> void:
 		var ang: float = TAU * float(i) / 16.0
 		var dir := Vector2(cos(ang), sin(ang))
 		var r: float = 60.0 + t * 700.0
-		draw_line(CENTER + dir * 40.0, CENTER + dir * r, Color(1.0, 0.95, 0.6, env * 0.5), 6.0)
-	draw_circle(CENTER, 30.0 + env * 60.0, Color(1, 1, 0.85, env * 0.6))
+		draw_line(_center + dir * 40.0, _center + dir * r, Color(1.0, 0.95, 0.6, env * 0.5), 6.0)
+	draw_circle(_center,30.0 + env * 60.0, Color(1, 1, 0.85, env * 0.6))
 	for i in 18: # faíscas subindo
 		var x: float = _hash(i) * 1280.0
 		var y: float = 720.0 - fmod(_t * 240.0 + _hash(i + 9) * 720.0, 720.0)
@@ -193,12 +195,12 @@ func _draw_quake(t: float, env: float, col: Color) -> void:
 	for k in 3:
 		var r: float = (t * 900.0) - k * 120.0
 		if r > 0.0:
-			draw_arc(CENTER, r, 0.0, TAU, 48, Color(col.r, col.g, col.b, max(0.0, env - k * 0.2)), 6.0)
+			draw_arc(_center,r, 0.0, TAU, 48, Color(col.r, col.g, col.b, max(0.0, env - k * 0.2)), 6.0)
 
 
 func _draw_void(t: float, env: float, col: Color) -> void:
 	draw_rect(ARENA, Color(0.1, 0.0, 0.15, env * 0.4))
 	for k in 4:
 		var r: float = lerp(700.0, 20.0, t) + k * 60.0 # anéis colapsando
-		draw_arc(CENTER, r, 0.0, TAU, 40, Color(col.r, col.g, col.b, env * 0.8), 5.0)
-	draw_circle(CENTER, env * 50.0, Color(0.7, 0.3, 0.9, env * 0.6))
+		draw_arc(_center,r, 0.0, TAU, 40, Color(col.r, col.g, col.b, env * 0.8), 5.0)
+	draw_circle(_center,env * 50.0, Color(0.7, 0.3, 0.9, env * 0.6))

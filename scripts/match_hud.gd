@@ -56,10 +56,10 @@ func _ready() -> void:
 
 	# Botão grande do Poder Supremo (canto superior direito).
 	_ult_btn = Button.new()
-	_ult_btn.custom_minimum_size = Vector2(230, 50)
-	_ult_btn.position = Vector2(1030, 12)
-	_ult_btn.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	_ult_btn.add_theme_font_size_override("font_size", 16)
+	_ult_btn.position = Vector2(1024, 10)
+	_ult_btn.size = Vector2(244, 54)
+	_ult_btn.custom_minimum_size = Vector2(244, 54)
+	_ult_btn.add_theme_font_size_override("font_size", 15)
 	_ult_btn.pressed.connect(func(): ult_pressed.emit())
 	_ult_btn.visible = false
 	add_child(_ult_btn)
