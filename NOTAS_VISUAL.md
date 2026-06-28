@@ -5,6 +5,28 @@
 > **testar todos os personagens**. Trabalhei com autonomia, em 2D, commitando por
 > partes. Este doc resume tudo e as decisões.
 
+## >>> ATUALIZAÇÃO: PIXEL ART (estilo Tangy TD) + SISTEMA DE ITENS
+Você pediu pra migrar o visual pra **pixel art 2D** (referência Tangy TD) e criar
+**centenas de itens** (míticos + básicos estilo Tibia). Feito e commitado:
+
+- **Pipeline pixel art**: baixei o LoRA *Pixel Art XL* e adaptei o ComfyUI.
+  `gen_art.py` tem modo PIXEL (LoRA + transparência + downscale nearest);
+  `gen_scenery.py` e `gen_items.py` idem. Godot configurado p/ filtro **nearest**.
+- **64 personagens** (56 heróis + 8 inimigos) **regerados em pixel art** (transparentes).
+- **Cenários em pixel**: 7 chãos por mitologia + castelo, portal, decorações e o
+  fundo de menu (templo ao pôr do sol).
+- **Sistema de itens (8 slots estilo Tibia)**: elmo, peito, pernas, botas, arma,
+  escudo, amuleto, anel. **203 itens** = básicos (por material: couro→mithril,
+  obsidiana, dragão...) + **47 lendários míticos** (Mjölnir, Égide de Atena, Olho
+  de Odin, Gorro do Saci, Macuahuitl, Kusanagi, Tridente de Poseidon...).
+- **55 ícones em pixel** (8 genéricos por slot + 47 lendários), aparecendo na loja
+  e nos slots da Coleção.
+- Loja/Coleção atualizadas (grade de 8 slots, cor por raridade, efeitos no texto).
+- **170/170 testes** (inclui 8 slots e contagem ≥200) + smoke limpo.
+
+Pendências/ideias: tela de "ficha do personagem" dedicada aos 8 slots com a arte
+grande; curar itens/sprites fracos; aplicar pixel também na fonte/HUD se quiser.
+
 ## Decisão importante: continuei em 2D (não migrei para 3D)
 Você sugeriu "talvez migrar para 3D". **Não migrei** — de propósito. Migrar
 exigiria refazer o jogo e usar modelos/rigs/animações 3D, que o ComfyUI **não

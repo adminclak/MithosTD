@@ -7,6 +7,8 @@ var _current: Node = null
 
 
 func _ready() -> void:
+	# Tema visual global (fonte de jogo + molduras Kenney) em todas as telas.
+	UiTheme.apply(get_window())
 	# Atalho de smoke test: "-- --auto-stage" inicia a fase 1 direto com os
 	# personagens iniciais, exercitando o fluxo Partida -> Resultado sem input.
 	var args := OS.get_cmdline_user_args()
