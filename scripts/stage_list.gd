@@ -9,8 +9,8 @@ static func all() -> Array:
 		_stage(1, "Campos de Elis", 5, 5, 1.0, 1.0, 50),
 		_stage(2, "Bosque de Nemeia", 6, 6, 1.15, 1.1, 62),
 		_stage(3, "Pantano da Hidra", 6, 7, 1.3, 1.2, 78),
-		_stage(4, "Desfiladeiro dos Centauros", 7, 8, 1.5, 1.3, 98),
-		_stage(5, "Encosta do Olimpo", 8, 8, 1.8, 1.4, 122),
+		_stage(4, "Desfiladeiro dos Centauros", 7, 8, 1.6, 1.3, 98),
+		_stage(5, "Encosta do Olimpo", 8, 8, 2.1, 1.45, 122),
 	]
 
 

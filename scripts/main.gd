@@ -11,8 +11,13 @@ func _ready() -> void:
 	# personagens iniciais, exercitando o fluxo Partida -> Resultado sem input.
 	var args := OS.get_cmdline_user_args()
 	if args.has("--auto-stage"):
-		var squad := Progression.unlocked_ids()
-		_on_start_stage(StageList.get_stage(1), squad.slice(0, Progression.SQUAD_MAX), true)
+		var idx := 1
+		for a in args:
+			if a.is_valid_int():
+				idx = clampi(int(a), 1, StageList.count())
+		# Esquadrao de demo variado (bloqueio + AoE + dano + suporte).
+		var squad := ["hercules", "ares", "artemis", "zeus", "atena", "medusa"]
+		_on_start_stage(StageList.get_stage(idx), squad, true)
 	elif args.has("--collection"):
 		_show_collection()
 	else:

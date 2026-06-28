@@ -9,7 +9,7 @@ extends Node2D
 signal finished(victory: bool)
 
 const START_HP := 20
-const START_GOLD := 180
+const START_GOLD := 220
 
 var auto_start: bool = false ## smoke test: começa as ondas sozinho
 
@@ -75,7 +75,7 @@ func _ready() -> void:
 ## Demo automática (smoke / auto-stage): posiciona o esquadrão sozinho, em zonas
 ## válidas, para exercitar o combate e o desenho das torres sem input.
 func _auto_place_demo() -> void:
-	GameState.add_gold(3000) # ouro extra apenas para a demo
+	GameState.add_gold(1500) # ouro extra apenas para a demo
 	var ranged := [Vector2(200, 280), Vector2(560, 300), Vector2(900, 280), Vector2(1130, 300)]
 	var melee := [Vector2(360, 290), Vector2(760, 300), Vector2(1040, 360)]
 	var ri := 0
