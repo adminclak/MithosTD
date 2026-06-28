@@ -43,6 +43,12 @@ func _ready() -> void:
 	_build_manager.setup(level.get_waypoints(), _squad)
 	add_child(_build_manager)
 
+	# Barra de heróis no rodapé -> clique entra no modo de colocação (fantasma).
+	var squad_bar := SquadBar.new()
+	squad_bar.setup(_build_manager)
+	squad_bar.char_selected.connect(_build_manager.start_placing)
+	add_child(squad_bar)
+
 	var hud := Hud.new()
 	add_child(hud)
 

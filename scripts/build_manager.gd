@@ -1,14 +1,16 @@
 class_name BuildManager
 extends Node2D
 
-## Posicionamento 100% LIVRE: o jogador clica em qualquer lugar do mapa para
-## invocar um personagem do esquadrão. Não há zonas — quem define o papel é o
-## próprio personagem (melee tanka onde for posto; ranged atira de onde estiver).
-## Valida apenas limites do mapa e espaçamento entre torres.
+## Posicionamento estilo Kingdom Rush:
+## - O jogador clica num herói na SquadBar (rodapé) -> entra em modo de colocação.
+## - Um "fantasma" (PlacementGhost) segue o mouse, verde (pode) / vermelho (não).
+## - Clique esquerdo posiciona (valida limites, espaçamento e ouro); direito/ESC cancela.
+## - Clique numa torre já em campo abre a gestão (upar/vender).
+## Sem zonas — qualquer herói em qualquer lugar válido (melee tanka onde for posto).
 
 const CLICK_RADIUS := 26.0
 const MIN_SPACING := 38.0
-const BOUNDS := Rect2(20, 20, 1240, 680)
+const BOUNDS := Rect2(20, 20, 1240, 600) ## área jogável (acima da SquadBar)
 
 var waypoints: Array = []
 var squad: Array = []
@@ -16,7 +18,8 @@ var squad: Array = []
 var _towers: Array = []
 var _menu: BuildMenu = null
 var _active_tower: Tower = null
-var _pending_pos: Vector2 = Vector2.ZERO
+var _placing: TowerData = null
+var _ghost: PlacementGhost = null
 var _toast: Label = null
 
 @onready var _state: Node = get_node_or_null(^"/root/GameState")
@@ -30,28 +33,62 @@ func setup(wpoints: Array, squad_datas: Array = []) -> void:
 func _ready() -> void:
 	_menu = BuildMenu.new()
 	add_child(_menu)
-	_menu.build_requested.connect(_on_build_requested)
 	_menu.upgrade_requested.connect(_on_upgrade_requested)
 	_menu.sell_requested.connect(_on_sell_requested)
 	_menu.closed.connect(_on_menu_closed)
+	_ghost = PlacementGhost.new()
+	add_child(_ghost)
+
+
+func _process(_delta: float) -> void:
+	if _placing != null:
+		var pos := get_global_mouse_position()
+		_ghost.position = pos
+		_ghost.valid = can_place(_placing.tower_class, pos) and _gold() >= _placing.cost
+		_ghost.queue_redraw()
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if _state != null and _state.is_over():
 		return
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		var pos := get_global_mouse_position()
-		var t := _tower_at(pos)
-		if t != null:
-			_active_tower = t
-			_pending_pos = Vector2.ZERO
-			_menu.open_manage(t.global_position, t, _gold())
-		else:
-			_active_tower = null
-			_pending_pos = pos
-			_menu.open_build(pos, _build_entries(pos), _gold())
+	if event is InputEventMouseButton and event.pressed:
+		if _placing != null:
+			if event.button_index == MOUSE_BUTTON_LEFT:
+				var pos := get_global_mouse_position()
+				if can_place(_placing.tower_class, pos) and _gold() >= _placing.cost:
+					try_place(pos, _placing)
+					_stop_placing()
+				else:
+					var why := _place_reason(_placing.tower_class, pos)
+					_show_toast(pos, why if why != "" else "sem ouro")
+				get_viewport().set_input_as_handled()
+			elif event.button_index == MOUSE_BUTTON_RIGHT:
+				_stop_placing()
+				get_viewport().set_input_as_handled()
+		elif event.button_index == MOUSE_BUTTON_LEFT:
+			var t := _tower_at(get_global_mouse_position())
+			if t != null:
+				_active_tower = t
+				_menu.open_manage(t.global_position, t, _gold())
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+		if _placing != null:
+			_stop_placing()
+			get_viewport().set_input_as_handled()
 
 
+# --- Modo de colocação (chamado pela SquadBar) ---
+func start_placing(data: TowerData) -> void:
+	_placing = data
+	_close_menu()
+	_ghost.show_for(data)
+
+
+func _stop_placing() -> void:
+	_placing = null
+	_ghost.clear()
+
+
+# --- Validação ---
 func can_place(_tower_class: int, pos: Vector2) -> bool:
 	if not BOUNDS.has_point(pos):
 		return false
@@ -68,14 +105,6 @@ func _place_reason(_tower_class: int, pos: Vector2) -> String:
 		if is_instance_valid(t) and t.global_position.distance_to(pos) < MIN_SPACING:
 			return "perto demais"
 	return ""
-
-
-func _build_entries(pos: Vector2) -> Array:
-	var entries: Array = []
-	for d in _available_squad():
-		entries.append({"data": d, "allowed": can_place(d.tower_class, pos), \
-			"reason": _place_reason(d.tower_class, pos)})
-	return entries
 
 
 func _available_squad() -> Array:
@@ -143,13 +172,7 @@ func sell(tower: Tower) -> bool:
 	return true
 
 
-# --- Sinais do BuildMenu ---
-func _on_build_requested(data: TowerData) -> void:
-	if not try_place(_pending_pos, data):
-		_show_toast(_place_reason(data.tower_class, _pending_pos))
-	_close_menu()
-
-
+# --- Sinais do BuildMenu (gestão) ---
 func _on_upgrade_requested() -> void:
 	if _active_tower != null:
 		try_upgrade(_active_tower)
@@ -174,15 +197,16 @@ func _close_menu() -> void:
 		_menu.close()
 
 
-func _show_toast(msg: String) -> void:
+func _show_toast(pos: Vector2, msg: String) -> void:
 	if msg == "":
 		return
 	if _toast == null:
 		_toast = Label.new()
-		_toast.add_theme_font_size_override("font_size", 22)
+		_toast.add_theme_font_size_override("font_size", 20)
 		_toast.add_theme_color_override("font_color", Color(1.0, 0.5, 0.4))
 		add_child(_toast)
-	_toast.text = "Nao da pra posicionar aqui (%s)" % msg
-	_toast.position = _pending_pos + Vector2(-90, -40)
+	_toast.text = "Nao da pra posicionar (%s)" % msg
+	_toast.position = pos + Vector2(-80, -36)
 	_toast.visible = true
-	get_tree().create_timer(1.3).timeout.connect(func(): if is_instance_valid(_toast): _toast.visible = false)
+	_toast.z_index = 120
+	get_tree().create_timer(1.2).timeout.connect(func(): if is_instance_valid(_toast): _toast.visible = false)

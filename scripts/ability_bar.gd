@@ -13,7 +13,7 @@ var _tracked: Array = [] ## instance ids das torres atualmente na barra
 func _ready() -> void:
 	layer = 4
 	_bar = HBoxContainer.new()
-	_bar.position = Vector2(20, 640)
+	_bar.position = Vector2(20, 560) ## acima da SquadBar (rodapé)
 	_bar.add_theme_constant_override("separation", 8)
 	add_child(_bar)
 

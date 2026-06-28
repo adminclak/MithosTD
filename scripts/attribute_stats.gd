@@ -17,6 +17,7 @@ static func build(tower_class: int, a: AttributeSet, melee: bool = false, stars:
 	d.tower_class = tower_class
 	d.is_melee = melee
 	d.body_color = _color_of(tower_class)
+	d.attributes = a
 
 	# --- Secundários comuns (todas as builds) ---
 	d.crit_chance = clampf((a.luck * 0.4 + a.dexterity * 0.15) / 100.0, 0.0, 0.6)
