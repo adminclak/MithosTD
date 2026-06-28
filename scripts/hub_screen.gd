@@ -4,7 +4,7 @@ extends CanvasLayer
 ## Tela de base: monta o esquadrão (até SQUAD_MAX personagens) filtrando por
 ## mitologia, e escolhe a fase. Emite start_stage(stage, squad_ids).
 
-signal start_stage(stage: StageData, squad_ids: Array)
+signal start_stage(stage: StageData, squad_ids: Array, ult_id: String)
 signal open_collection
 signal open_gacha
 signal open_quests
@@ -17,6 +17,8 @@ var _list_box: VBoxContainer
 var _stage_buttons: Array = []
 var _hint: Label
 var _squad_label: Label
+var _ult_id: String = "" ## personagem cujo Poder Supremo será usado na partida
+var _ult_box: VBoxContainer
 
 
 func _ready() -> void:
@@ -119,12 +121,23 @@ func _ready() -> void:
 		_stage_buttons.append({"button": b, "stage": s})
 
 	_squad_label = Label.new()
-	_squad_label.position = Vector2(640, 440)
+	_squad_label.position = Vector2(640, 418)
 	add_child(_squad_label)
 	_hint = Label.new()
-	_hint.position = Vector2(640, 470)
+	_hint.position = Vector2(640, 444)
 	_hint.custom_minimum_size = Vector2(560, 0)
 	add_child(_hint)
+
+	# Seletor do Poder Supremo (1 por partida, conforme o esquadrão).
+	var ult_head := Label.new()
+	ult_head.position = Vector2(640, 484)
+	ult_head.text = "Poder Supremo (escolha 1):"
+	ult_head.add_theme_color_override("font_color", Color(1.0, 0.86, 0.42))
+	add_child(ult_head)
+	_ult_box = VBoxContainer.new()
+	_ult_box.position = Vector2(640, 510)
+	_ult_box.add_theme_constant_override("separation", 4)
+	add_child(_ult_box)
 
 	_refresh_list()
 	_refresh()
@@ -174,7 +187,8 @@ func _on_char_toggled(pressed: bool, id: String, cb: CheckButton) -> void:
 func _try_start(stage: StageData) -> void:
 	if _selected.is_empty() or stage.index > Progression.highest_stage_unlocked:
 		return
-	start_stage.emit(stage, _selected.duplicate())
+	var ult: String = _ult_id if _ult_id != "" else String(_selected[0])
+	start_stage.emit(stage, _selected.duplicate(), ult)
 
 
 func _refresh() -> void:
@@ -191,3 +205,30 @@ func _refresh() -> void:
 			if c != null:
 				names.append(c.display_name)
 		_hint.text = "Levando: " + ", ".join(names)
+	_refresh_ult_box()
+
+
+## Mostra um Poder Supremo por herói do esquadrão; clicar escolhe qual usar.
+func _refresh_ult_box() -> void:
+	if _ult_box == null:
+		return
+	# Mantém uma escolha válida (dentro do esquadrão atual).
+	if not _selected.has(_ult_id):
+		_ult_id = _selected[0] if not _selected.is_empty() else ""
+	for c in _ult_box.get_children():
+		c.queue_free()
+	for id in _selected:
+		var ch := Roster.by_id(id)
+		if ch == null:
+			continue
+		var ult := Ultimates.for_character(id)
+		var b := Button.new()
+		b.custom_minimum_size = Vector2(360, 30)
+		b.text = ("➤ " if id == _ult_id else "   ") + "%s — %s" % [ult.display_name, ch.display_name]
+		UiTheme.style_button(b)
+		if id == _ult_id:
+			b.add_theme_color_override("font_color", ult.color)
+		b.pressed.connect(func():
+			_ult_id = id
+			_refresh_ult_box())
+		_ult_box.add_child(b)

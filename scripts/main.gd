@@ -17,7 +17,7 @@ func _ready() -> void:
 				idx = clampi(int(a), 1, StageList.count())
 		# Esquadrao de demo variado (bloqueio + AoE + dano + suporte).
 		var squad := ["hercules", "ares", "artemis", "zeus", "atena", "medusa"]
-		_on_start_stage(StageList.get_stage(idx), squad, true)
+		_on_start_stage(StageList.get_stage(idx), squad, "zeus", true)
 	elif args.has("--collection"):
 		_show_collection()
 	elif args.has("--gacha"):
@@ -55,7 +55,7 @@ func _show_quests() -> void:
 	_switch_to(screen)
 
 
-func _on_start_stage(stage: StageData, squad_ids: Array, auto: bool = false) -> void:
+func _on_start_stage(stage: StageData, squad_ids: Array, ult_id: String = "", auto: bool = false) -> void:
 	var squad_datas: Array = []
 	for id in squad_ids:
 		var ch := Roster.by_id(id)
@@ -66,7 +66,7 @@ func _on_start_stage(stage: StageData, squad_ids: Array, auto: bool = false) -> 
 			squad_datas.append(data)
 
 	var game := GameScreen.new()
-	game.setup(stage, squad_datas)
+	game.setup(stage, squad_datas, ult_id)
 	game.auto_start = auto
 	game.finished.connect(_on_game_finished.bind(stage, squad_ids))
 	_switch_to(game)

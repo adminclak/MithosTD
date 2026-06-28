@@ -11,6 +11,7 @@ signal finished(victory: bool)
 const START_HP := 20
 const START_GOLD := 220
 const PREP_TIME := 10.0 ## segundos de preparação antes da 1ª onda
+const ULT_CHARGE_TIME := 28.0 ## segundos de onda para encher o Poder Supremo
 
 var auto_start: bool = false ## smoke test: começa as ondas sozinho
 var _prep_timer: float = PREP_TIME
@@ -23,10 +24,19 @@ var _match_hud: MatchHud
 var _fast: bool = false
 var _ended: bool = false
 
+# Poder Supremo escolhido para a partida (1 por partida) e sua carga (0..1).
+var _ult: UltimateData = null
+var _ult_charge: float = 1.0 ## começa carregado para a 1ª investida
 
-func setup(stage: StageData, squad_datas: Array) -> void:
+
+func setup(stage: StageData, squad_datas: Array, ult_char_id: String = "") -> void:
 	_stage = stage
 	_squad = squad_datas
+	var cid := ult_char_id
+	if cid == "" and not squad_datas.is_empty():
+		cid = squad_datas[0].char_id
+	if cid != "":
+		_ult = Ultimates.for_character(cid)
 
 
 func _ready() -> void:
@@ -61,7 +71,10 @@ func _ready() -> void:
 	_match_hud.pause_pressed.connect(_on_pause)
 	_match_hud.speed_pressed.connect(_on_speed)
 	_match_hud.abandon_pressed.connect(_confirm_abandon)
+	_match_hud.ult_pressed.connect(_on_ult)
 	_match_hud.set_phase("Preparacao: %ds — posicione e clique Lancar Onda" % int(PREP_TIME))
+	if _ult != null:
+		_match_hud.set_ult(_ult.display_name, _ult.color)
 
 	_wave_manager = WaveManager.new()
 	_wave_manager.waypoints = level.get_waypoints()
@@ -107,6 +120,25 @@ func _process(delta: float) -> void:
 			_wave_manager.player_advance()
 		else:
 			_match_hud.set_phase("Preparacao: %ds — posicione e clique Lancar Onda" % ceil(_prep_timer))
+
+	# Carga do Poder Supremo (enche durante as ondas).
+	if _ult != null and not _ended and _wave_manager != null and not _wave_manager.is_in_prep():
+		if _ult_charge < 1.0:
+			_ult_charge = min(1.0, _ult_charge + delta / ULT_CHARGE_TIME)
+		_match_hud.set_ult_charge(_ult_charge)
+		# Smoke/demo: dispara sozinho quando carregado (exercita a animação).
+		if auto_start and _ult_charge >= 1.0:
+			_on_ult()
+
+
+func _on_ult() -> void:
+	if _ult == null or _ult_charge < 1.0 or _ended:
+		return
+	_ult_charge = 0.0
+	_match_hud.set_ult_charge(0.0)
+	var fx := UltimateEffect.new()
+	add_child(fx)
+	fx.play(_ult)
 
 
 func _on_advance() -> void:
