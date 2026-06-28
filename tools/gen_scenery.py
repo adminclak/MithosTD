@@ -30,6 +30,10 @@ JOBS = {
         "uniform short cartoon grass with subtle color variation, a few tiny scattered "
         "wildflowers and small dirt patches, even soft lighting, hand-painted game tile, "
         "completely empty, nothing on it", False, 1024, 576),
+    "world_map": ("illustrated fantasy world map seen from above, distinct regions "
+        "(green greek hills, snowy norse fiords, golden egyptian desert, lush jungle, "
+        "misty asian mountains), a winding road connecting them, rivers, parchment edges, "
+        "vibrant cartoon painterly style, cinematic, no text, no labels", False, 1024, 576),
     "menu_bg": ("epic fantasy game title-screen background illustration, ancient "
         "mythological temple on a green mountain, dramatic golden sunset sky with clouds, "
         "lush scenery, vibrant cartoon painterly Kingdom Rush style, cinematic, no text", False, 1024, 576),

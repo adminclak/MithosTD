@@ -20,6 +20,10 @@ func _ready() -> void:
 		# Esquadrao de demo variado (bloqueio + AoE + dano + suporte).
 		var squad := ["hercules", "ares", "artemis", "zeus", "atena", "medusa"]
 		_on_start_stage(StageList.get_stage(idx), squad, "zeus", true)
+	elif args.has("--heroes"):
+		_show_heroes()
+	elif args.has("--worldmap"):
+		_show_worldmap()
 	elif args.has("--collection"):
 		_show_collection()
 	elif args.has("--gacha"):
@@ -27,33 +31,51 @@ func _ready() -> void:
 	elif args.has("--quests"):
 		_show_quests()
 	else:
-		_show_hub()
+		_show_title()
 
 
-func _show_hub() -> void:
-	var hub := HubScreen.new()
-	hub.start_stage.connect(_on_start_stage)
-	hub.open_collection.connect(_show_collection)
-	hub.open_gacha.connect(_show_gacha)
-	hub.open_quests.connect(_show_quests)
-	_switch_to(hub)
+func _show_title() -> void:
+	var t := TitleScreen.new()
+	t.play_pressed.connect(_show_worldmap)
+	t.heroes_pressed.connect(_show_heroes)
+	t.shop_pressed.connect(_show_collection)
+	t.quests_pressed.connect(_show_quests)
+	t.gacha_pressed.connect(_show_gacha)
+	_switch_to(t)
+
+
+func _show_worldmap() -> void:
+	var w := WorldMapScreen.new()
+	w.stage_chosen.connect(_start_stage_from_map)
+	w.back.connect(_show_title)
+	_switch_to(w)
+
+
+func _show_heroes() -> void:
+	var h := HeroesScreen.new()
+	h.closed.connect(_show_title)
+	_switch_to(h)
+
+
+func _start_stage_from_map(stage: StageData) -> void:
+	_on_start_stage(stage, Progression.squad.duplicate(), Progression.squad_ult, false)
 
 
 func _show_collection() -> void:
 	var screen := CollectionScreen.new()
-	screen.closed.connect(_show_hub)
+	screen.closed.connect(_show_title)
 	_switch_to(screen)
 
 
 func _show_gacha() -> void:
 	var screen := GachaScreen.new()
-	screen.closed.connect(_show_hub)
+	screen.closed.connect(_show_title)
 	_switch_to(screen)
 
 
 func _show_quests() -> void:
 	var screen := QuestsScreen.new()
-	screen.closed.connect(_show_hub)
+	screen.closed.connect(_show_title)
 	_switch_to(screen)
 
 
@@ -89,7 +111,7 @@ func _on_game_finished(victory: bool, stage: StageData, squad_ids: Array) -> voi
 
 	var result := ResultScreen.new()
 	result.setup(victory, xp, summary, newly, rewards)
-	result.continue_pressed.connect(_show_hub)
+	result.continue_pressed.connect(_show_title)
 	_switch_to(result)
 
 
