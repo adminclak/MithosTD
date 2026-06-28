@@ -9,7 +9,9 @@ extends Node2D
 @export var attack_rate: float = 1.0 ## ataques por segundo quando bloqueado
 @export var body_color: Color = Color(0.85, 0.3, 0.3)
 
+var data: EnemyData = null
 var hp: int
+var _radius: float = 14.0
 var _waypoints: Array = []
 var _index: int = 0
 
@@ -29,11 +31,24 @@ signal died(enemy)
 signal reached_end(enemy)
 
 
-func setup(points: Array) -> void:
+## Aplica os stats de um EnemyData (data-driven). hp_mult vem da dificuldade da fase.
+func apply_data(d: EnemyData, hp_mult: float = 1.0) -> void:
+	data = d
+	max_hp = int(round(d.max_hp * hp_mult))
+	speed = d.speed
+	gold_reward = d.gold_reward
+	base_damage = d.base_damage
+	attack_damage = d.attack_damage
+	attack_rate = d.attack_rate
+	body_color = d.color
+	_radius = d.radius
+
+
+func setup(points: Array, start_index: int = 0) -> void:
 	_waypoints = points.duplicate()
-	_index = 0
+	_index = clampi(start_index, 0, max(0, points.size() - 1))
 	if not points.is_empty():
-		global_position = points[0]
+		global_position = points[_index]
 
 
 func _ready() -> void:
@@ -125,8 +140,23 @@ func take_damage(amount: int) -> void:
 func _die() -> void:
 	if _state != null:
 		_state.add_gold(gold_reward)
+	if data != null and data.special == EnemyData.Special.SPLIT and data.split_into != "":
+		_spawn_split()
 	died.emit(self)
 	queue_free()
+
+
+## Hidra: ao morrer gera filhotes que continuam do mesmo ponto do caminho.
+func _spawn_split() -> void:
+	var child := GreekBestiary.by_id(data.split_into)
+	if child == null:
+		return
+	for i in data.split_count:
+		var c := Enemy.new()
+		c.apply_data(child)
+		c.setup(_waypoints, _index)
+		get_parent().add_child(c)
+		c.global_position = global_position + Vector2(randf_range(-12.0, 12.0), randf_range(-12.0, 12.0))
 
 
 func _reach_end() -> void:
@@ -138,18 +168,16 @@ func _reach_end() -> void:
 
 func _draw() -> void:
 	# Corpo do inimigo: circulo preenchido na cor body_color.
-	draw_circle(Vector2.ZERO, 14.0, body_color)
-	# Barra de vida acima do corpo.
-	var bar_pos: Vector2 = Vector2(-14.0, -24.0)
-	var bar_width: float = 28.0
+	draw_circle(Vector2.ZERO, _radius, body_color)
+	# Barra de vida acima do corpo (largura proporcional ao tamanho).
+	var bar_width: float = _radius * 2.0
 	var bar_height: float = 4.0
-	# Fundo escuro da barra.
+	var bar_pos: Vector2 = Vector2(-_radius, -_radius - 10.0)
 	draw_rect(Rect2(bar_pos, Vector2(bar_width, bar_height)), Color(0.1, 0.1, 0.1))
-	# Proporcao de vida atual em verde.
 	var ratio: float = 0.0
 	if max_hp > 0:
 		ratio = clampf(float(hp) / float(max_hp), 0.0, 1.0)
 	draw_rect(Rect2(bar_pos, Vector2(bar_width * ratio, bar_height)), Color(0.2, 0.8, 0.2))
 	# Atordoado: anel ciano em volta.
 	if _stun_timer > 0.0:
-		draw_arc(Vector2.ZERO, 16.0, 0.0, TAU, 20, Color(0.6, 0.9, 1.0), 2.0)
+		draw_arc(Vector2.ZERO, _radius + 2.0, 0.0, TAU, 20, Color(0.6, 0.9, 1.0), 2.0)

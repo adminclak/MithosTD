@@ -43,6 +43,7 @@ func _ready() -> void:
 	wave_manager.waypoints = level.get_waypoints()
 	wave_manager.enemies_root = enemies_root
 	wave_manager.total_waves = _stage.waves
+	wave_manager.stage_index = _stage.index
 	wave_manager.enemy_hp_mult = _stage.enemy_hp_mult
 	wave_manager.enemy_count_mult = _stage.enemy_count_mult
 	add_child(wave_manager)

@@ -233,7 +233,9 @@ Single-player, **mundo grego completo** como fatia vertical do jogo final:
 3. ✅ **Economia da partida** — invocar torres clicando nos slots (painel das 4 classes + custo), upgrade temporário (Nv 1→2→3) e venda; bônus de ouro por onda. **CONCLUÍDA**: `BuildManager`/`BuildMenu`/`TowerSlot`, validada (smoke test + 63 testes). Montagem de esquadrão movida para a Camada 4.
 4. ✅ **Meta-progressão** — 8 personagens gregos, XP/níveis permanentes, desbloqueio por fase, montagem de esquadrão (Hub) e save local em `user://` (JSON). 5 fases com dificuldade crescente. **CONCLUÍDA**: autoload `Progression`, fluxo Hub→Partida→Resultado, validada (smoke + 83 testes).
 5. ✅ **Equipamentos + habilidades + loja** — habilidade ativa de assinatura por personagem (botão no HUD com cooldown; 5 tipos de efeito: dano/atordoar/buff/cura/escudo), equipamentos (Arma+Relíquia, raridades, bônus nos stats), loja com ouro meta, evolução de estrela por Essência (tetos 10/20/30). **CONCLUÍDA**: `AbilityData`/`AbilityBar`, `EquipmentData`/`EquipmentList`, `CollectionScreen`, validada (smoke + 116 testes).
-6. ⏭️ **Conteúdo** (PRÓXIMA) — completar o mundo grego (7 inimigos temáticos, 5 fases com rotas próprias), balancear.
+6. ✅ **Conteúdo** — bestiário grego data-driven (7 inimigos: Lacaio, Espectro, Esqueleto, Hidra que se divide, Centauro, Ciclope e o boss Tálos), composição de ondas temática por fase (`WaveComposer`) e o boss na fase 5. **CONCLUÍDA**: `EnemyData`/`GreekBestiary`, validada (smoke + 126 testes). *Obs.: rota única reutilizada (variando slots/dificuldade/ondas) — rotas geográficas distintas por fase ficam para o editor, como o design previa.*
+
+> **MVP da fatia vertical grega COMPLETO** (Camadas 1–6). Próximos passos sugeridos: playtest e balanceamento, rotas próprias por fase no editor, arte/áudio, e export Android.
 
 ---
 

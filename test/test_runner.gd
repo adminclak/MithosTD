@@ -26,6 +26,8 @@ func _initialize() -> void:
 	_test_abilities()
 	_test_equipment()
 	_test_shop_evolution()
+	_test_bestiary()
+	_test_wave_composition()
 	print("\n=== RESULTADO: %d passou, %d falhou ===" % [_passed, _failed])
 	quit(0 if _failed == 0 else 1)
 
@@ -443,3 +445,69 @@ func _test_shop_evolution() -> void:
 	var r2 = pr.grant_rewards(1, false)
 	_check(r2["gold"] == 10, "derrota da 10 de ouro meta")
 	pr.reset()
+
+func _test_bestiary() -> void:
+	print("\nBestiario grego (7 inimigos + divisao da Hidra):")
+	var lacaio = GreekBestiary.by_id("lacaio")
+	_check(lacaio != null and lacaio.max_hp == 12, "Lacaio tem 12 de vida")
+	var talos = GreekBestiary.by_id("talos")
+	_check(talos != null and talos.max_hp >= 600, "Talos (boss) tem muita vida")
+	var hidra = GreekBestiary.by_id("hidra")
+	_check(hidra.special == EnemyData.Special.SPLIT, "Hidra tem comportamento de divisao")
+
+	# apply_data aplica os stats e o multiplicador de vida da fase.
+	var e = Enemy.new()
+	e.apply_data(GreekBestiary.by_id("esqueleto"), 2.0)
+	root.add_child(e)
+	_check(e.max_hp == 92, "apply_data aplica hp_mult (46 * 2 = 92)")
+	_check(e.hp == 92, "_ready inicia hp = max_hp")
+	e.free()
+
+	# Matar uma Hidra gera 2 filhotes que entram no jogo.
+	var gs = root.get_node_or_null(^"/root/GameState")
+	gs.reset_run(20, 0)
+	var hidra_e = Enemy.new()
+	hidra_e.apply_data(GreekBestiary.by_id("hidra"))
+	hidra_e.setup([Vector2(0, 0), Vector2(200, 0)])
+	root.add_child(hidra_e)
+	hidra_e.global_position = Vector2(50, 0)
+	hidra_e.take_damage(999)
+	var filhotes := 0
+	for en in get_nodes_in_group("enemies"):
+		if is_instance_valid(en) and en.data != null and en.data.id == "hidra_filhote":
+			filhotes += 1
+	_check(filhotes == 2, "Hidra ao morrer gera 2 filhotes")
+	for en in get_nodes_in_group("enemies"):
+		if is_instance_valid(en):
+			en.free()
+
+	# Todos os tipos do bestiario instanciam sem erro (cobre o boss Talos).
+	var ok_all := true
+	for ed in GreekBestiary.all():
+		var en = Enemy.new()
+		en.apply_data(ed)
+		en.setup([Vector2(0, 0), Vector2(100, 0)])
+		root.add_child(en)
+		if not en.is_in_group("enemies") or en.max_hp != ed.max_hp:
+			ok_all = false
+		en.free()
+	_check(ok_all, "todos os 8 tipos do bestiario instanciam corretamente")
+
+func _test_wave_composition() -> void:
+	print("\nComposicao de ondas por fase:")
+	var g1 = WaveComposer.compose(1, 1, 5)
+	_check(g1.size() == 1 and g1[0]["id"] == "lacaio", "fase 1 (tutorial) spawna so lacaios")
+
+	var g3 = WaveComposer.compose(3, 4, 7)
+	var has_hidra := false
+	for g in g3:
+		if g["id"] == "hidra":
+			has_hidra = true
+	_check(has_hidra, "fase 3 inclui Hidras (premia AoE)")
+
+	var gboss = WaveComposer.compose(5, 5, 5)
+	var has_talos := false
+	for g in gboss:
+		if g["id"] == "talos":
+			has_talos = true
+	_check(has_talos, "onda final da fase 5 inclui o boss Talos")

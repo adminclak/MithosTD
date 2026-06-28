@@ -1,14 +1,16 @@
 class_name WaveManager
 extends Node
 
+## Gera as ondas de uma fase usando a composição do WaveComposer e o bestiário.
+## A dificuldade (hp/contagem) vem da StageData via GameScreen.
+
 @export var total_waves: int = 5
-@export var base_count: int = 5
-@export var per_wave: int = 2
-@export var spawn_interval: float = 0.7
+@export var stage_index: int = 1
+@export var spawn_interval: float = 0.6
 @export var wave_pause: float = 3.0
 @export var wave_bonus: int = 20 ## ouro ganho ao concluir cada onda
-@export var enemy_hp_mult: float = 1.0   ## dificuldade da fase
-@export var enemy_count_mult: float = 1.0 ## dificuldade da fase
+@export var enemy_hp_mult: float = 1.0
+@export var enemy_count_mult: float = 1.0
 
 var waypoints: Array = []
 var enemies_root: Node2D
@@ -23,17 +25,19 @@ func _run_waves() -> void:
 		if GameState.is_over():
 			return
 		GameState.set_wave(w, total_waves)
-		var count: int = int(round((base_count + (w - 1) * per_wave) * enemy_count_mult))
-		for i in count:
-			if GameState.is_over():
-				return
-			_spawn_one()
-			await get_tree().create_timer(spawn_interval).timeout
-		# Bônus por concluir a onda (todos os inimigos dela já foram lançados).
+		for group in WaveComposer.compose(stage_index, w, total_waves):
+			var count: int = max(1, int(round(group["count"] * enemy_count_mult)))
+			for i in count:
+				if GameState.is_over():
+					return
+				_spawn(group["id"])
+				await get_tree().create_timer(spawn_interval).timeout
+		# Bônus por concluir a onda.
 		GameState.add_gold(wave_bonus)
 		if w < total_waves:
 			await get_tree().create_timer(wave_pause).timeout
-	# Espera a tela limpar de inimigos restantes.
+
+	# Espera a tela limpar dos inimigos restantes.
 	while get_tree().get_nodes_in_group("enemies").size() > 0:
 		if GameState.is_over():
 			return
@@ -42,9 +46,12 @@ func _run_waves() -> void:
 		GameState.win()
 
 
-func _spawn_one() -> void:
+func _spawn(enemy_id: String) -> void:
+	var d := GreekBestiary.by_id(enemy_id)
+	if d == null:
+		return
 	var e := Enemy.new()
-	e.max_hp = int(round(e.max_hp * enemy_hp_mult))
+	e.apply_data(d, enemy_hp_mult)
 	e.setup(waypoints)
 	if enemies_root != null:
 		enemies_root.add_child(e)
