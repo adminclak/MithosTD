@@ -41,6 +41,12 @@ var _shield_timer: float = 0.0
 
 var _sprite: Texture2D = null
 
+# Animação (puro código): respiração idle, ataque (recoil/espadada/escudo) e
+# direção do golpe. _atk vai de 1→0 a cada ação.
+var _idle: float = 0.0
+var _atk: float = 0.0
+var _face: Vector2 = Vector2.RIGHT
+
 @onready var _state: Node = get_node_or_null(^"/root/GameState")
 
 
@@ -77,6 +83,12 @@ func _process(delta: float) -> void:
 	elif data.tower_class == TowerData.TowerClass.ARCHER or data.tower_class == TowerData.TowerClass.MAGE:
 		_process_attacker(delta)
 	# Sacerdote ranged: a aura é consultada pelas entidades próximas.
+
+	# Animação: respiração contínua + decaimento do golpe + redesenho por frame.
+	_idle += delta * 3.2
+	if _atk > 0.0:
+		_atk = max(0.0, _atk - delta * 4.0)
+	queue_redraw()
 
 
 # --- Upgrade / venda ---
@@ -160,7 +172,7 @@ func _find_target() -> Node2D:
 func _shoot(target: Node2D) -> void:
 	var p := Projectile.new()
 	get_parent().add_child(p)
-	p.global_position = global_position
+	p.global_position = global_position + Vector2(0, -6)
 	var dmg: int = int(round(data.damage * _stat_mult() * _aura_damage_mult * _temp_mult()))
 	var col: Color = data.projectile_color
 	if randf() < data.crit_chance:
@@ -168,6 +180,14 @@ func _shoot(target: Node2D) -> void:
 		col = Color(1.0, 0.55, 0.2)
 	p.setup(target, dmg, data.splash_radius, col, data.penetration)
 	p.speed = data.proj_speed
+	# Tipo de projétil pela classe: Mago = bola de fogo; Arqueiro = flecha.
+	if data.tower_class == TowerData.TowerClass.MAGE:
+		p.set_kind(Projectile.Kind.FIREBALL if data.splash_radius > 0.0 else Projectile.Kind.BOLT)
+	else:
+		p.set_kind(Projectile.Kind.ARROW)
+	# Dispara a animação de ataque (recuo + arco/flash) virada para o alvo.
+	_atk = 1.0
+	_face = (target.global_position - global_position).normalized()
 
 
 # --- MELEE (tanque que trava inimigos) ---
@@ -211,8 +231,14 @@ func _process_melee(delta: float) -> void:
 
 	# Ataca os travados.
 	if not _melee_targets.is_empty():
+		# Vira o personagem para o primeiro alvo válido (escudo/espada apontam pra lá).
+		for e in _melee_targets:
+			if is_instance_valid(e):
+				_face = (e.global_position - global_position).normalized()
+				break
 		_melee_cd -= delta
 		if _melee_cd <= 0.0:
+			_atk = 1.0 # dispara a espadada / investida de escudo
 			var dmg := int(round(data.melee_damage * _stat_mult() * _aura_damage_mult * _temp_mult()))
 			for e in _melee_targets:
 				if not is_instance_valid(e):
@@ -392,19 +418,36 @@ func _draw() -> void:
 			or data.tower_class == TowerData.TowerClass.MAGE):
 		draw_arc(Vector2.ZERO, data.attack_range, 0.0, TAU, 64, Color(c.r, c.g, c.b, 0.07), 1.0)
 	if data.aura_radius > 0.0:
-		draw_arc(Vector2.ZERO, data.aura_radius, 0.0, TAU, 64, Color(c.r, c.g, c.b, 0.13), 1.5)
+		# Aura pulsante (respira com o idle).
+		var pulse: float = 0.10 + 0.06 * (0.5 + 0.5 * sin(_idle * 1.4))
+		draw_arc(Vector2.ZERO, data.aura_radius, 0.0, TAU, 64, Color(c.r, c.g, c.b, pulse), 2.0)
 
-	# Sombra + corpo (sprite, se houver; senão, boneco desenhado).
+	# Deslocamento do corpo: respiração (bob) + movimento do golpe.
+	var bob := Vector2(0, sin(_idle) * 1.5)
+	var motion := Vector2.ZERO
+	if data.is_melee:
+		motion = _face * 6.0 * _atk     # avança ao golpear/empurrar
+	else:
+		motion = -_face * 4.0 * _atk    # recua ao atirar
+	var off := bob + motion
+
+	# Sombra (fixa no chão).
 	draw_circle(Vector2(0, 15), 13.0, Color(0, 0, 0, 0.20))
 	if _down:
 		c = Color(c.r * 0.4, c.g * 0.4, c.b * 0.4, 0.7)
 		dark = Color(dark.r, dark.g, dark.b, 0.7)
+
+	# Arma/efeito ATRÁS do corpo (ex.: arco) e DEPOIS o corpo por cima.
+	if not _down:
+		_draw_weapon_back(off)
 	if _sprite != null:
 		var sz := Vector2(48, 48)
-		draw_texture_rect(_sprite, Rect2(-sz * 0.5 + Vector2(0, -6), sz), false, \
+		draw_texture_rect(_sprite, Rect2(off + (-sz * 0.5) + Vector2(0, -6), sz), false, \
 			Color(1, 1, 1, 0.7) if _down else Color.WHITE)
 	else:
-		_draw_doll(c, dark)
+		_draw_doll_at(off, c, dark)
+	if not _down:
+		_draw_weapon_front(off)
 
 	# Sobreposições.
 	if data.is_melee:
@@ -415,14 +458,99 @@ func _draw() -> void:
 		draw_rect(Rect2(Vector2(-18 + i * 8, -32), Vector2(6, 5)), Color(1.0, 0.9, 0.3))
 
 
+## True = estilo escudeiro (tanque); False = espadachim. Sem atributos, usa a
+## capacidade de bloqueio como pista (tanques seguram mais inimigos).
+func _melee_uses_shield() -> bool:
+	if data.attributes != null:
+		return data.attributes.vitality >= data.attributes.strength
+	return data.block_capacity >= 3
+
+
+## Efeitos desenhados ATRÁS do corpo.
+func _draw_weapon_back(off: Vector2) -> void:
+	var ang := _face.angle()
+	if data.is_melee:
+		return
+	match data.tower_class:
+		TowerData.TowerClass.ARCHER:
+			# Arco curvo do lado do alvo, com corda que estica ao atirar.
+			var hand := off + _face * 8.0
+			var perp := Vector2(-_face.y, _face.x)
+			var p_top := hand + perp * 9.0
+			var p_bot := hand - perp * 9.0
+			var bend: float = 6.0 - 3.0 * _atk
+			var mid := hand + _face * bend
+			draw_polyline(PackedVector2Array([p_top, mid, p_bot]), Color(0.5, 0.32, 0.16), 2.2)
+			draw_line(p_top, p_bot, Color(0.9, 0.9, 0.9, 0.8), 1.0) # corda
+		TowerData.TowerClass.MAGE:
+			# Cajado apontando para o alvo.
+			draw_line(off, off + _face * 16.0, Color(0.5, 0.35, 0.2), 2.5)
+	# guarda ang para uso futuro (silencia aviso)
+	ang = ang
+
+
+## Efeitos desenhados NA FRENTE do corpo.
+func _draw_weapon_front(off: Vector2) -> void:
+	match data.tower_class:
+		TowerData.TowerClass.MAGE:
+			if _atk > 0.0:
+				# Orbe de conjuração brilhando na ponta do cajado.
+				var tip := off + _face * 16.0
+				var col := data.projectile_color
+				draw_circle(tip, 7.0 * _atk, Color(col.r, col.g, col.b, 0.35 * _atk))
+				draw_circle(tip, 4.0 * _atk, Color(1, 1, 1, 0.8 * _atk))
+		TowerData.TowerClass.PRIEST:
+			# Halo dourado sobre a cabeça.
+			draw_arc(off + Vector2(0, -24), 7.0, PI, TAU, 12, Color(1.0, 0.9, 0.4, 0.9), 2.0)
+		_:
+			pass
+	if data.is_melee:
+		if _melee_uses_shield():
+			_draw_shield(off)
+		else:
+			_draw_sword_slash(off)
+
+
+## Escudeiro: escudo do lado do alvo, que avança (block shove) no golpe.
+func _draw_shield(off: Vector2) -> void:
+	var center := off + _face * (10.0 + 4.0 * _atk)
+	var perp := Vector2(-_face.y, _face.x)
+	var pts := PackedVector2Array([
+		center + perp * 7.0 + _face * 2.0,
+		center - perp * 7.0 + _face * 2.0,
+		center - perp * 5.0 + _face * 8.0,
+		center + perp * 5.0 + _face * 8.0,
+	])
+	draw_colored_polygon(pts, Color(0.75, 0.78, 0.85))
+	draw_polyline(pts + PackedVector2Array([pts[0]]), Color(0.35, 0.37, 0.45), 1.5)
+	draw_circle(center + _face * 5.0, 2.0, Color(0.95, 0.85, 0.3)) # brasão
+
+
+## Espadachim: arco de espada varrendo a frente durante o golpe.
+func _draw_sword_slash(off: Vector2) -> void:
+	var base := _face.angle()
+	# Espada em repouso (apontada para o alvo).
+	draw_line(off + _face * 4.0, off + _face * 18.0, Color(0.85, 0.87, 0.95), 2.5)
+	if _atk <= 0.0:
+		return
+	# Swoosh: arco curto que varre a frente conforme a animação (1→0).
+	var sweep: float = lerp(0.9, -0.6, 1.0 - _atk)
+	var r := 20.0
+	var pts := PackedVector2Array()
+	for i in 9:
+		var a: float = base + sweep - 0.5 * (float(i) / 8.0)
+		pts.append(off + Vector2(cos(a), sin(a)) * r)
+	draw_polyline(pts, Color(1, 1, 1, 0.6 * _atk), 3.0)
+
+
 ## "Boneco" placeholder: tronco colorido (cor da classe) + cabeça + olhos.
-func _draw_doll(c: Color, dark: Color) -> void:
-	draw_rect(Rect2(-10, -5, 20, 21), c)
-	draw_rect(Rect2(-10, -5, 20, 21), dark, false, 2.0)
-	draw_circle(Vector2(0, -12), 9.0, Color(0.98, 0.86, 0.72)) # cabeça
-	draw_arc(Vector2(0, -12), 9.0, 0.0, TAU, 16, dark, 1.5)
-	draw_circle(Vector2(-3.4, -13), 1.6, Color.BLACK)
-	draw_circle(Vector2(3.4, -13), 1.6, Color.BLACK)
+func _draw_doll_at(off: Vector2, c: Color, dark: Color) -> void:
+	draw_rect(Rect2(off + Vector2(-10, -5), Vector2(20, 21)), c)
+	draw_rect(Rect2(off + Vector2(-10, -5), Vector2(20, 21)), dark, false, 2.0)
+	draw_circle(off + Vector2(0, -12), 9.0, Color(0.98, 0.86, 0.72)) # cabeça
+	draw_arc(off + Vector2(0, -12), 9.0, 0.0, TAU, 16, dark, 1.5)
+	draw_circle(off + Vector2(-3.4, -13), 1.6, Color.BLACK)
+	draw_circle(off + Vector2(3.4, -13), 1.6, Color.BLACK)
 
 
 func _draw_hp_bar() -> void:
