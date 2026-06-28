@@ -27,6 +27,10 @@ var _dot_timer: float = 0.0           ## dano ao longo do tempo (veneno/fogo)
 var _dot_dps: float = 0.0
 var _dot_accum: float = 0.0
 
+# Animação leve (puro código): balanço ao andar + flash branco ao levar dano.
+var _bob: float = 0.0
+var _flash: float = 0.0
+
 # Estado global resolvido pelo nó autoload (/root/GameState). Acessar por nó em
 # vez do identificador global deixa a entidade compilável fora do jogo (testes
 # headless com -s), onde o global não é registrado mas o nó existe.
@@ -95,6 +99,8 @@ func _physics_process(delta: float) -> void:
 	var target: Vector2 = _waypoints[_index]
 	var spd: float = speed * _aura_speed_mult() * _slow_factor()
 	global_position = global_position.move_toward(target, spd * delta)
+	_bob += delta * 10.0 # balanço de caminhada
+	queue_redraw()
 	if global_position.distance_to(target) < 4.0:
 		_index += 1
 		if _index >= _waypoints.size():
@@ -173,6 +179,9 @@ func _slow_factor() -> float:
 
 
 func _process_status(delta: float) -> void:
+	if _flash > 0.0:
+		_flash -= delta
+		queue_redraw()
 	if _slow_timer > 0.0:
 		_slow_timer -= delta
 	if _dot_timer > 0.0:
@@ -191,6 +200,7 @@ func take_damage(amount: int, pen: int = 0) -> void:
 	if data != null and data.defense > 0:
 		dealt = max(1, amount - max(0, data.defense - pen))
 	hp -= dealt
+	_flash = 0.12
 	queue_redraw()
 	if hp <= 0:
 		_die()
@@ -226,20 +236,25 @@ func _reach_end() -> void:
 
 
 func _draw() -> void:
-	# Sombra.
+	# Sombra (fica fixa no chão).
 	draw_circle(Vector2(0, _radius * 0.6), _radius * 0.95, Color(0, 0, 0, 0.20))
+	# Balanço vertical da caminhada (o corpo sobe/desce; a sombra não).
+	var off := Vector2(0, sin(_bob) * 2.0)
 	if _sprite != null:
 		var s := _radius * 2.2
-		draw_texture_rect(_sprite, Rect2(Vector2(-s * 0.5, -s * 0.5), Vector2(s, s)), false)
+		draw_texture_rect(_sprite, Rect2(off + Vector2(-s * 0.5, -s * 0.5), Vector2(s, s)), false)
 	else:
 		# "Monstrinho" placeholder: corpo + olhos (vivos/aterrorizantes).
-		draw_circle(Vector2.ZERO, _radius, body_color)
-		draw_arc(Vector2.ZERO, _radius, 0.0, TAU, 24, Color(0.08, 0.08, 0.08, 0.7), 1.5)
+		draw_circle(off, _radius, body_color)
+		draw_arc(off, _radius, 0.0, TAU, 24, Color(0.08, 0.08, 0.08, 0.7), 1.5)
 		var eye := _radius * 0.28
-		draw_circle(Vector2(-_radius * 0.35, -_radius * 0.15), eye, Color(1, 1, 1))
-		draw_circle(Vector2(_radius * 0.35, -_radius * 0.15), eye, Color(1, 1, 1))
-		draw_circle(Vector2(-_radius * 0.35, -_radius * 0.15), eye * 0.5, Color(0.8, 0.1, 0.1))
-		draw_circle(Vector2(_radius * 0.35, -_radius * 0.15), eye * 0.5, Color(0.8, 0.1, 0.1))
+		draw_circle(off + Vector2(-_radius * 0.35, -_radius * 0.15), eye, Color(1, 1, 1))
+		draw_circle(off + Vector2(_radius * 0.35, -_radius * 0.15), eye, Color(1, 1, 1))
+		draw_circle(off + Vector2(-_radius * 0.35, -_radius * 0.15), eye * 0.5, Color(0.8, 0.1, 0.1))
+		draw_circle(off + Vector2(_radius * 0.35, -_radius * 0.15), eye * 0.5, Color(0.8, 0.1, 0.1))
+	# Flash branco ao levar dano.
+	if _flash > 0.0:
+		draw_circle(off, _radius, Color(1, 1, 1, clampf(_flash / 0.12, 0.0, 1.0) * 0.55))
 	# Barra de vida acima do corpo (largura proporcional ao tamanho).
 	var bar_width: float = _radius * 2.0
 	var bar_height: float = 4.0

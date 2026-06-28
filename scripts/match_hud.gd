@@ -44,6 +44,9 @@ func _ready() -> void:
 
 	_phase_label = Label.new()
 	_phase_label.position = Vector2(340, 52)
+	_phase_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.7))
+	_phase_label.add_theme_constant_override("shadow_offset_x", 1)
+	_phase_label.add_theme_constant_override("shadow_offset_y", 2)
 	add_child(_phase_label)
 
 
@@ -51,6 +54,7 @@ func _mk(text: String) -> Button:
 	var b := Button.new()
 	b.custom_minimum_size = Vector2(124, 34)
 	b.text = text
+	UiTheme.style_button(b)
 	return b
 
 

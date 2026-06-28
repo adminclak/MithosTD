@@ -21,15 +21,34 @@ var _squad_label: Label
 
 func _ready() -> void:
 	layer = 5
-	var bg := ColorRect.new()
-	bg.color = Color(0.09, 0.10, 0.14)
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(bg)
+	# Fundo ilustrado (se houver arte); senão cor sólida.
+	var menu_tex := Art.map("menu_bg")
+	if menu_tex != null:
+		var tr := TextureRect.new()
+		tr.texture = menu_tex
+		tr.set_anchors_preset(Control.PRESET_FULL_RECT)
+		tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		add_child(tr)
+	else:
+		var bg := ColorRect.new()
+		bg.color = Color(0.09, 0.10, 0.14)
+		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+		add_child(bg)
+	# Véu escuro para dar legibilidade ao texto/painéis sobre a ilustração.
+	var scrim := ColorRect.new()
+	scrim.color = Color(0.06, 0.07, 0.10, 0.55)
+	scrim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(scrim)
 
 	var title := Label.new()
-	title.position = Vector2(40, 20)
+	title.position = Vector2(40, 18)
 	title.text = "MITHOS TD"
-	title.add_theme_font_size_override("font_size", 34)
+	title.add_theme_font_size_override("font_size", 40)
+	title.add_theme_color_override("font_color", Color(1.0, 0.86, 0.42))
+	title.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.7))
+	title.add_theme_constant_override("shadow_offset_x", 2)
+	title.add_theme_constant_override("shadow_offset_y", 3)
 	add_child(title)
 
 	var meta := Label.new()
@@ -62,6 +81,7 @@ func _ready() -> void:
 		var fb := Button.new()
 		fb.custom_minimum_size = Vector2(96, 28)
 		fb.text = myth
+		UiTheme.style_button(fb)
 		fb.pressed.connect(_set_filter.bind(myth))
 		filter_bar.add_child(fb)
 
@@ -93,6 +113,7 @@ func _ready() -> void:
 		var b := Button.new()
 		b.custom_minimum_size = Vector2(320, 36)
 		b.text = "Fase %d  -  %s" % [s.index, s.display_name]
+		UiTheme.style_button(b)
 		b.pressed.connect(_try_start.bind(s))
 		stage_col.add_child(b)
 		_stage_buttons.append({"button": b, "stage": s})
@@ -113,6 +134,7 @@ func _menu_btn(text: String) -> Button:
 	var b := Button.new()
 	b.custom_minimum_size = Vector2(180, 32)
 	b.text = text
+	UiTheme.style_button(b)
 	return b
 
 

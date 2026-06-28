@@ -55,7 +55,7 @@ poucos steps e CFG baixo (senão a imagem "queima"):
 - `ares.png` — Ares, greek god of war, fierce, crested helmet, red battle armor, spear and round shield, melee warrior
 - `atena.png` — Athena, greek goddess of wisdom and war, golden armor, spear, aegis shield, owl companion, supportive aura, priest
 - `apolo.png` — Apollo, greek god of sun and healing, golden laurel wreath, lyre, radiant warm light, healer, priest
-- `medusa.png` — Medusa, gorgon, snakes for hair, glowing petrifying eyes, green and teal tones, mage
+- `medusa.png` — Medusa, gorgon woman whose hair is made of many live writhing snakes (very prominent snake hair), glowing petrifying green eyes, scaled skin, holding a magic staff, green and teal tones, mage
 - `zeus.png` — Zeus, king of the greek gods, muscular bearded man, crackling lightning bolt, white toga, golden aura, mage
 
 ### Nórdica

@@ -32,3 +32,7 @@ static func enemy(id: String) -> Texture2D:
 	if id == "":
 		return null
 	return _load("res://assets/enemies/%s.png" % id)
+
+
+static func map(id: String) -> Texture2D:
+	return _load("res://assets/map/%s.png" % id)
