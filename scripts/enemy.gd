@@ -30,6 +30,8 @@ var _dot_accum: float = 0.0
 # Estado global resolvido pelo nó autoload (/root/GameState). Acessar por nó em
 # vez do identificador global deixa a entidade compilável fora do jogo (testes
 # headless com -s), onde o global não é registrado mas o nó existe.
+var _sprite: Texture2D = null
+
 @onready var _state: Node = get_node_or_null(^"/root/GameState")
 
 signal died(enemy)
@@ -59,8 +61,10 @@ func setup(points: Array, start_index: int = 0) -> void:
 func _ready() -> void:
 	add_to_group("enemies")
 	hp = max_hp
+	if data != null:
+		_sprite = Art.enemy(data.id)
 	if not _waypoints.is_empty():
-		global_position = _waypoints[0]
+		global_position = _waypoints[_index]
 	queue_redraw()
 
 
@@ -222,10 +226,20 @@ func _reach_end() -> void:
 
 
 func _draw() -> void:
-	# Sombra + corpo do inimigo com contorno escuro (destaca do fundo).
-	draw_circle(Vector2(0, 3), _radius * 0.95, Color(0, 0, 0, 0.20))
-	draw_circle(Vector2.ZERO, _radius, body_color)
-	draw_arc(Vector2.ZERO, _radius, 0.0, TAU, 24, Color(0.08, 0.08, 0.08, 0.7), 1.5)
+	# Sombra.
+	draw_circle(Vector2(0, _radius * 0.6), _radius * 0.95, Color(0, 0, 0, 0.20))
+	if _sprite != null:
+		var s := _radius * 2.2
+		draw_texture_rect(_sprite, Rect2(Vector2(-s * 0.5, -s * 0.5), Vector2(s, s)), false)
+	else:
+		# "Monstrinho" placeholder: corpo + olhos (vivos/aterrorizantes).
+		draw_circle(Vector2.ZERO, _radius, body_color)
+		draw_arc(Vector2.ZERO, _radius, 0.0, TAU, 24, Color(0.08, 0.08, 0.08, 0.7), 1.5)
+		var eye := _radius * 0.28
+		draw_circle(Vector2(-_radius * 0.35, -_radius * 0.15), eye, Color(1, 1, 1))
+		draw_circle(Vector2(_radius * 0.35, -_radius * 0.15), eye, Color(1, 1, 1))
+		draw_circle(Vector2(-_radius * 0.35, -_radius * 0.15), eye * 0.5, Color(0.8, 0.1, 0.1))
+		draw_circle(Vector2(_radius * 0.35, -_radius * 0.15), eye * 0.5, Color(0.8, 0.1, 0.1))
 	# Barra de vida acima do corpo (largura proporcional ao tamanho).
 	var bar_width: float = _radius * 2.0
 	var bar_height: float = 4.0

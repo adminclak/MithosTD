@@ -1,0 +1,2 @@
+Coloque aqui as imagens dos herois: <id>.png  (ex.: zeus.png, artemis.png).
+PNG quadrado, fundo transparente, 256x256. Veja ../ARTE.md para a lista de ids.

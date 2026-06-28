@@ -52,6 +52,11 @@ Data de início: 2026-06-28 (madrugada). Base: MVP completo (Camadas 1–6, comm
 - Raridade por personagem em `Roster.rarity_of` (Comum/Raro/Épico/Lendário) — afeta chance do gacha, preço e fragmentos.
 - Botões no Hub: Coleção/Loja, Altar (Gacha), Missões. Atalhos de smoke: `-- --gacha`, `-- --quests`.
 
+## Visual (B10)
+- **Sistema de sprites pronto** (`scripts/art.gd`): se existir `assets/heroes/<id>.png` ou `assets/enemies/<id>.png`, o jogo usa a imagem; senão desenha placeholder. **Você adiciona arte aos poucos sem mexer no código.** Convenção e **lista de prompts de IA** em `assets/ARTE.md`.
+- **Placeholders melhorados:** heróis viraram "bonecos" (tronco colorido por classe + cabeça + olhos); inimigos viraram "monstrinhos" (corpo + olhos vermelhos). Ainda é arte de programador — a arte cartoon de verdade (Brawlhalla/Kingdom Rush) entra via os PNGs.
+- **Importante:** eu não gero imagens. Use o `assets/ARTE.md` com uma IA (Midjourney/DALL-E/Leonardo) ou um artista, e jogue os PNGs nas pastas.
+
 ## Onde mexer no balanceamento (centralizado)
 - **Fórmulas de stats por atributo:** [scripts/attribute_stats.gd](scripts/attribute_stats.gd) — muda TUDO de uma vez (dano, alcance, cadência, vida de bloqueador, aura, crítico).
 - **Atributos por arquétipo:** [scripts/archetypes.gd](scripts/archetypes.gd) — base e crescimento por nível de cada papel.

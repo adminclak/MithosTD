@@ -39,6 +39,8 @@ var _down_timer: float = 0.0
 var _regen_accum: float = 0.0
 var _shield_timer: float = 0.0
 
+var _sprite: Texture2D = null
+
 @onready var _state: Node = get_node_or_null(^"/root/GameState")
 
 
@@ -56,6 +58,7 @@ func _ready() -> void:
 		if data.is_melee:
 			add_to_group("melee_allies")
 			_hp = data.max_hp
+		_sprite = Art.hero(data.char_id)
 	queue_redraw()
 
 
@@ -383,32 +386,43 @@ func _draw() -> void:
 		return
 	var c: Color = data.body_color
 	var dark := Color(c.r * 0.45, c.g * 0.45, c.b * 0.45)
-	draw_circle(Vector2(0, 5), 18.0, Color(0, 0, 0, 0.22))
-	if _down:
-		c = Color(c.r * 0.4, c.g * 0.4, c.b * 0.4, 0.6) # caído: apagado
 
+	# Indicadores de alcance/aura (por baixo do corpo).
+	if not data.is_melee and (data.tower_class == TowerData.TowerClass.ARCHER \
+			or data.tower_class == TowerData.TowerClass.MAGE):
+		draw_arc(Vector2.ZERO, data.attack_range, 0.0, TAU, 64, Color(c.r, c.g, c.b, 0.07), 1.0)
+	if data.aura_radius > 0.0:
+		draw_arc(Vector2.ZERO, data.aura_radius, 0.0, TAU, 64, Color(c.r, c.g, c.b, 0.13), 1.5)
+
+	# Sombra + corpo (sprite, se houver; senão, boneco desenhado).
+	draw_circle(Vector2(0, 15), 13.0, Color(0, 0, 0, 0.20))
+	if _down:
+		c = Color(c.r * 0.4, c.g * 0.4, c.b * 0.4, 0.7)
+		dark = Color(dark.r, dark.g, dark.b, 0.7)
+	if _sprite != null:
+		var sz := Vector2(48, 48)
+		draw_texture_rect(_sprite, Rect2(-sz * 0.5 + Vector2(0, -6), sz), false, \
+			Color(1, 1, 1, 0.7) if _down else Color.WHITE)
+	else:
+		_draw_doll(c, dark)
+
+	# Sobreposições.
 	if data.is_melee:
-		draw_rect(Rect2(-16, -16, 32, 32), c)
-		draw_rect(Rect2(-16, -16, 32, 32), dark, false, 2.0)
-		if data.aura_radius > 0.0: # sacerdote melee
-			draw_arc(Vector2.ZERO, data.aura_radius, 0.0, TAU, 64, Color(c.r, c.g, c.b, 0.12), 1.5)
 		_draw_hp_bar()
 		if _shield_timer > 0.0:
 			draw_arc(Vector2.ZERO, 22.0, 0.0, TAU, 24, Color(1.0, 0.95, 0.5), 2.0)
-	else:
-		match data.tower_class:
-			TowerData.TowerClass.ARCHER:
-				draw_arc(Vector2.ZERO, data.attack_range, 0.0, TAU, 64, Color(c.r, c.g, c.b, 0.07), 1.0)
-				draw_colored_polygon(PackedVector2Array([Vector2(0, -19), Vector2(17, 15), Vector2(-17, 15)]), c)
-			TowerData.TowerClass.MAGE:
-				draw_arc(Vector2.ZERO, data.attack_range, 0.0, TAU, 64, Color(c.r, c.g, c.b, 0.07), 1.0)
-				draw_colored_polygon(PackedVector2Array([Vector2(0, -19), Vector2(18, 0), Vector2(0, 19), Vector2(-18, 0)]), c)
-			TowerData.TowerClass.PRIEST:
-				draw_arc(Vector2.ZERO, data.aura_radius, 0.0, TAU, 64, Color(c.r, c.g, c.b, 0.14), 1.5)
-				draw_circle(Vector2.ZERO, 17.0, c)
-				draw_arc(Vector2.ZERO, 17.0, 0.0, TAU, 24, dark, 2.0)
 	for i in level:
 		draw_rect(Rect2(Vector2(-18 + i * 8, -32), Vector2(6, 5)), Color(1.0, 0.9, 0.3))
+
+
+## "Boneco" placeholder: tronco colorido (cor da classe) + cabeça + olhos.
+func _draw_doll(c: Color, dark: Color) -> void:
+	draw_rect(Rect2(-10, -5, 20, 21), c)
+	draw_rect(Rect2(-10, -5, 20, 21), dark, false, 2.0)
+	draw_circle(Vector2(0, -12), 9.0, Color(0.98, 0.86, 0.72)) # cabeça
+	draw_arc(Vector2(0, -12), 9.0, 0.0, TAU, 16, dark, 1.5)
+	draw_circle(Vector2(-3.4, -13), 1.6, Color.BLACK)
+	draw_circle(Vector2(3.4, -13), 1.6, Color.BLACK)
 
 
 func _draw_hp_bar() -> void:
