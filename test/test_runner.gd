@@ -212,40 +212,49 @@ func _test_economy() -> void:
 	gs.reset_run(20, 300)
 
 	var bm = BuildManager.new()
-	bm.setup([Vector2(200, 300)], [Vector2(-40, 160), Vector2(360, 160)])
+	bm.setup([Vector2(0, 300), Vector2(600, 300)]) # rota horizontal; sem squad
 	root.add_child(bm)
-	var slot = bm._slots[0]
+	var ranged_pos := Vector2(200, 440) # lateral (longe da rota)
 
-	# Invocar Arqueiro (100): desconta ouro e ocupa o slot.
-	_check(bm.try_build(slot, TowerData.archer()) == true, "try_build com saldo retorna true")
+	# Invocar Arqueiro (100) numa posicao livre valida: desconta ouro.
+	var archer = TowerData.archer()
+	_check(bm.can_place(archer.tower_class, ranged_pos) == true, "ranged pode na lateral")
+	_check(bm.try_place(ranged_pos, archer) == true, "try_place com saldo retorna true")
 	_check(gs.gold == 200, "invocar Arqueiro desconta 100 (300 -> 200)")
-	_check(slot.is_empty() == false, "slot fica ocupado apos invocar")
+	_check(bm._towers.size() == 1, "torre fica posicionada")
 
-	# Slot ocupado nao aceita nova torre.
-	_check(bm.try_build(slot, TowerData.mage()) == false, "nao invoca em slot ocupado")
-	_check(gs.gold == 200, "invocacao recusada nao gasta ouro")
+	# Espacamento: nao pode colocar em cima de outra.
+	_check(bm.can_place(archer.tower_class, ranged_pos + Vector2(8, 0)) == false, "perto demais e bloqueado")
 
-	# Upgrade: custo correto, sobe nivel e desconta.
-	var t = slot.tower
-	_check(t.level == 1, "torre comeca no nivel 1")
+	# Upgrade.
+	var t = bm._tower_at(ranged_pos)
+	_check(t != null, "_tower_at encontra a torre clicada")
 	_check(t.upgrade_cost() == 60, "custo do 1o upgrade do Arqueiro = 60")
-	_check(bm.try_upgrade(slot) == true, "try_upgrade com saldo retorna true")
+	_check(bm.try_upgrade(t) == true, "try_upgrade com saldo retorna true")
 	_check(t.level == 2, "torre sobe para o nivel 2")
 	_check(gs.gold == 140, "upgrade desconta 60 (200 -> 140)")
 
-	# Vender devolve 60% do investido (100 + 60 = 160 -> 96) e libera o slot.
+	# Vender devolve 60% do investido (100 + 60 = 160 -> 96).
 	_check(t.sell_value() == 96, "venda devolve 60% do investido (160 -> 96)")
 	var before = gs.gold
-	_check(bm.sell(slot) == true, "sell retorna true")
+	_check(bm.sell(t) == true, "sell retorna true")
 	_check(gs.gold == before + 96, "vender credita o valor de venda")
-	_check(slot.is_empty() == true, "slot fica vazio apos vender")
+	_check(bm._towers.size() == 0, "torre removida apos vender")
+
+	# Zonas: Guerreiro (melee) so no meio; ranged so na lateral.
+	var meio := Vector2(300, 312)    # dist ~12 <= 48 (zona melee)
+	var lateral := Vector2(300, 460) # dist ~160 (zona lateral)
+	_check(bm.can_place(TowerData.warrior().tower_class, meio) == true, "Guerreiro pode no meio da rota")
+	_check(bm.can_place(TowerData.warrior().tower_class, lateral) == false, "Guerreiro NAO pode na lateral")
+	_check(bm.can_place(TowerData.archer().tower_class, lateral) == true, "Arqueiro pode na lateral")
+	_check(bm.can_place(TowerData.archer().tower_class, meio) == false, "Arqueiro NAO pode no meio")
 
 	# Sem ouro suficiente: nao invoca e nao gasta.
 	gs.reset_run(20, 50)
 	var bm2 = BuildManager.new()
-	bm2.setup([Vector2(500, 500)], [])
+	bm2.setup([Vector2(0, 300), Vector2(600, 300)])
 	root.add_child(bm2)
-	_check(bm2.try_build(bm2._slots[0], TowerData.archer()) == false, "sem ouro nao invoca Arqueiro (100)")
+	_check(bm2.try_place(Vector2(200, 440), TowerData.archer()) == false, "sem ouro nao invoca Arqueiro (100)")
 	_check(gs.gold == 50, "tentativa sem saldo nao gasta ouro")
 
 	bm.free()
@@ -327,12 +336,13 @@ func _test_squad_uniqueness() -> void:
 	gs.reset_run(20, 1000)
 	var data = Roster.by_id("artemis").tower_data_for_level(1)
 	var bm = BuildManager.new()
-	bm.setup([Vector2(200, 300), Vector2(560, 300)], [], [data])
+	bm.setup([Vector2(0, 300), Vector2(600, 300)], [data])
 	root.add_child(bm)
+	var pos := Vector2(200, 440) # lateral (Artemis e arqueira)
 	_check(bm._available_squad().size() == 1, "esquadrao com 1 personagem: 1 disponivel")
-	bm.try_build(bm._slots[0], data)
+	bm.try_place(pos, data)
 	_check(bm._available_squad().size() == 0, "apos invocar, 0 disponiveis (personagem unico)")
-	bm.sell(bm._slots[0])
+	bm.sell(bm._tower_at(pos))
 	_check(bm._available_squad().size() == 1, "apos vender, o personagem volta a ficar disponivel")
 	bm.free()
 

@@ -30,15 +30,26 @@ func _ready() -> void:
 	_panel.add_child(_box)
 
 
-func open_build(world_pos: Vector2, classes: Array, gold: int) -> void:
+## entries: lista de TowerData (compat) OU de { data, allowed, reason } (zonas).
+func open_build(world_pos: Vector2, entries: Array, gold: int) -> void:
 	_clear()
 	_add_title("Invocar  (ouro: %d)" % gold)
-	for data in classes:
+	for item in entries:
+		var data: TowerData
+		var allowed := true
+		var reason := ""
+		if item is Dictionary:
+			data = item["data"]
+			allowed = item.get("allowed", true)
+			reason = item.get("reason", "")
+		else:
+			data = item
 		var b := Button.new()
 		b.custom_minimum_size = Vector2(0, 30)
-		b.text = "%s   %d" % [data.display_name, data.cost]
+		var suffix := ("  [%s]" % reason) if (not allowed and reason != "") else ""
+		b.text = "%s   %d%s" % [data.display_name, data.cost, suffix]
 		b.add_theme_color_override("font_color", data.body_color)
-		b.disabled = gold < data.cost
+		b.disabled = (gold < data.cost) or (not allowed)
 		b.pressed.connect(func(): build_requested.emit(data))
 		_box.add_child(b)
 	_add_close_button()

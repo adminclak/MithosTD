@@ -36,7 +36,7 @@ func _ready() -> void:
 	add_child(enemies_root)
 
 	var build_manager := BuildManager.new()
-	build_manager.setup(level.get_tower_slots_for(_stage.slots), level.get_waypoints(), _squad)
+	build_manager.setup(level.get_waypoints(), _squad)
 	add_child(build_manager)
 
 	var wave_manager := WaveManager.new()
