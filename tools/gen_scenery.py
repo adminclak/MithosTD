@@ -15,10 +15,14 @@ PROJ = r"C:\projetos\jogoTD"
 OUTDIR = r"C:\Users\leoar\AppData\Local\Comfy-Desktop\ComfyUI-Shared\output"
 MAPDIR = os.path.join(PROJ, "assets", "map")
 CKPT = "DreamShaperXL_Turbo_V2-SFW.safetensors"
+LORA = "pixel-art-xl.safetensors"
+PIXEL = os.environ.get("PIXEL", "1") == "1"
+PIXEL_PRE = "pixel art, pixel-art style, bold clean outline, vibrant saturated colors, "
 
 NEG = ("text, words, watermark, signature, ui, interface, blurry, low quality, "
        "lowres, photo, realistic, 3d render, people, humans, characters, "
-       "buildings, towers, castle, houses, roads, paths, stone tiles, walls, grid, fences")
+       "buildings, towers, castle, houses, roads, paths, stone tiles, walls, grid, fences"
+       ", antialiased, smooth, gradient")
 
 # id -> (prompt, transparente, largura, altura)
 JOBS = {
@@ -76,24 +80,38 @@ def api(path, data=None):
 
 
 def build_workflow(prompt, seed, prefix, transparent, w, h):
+    pos = (PIXEL_PRE + prompt) if PIXEL else prompt
     wf = {
         "1": {"class_type": "CheckpointLoaderSimple", "inputs": {"ckpt_name": CKPT}},
-        "6": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["1", 1], "text": prompt}},
-        "7": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["1", 1], "text": NEG}},
         "8": {"class_type": "EmptyLatentImage", "inputs": {"width": w, "height": h, "batch_size": 1}},
         "10": {"class_type": "VAEDecode", "inputs": {"samples": ["9", 0], "vae": ["1", 2]}},
         "12": {"class_type": "SaveImage", "inputs": {"images": ["10", 0], "filename_prefix": prefix}},
     }
     model_src = ["1", 0]
+    clip_src = ["1", 1]
+    if PIXEL:
+        wf["20"] = {"class_type": "LoraLoader", "inputs": {"model": ["1", 0], "clip": ["1", 1],
+                    "lora_name": LORA, "strength_model": 1.1, "strength_clip": 1.0}}
+        model_src = ["20", 0]
+        clip_src = ["20", 1]
+    wf["6"] = {"class_type": "CLIPTextEncode", "inputs": {"clip": clip_src, "text": pos}}
+    wf["7"] = {"class_type": "CLIPTextEncode", "inputs": {"clip": clip_src, "text": NEG}}
     save_src = ["10", 0]
     if transparent:
         wf["5"] = {"class_type": "LayeredDiffusionApply",
-                   "inputs": {"model": ["1", 0], "config": "SDXL, Conv Injection", "weight": 1.0}}
+                   "inputs": {"model": model_src, "config": "SDXL, Conv Injection", "weight": 1.0}}
         model_src = ["5", 0]
         wf["11"] = {"class_type": "LayeredDiffusionDecodeRGBA",
                     "inputs": {"samples": ["9", 0], "images": ["10", 0],
                                "sd_version": "SDXL", "sub_batch_size": 16}}
         save_src = ["11", 0]
+    # Downscale (nearest) p/ pixels nitidos, preservando proporcao.
+    if PIXEL:
+        tw = 320 if not transparent else 192
+        th = int(round(h * tw / float(w)))
+        wf["13"] = {"class_type": "ImageScale", "inputs": {"image": save_src,
+                    "upscale_method": "nearest-exact", "width": tw, "height": th, "crop": "disabled"}}
+        save_src = ["13", 0]
     wf["12"]["inputs"]["images"] = save_src
     wf["9"] = {"class_type": "KSampler",
                "inputs": {"model": model_src, "positive": ["6", 0], "negative": ["7", 0],

@@ -36,3 +36,9 @@ static func enemy(id: String) -> Texture2D:
 
 static func map(id: String) -> Texture2D:
 	return _load("res://assets/map/%s.png" % id)
+
+
+static func item(icon_id: String) -> Texture2D:
+	if icon_id == "":
+		return null
+	return _load("res://assets/items/%s.png" % icon_id)

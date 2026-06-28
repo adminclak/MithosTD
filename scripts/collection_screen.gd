@@ -113,6 +113,10 @@ func _slot_button(char_id: String, slot: int, slot_label: String) -> Button:
 	b.text = "%s: %s" % [slot_label, (item.display_name if item != null else "-")]
 	if item != null:
 		b.add_theme_color_override("font_color", EquipmentData.rarity_color(item.rarity))
+		var tex := Art.item(item.icon_id())
+		if tex != null:
+			b.icon = tex
+			b.expand_icon = true
 	b.pressed.connect(_on_cycle_slot.bind(char_id, slot))
 	return b
 
@@ -132,6 +136,14 @@ func _build_shop() -> VBoxContainer:
 	for item in EquipmentList.all():
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 8)
+		var tex := Art.item(item.icon_id())
+		if tex != null:
+			var ic := TextureRect.new()
+			ic.texture = tex
+			ic.custom_minimum_size = Vector2(28, 28)
+			ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			row.add_child(ic)
 		var lbl := Label.new()
 		lbl.custom_minimum_size = Vector2(360, 0)
 		lbl.text = "[%s] %s — %s" % [EquipmentData.slot_name(item.slot), item.display_name, item.effects_text()]

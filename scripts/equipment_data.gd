@@ -15,6 +15,7 @@ enum Stat {
 }
 
 const SLOT_NAMES := ["Elmo", "Peito", "Pernas", "Botas", "Arma", "Escudo", "Amuleto", "Anel"]
+const SLOT_KEYS := ["helmet", "armor", "legs", "boots", "weapon", "shield", "amulet", "ring"]
 const STAT_NAMES := ["Dano", "Alcance", "Vel. Ataque", "Vida", "Defesa", "Crítico",
 	"Penetração", "Esquiva", "Roubo de Vida", "Regeneração", "Poder de Aura",
 	"Red. Recarga", "Bloqueio"]
@@ -106,6 +107,11 @@ func effects_text() -> String:
 			_:
 				parts.append("+%d%% %s" % [int(round(v * 100.0)), txt])
 	return ", ".join(parts)
+
+
+## Id de ícone: o único (lendário) se houver; senão o genérico do slot.
+func icon_id() -> String:
+	return icon if icon != "" else "slot_" + SLOT_KEYS[slot]
 
 
 static func slot_name(s: int) -> String:
