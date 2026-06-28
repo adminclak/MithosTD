@@ -44,6 +44,14 @@ Data de início: 2026-06-28 (madrugada). Base: MVP completo (Camadas 1–6, comm
 - **56 habilidades temáticas** (nome do mito por personagem) reaproveitando **11 famílias de efeito**: dano em área, perfurante (LINE), raio em cadeia (CHAIN), atordoar (STUN), lentidão (SLOW), empurrão (KNOCKBACK), veneno/fogo (DOT), buff de torres, cura de aliados, escudo de aliados e invocar aliado (SUMMON). Catálogo em `scripts/abilities.gd` (mexer aqui muda nome/efeito/números). Inimigos ganharam status: lentidão, DoT e knockback (`enemy.gd`).
 - Pendente (polish): os efeitos ainda são por FAMÍLIA (ex.: vários "dano em área" idênticos em números); dá pra afinar números por personagem depois. Nomes/temas já são únicos.
 
+## Conquista de personagens (B9)
+- **Gating religado:** começa com **7 iniciais** (1 por mitologia, `Roster.STARTERS`); o resto é conquistado.
+- **4 caminhos:** (1) **fases** de campanha desbloqueiam um herói cada (`STAGE_UNLOCKS`); (2) **quests** (campanha + diárias) dão Ambrosia (`scripts/quests.gd` + tela `quests_screen.gd`); (3) **gacha** "Altar dos Deuses" gasta Ambrosia, sorteia por raridade — novo desbloqueia, repetido vira **fragmentos** (`gacha_screen.gd`); (4) **loja** recruta heróis bloqueados com Ambrosia (na `collection_screen.gd`).
+- **Moedas:** Ambrosia (gacha/recrutar, ganha jogando) · Ouro meta (loja de itens) · Fragmentos por personagem (evoluem estrelas) · Essência (secundária).
+- **Evolução de estrela** agora gasta **fragmentos do personagem + ouro** (era essência).
+- Raridade por personagem em `Roster.rarity_of` (Comum/Raro/Épico/Lendário) — afeta chance do gacha, preço e fragmentos.
+- Botões no Hub: Coleção/Loja, Altar (Gacha), Missões. Atalhos de smoke: `-- --gacha`, `-- --quests`.
+
 ## Onde mexer no balanceamento (centralizado)
 - **Fórmulas de stats por atributo:** [scripts/attribute_stats.gd](scripts/attribute_stats.gd) — muda TUDO de uma vez (dano, alcance, cadência, vida de bloqueador, aura, crítico).
 - **Atributos por arquétipo:** [scripts/archetypes.gd](scripts/archetypes.gd) — base e crescimento por nível de cada papel.

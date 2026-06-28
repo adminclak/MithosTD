@@ -52,6 +52,7 @@ func _rebuild() -> void:
 
 	cols.add_child(_build_characters())
 	cols.add_child(_build_shop())
+	cols.add_child(_build_character_shop())
 
 	var back := Button.new()
 	back.custom_minimum_size = Vector2(160, 36)
@@ -75,8 +76,9 @@ func _build_characters() -> VBoxContainer:
 		panel.add_child(v)
 
 		var name_lbl := Label.new()
-		name_lbl.text = "%s  (%s)  Nv %d  %s" % [ch.display_name, \
-			CLASS_NAMES[ch.tower_class], Progression.level_of(id), STAR.repeat(Progression.stars_of(id))]
+		name_lbl.text = "%s  (%s)  Nv %d  %s  | Frag: %d" % [ch.display_name, \
+			CLASS_NAMES[ch.tower_class], Progression.level_of(id), \
+			STAR.repeat(Progression.stars_of(id)), Progression.fragments_of(id)]
 		v.add_child(name_lbl)
 
 		var slots := HBoxContainer.new()
@@ -92,7 +94,7 @@ func _build_characters() -> VBoxContainer:
 			evo.text = "Evolucao maxima"
 			evo.disabled = true
 		else:
-			evo.text = "Evoluir (%d essencia + %d ouro)" % [cost["essence"], cost["gold"]]
+			evo.text = "Evoluir (%d frag + %d ouro)" % [cost["frag"], cost["gold"]]
 			evo.disabled = not Progression.can_evolve(id)
 			evo.pressed.connect(_on_evolve.bind(id))
 		v.add_child(evo)
@@ -139,6 +141,40 @@ func _build_shop() -> VBoxContainer:
 		row.add_child(buy)
 		col.add_child(row)
 	return col
+
+
+func _build_character_shop() -> VBoxContainer:
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 4)
+	var head := Label.new()
+	head.text = "Recrutar herois (Ambrosia: %d)" % Progression.ambrosia
+	head.add_theme_font_size_override("font_size", 22)
+	col.add_child(head)
+	for d in Roster.defs():
+		var id: String = d[0]
+		if Progression.is_unlocked(id):
+			continue
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 8)
+		var lbl := Label.new()
+		lbl.custom_minimum_size = Vector2(230, 0)
+		lbl.text = "%s (%s)" % [d[1], Roster.rarity_name(Roster.rarity_of(id))]
+		row.add_child(lbl)
+		var buy := Button.new()
+		buy.custom_minimum_size = Vector2(140, 28)
+		var price := Progression.character_price(id)
+		buy.text = "Recrutar %d" % price
+		buy.disabled = Progression.ambrosia < price
+		buy.pressed.connect(_on_buy_char.bind(id))
+		row.add_child(buy)
+		col.add_child(row)
+	return col
+
+
+func _on_buy_char(char_id: String) -> void:
+	Progression.buy_character(char_id)
+	Progression.save_game()
+	_rebuild()
 
 
 func _on_cycle_slot(char_id: String, slot: int) -> void:

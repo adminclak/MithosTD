@@ -23,6 +23,7 @@ func _initialize() -> void:
 	_test_build_menu_ui()
 	_test_progression()
 	_test_gacha()
+	_test_quests()
 	_test_squad_uniqueness()
 	_test_abilities()
 	_test_equipment()
@@ -475,6 +476,23 @@ func _test_gacha() -> void:
 	_check(pr.buy_character("zeus") == true, "compra Zeus com Ambrosia")
 	_check(pr.is_unlocked("zeus") == true, "Zeus desbloqueado apos a compra")
 	_check(pr.buy_character("zeus") == false, "nao compra Zeus de novo")
+	pr.reset()
+
+func _test_quests() -> void:
+	print("\nQuests (campanha / diarias / claim):")
+	var pr = root.get_node_or_null(^"/root/Progression")
+	pr.reset()
+	var q := Quests.by_id("q_wins5") # vencer 5 partidas
+	_check(pr.quest_complete(q) == false, "quest de 5 vitorias comeca incompleta")
+	for i in 5:
+		pr.record_win()
+	_check(pr.metric_value("wins") == 5, "record_win conta as vitorias")
+	_check(pr.quest_complete(q) == true, "quest completa apos 5 vitorias")
+	_check(pr.quest_claimable(q) == true, "quest completa e coletavel")
+	var amb_before = pr.ambrosia
+	_check(pr.claim_quest("q_wins5") == true, "claim da a recompensa")
+	_check(pr.ambrosia == amb_before + q["ambrosia"], "claim credita a Ambrosia")
+	_check(pr.quest_claimable(q) == false, "quest ja coletada nao e coletavel de novo")
 	pr.reset()
 
 func _test_bestiary() -> void:

@@ -6,6 +6,8 @@ extends CanvasLayer
 
 signal start_stage(stage: StageData, squad_ids: Array)
 signal open_collection
+signal open_gacha
+signal open_quests
 
 const CLASS_NAMES := ["Arqueiro", "Mago", "Guerreiro", "Sacerdote"]
 
@@ -32,17 +34,24 @@ func _ready() -> void:
 
 	var meta := Label.new()
 	meta.position = Vector2(40, 66)
-	meta.text = "Fase liberada: %d/%d    Ouro meta: %d    Essencia: %d    (%d herois)" % \
+	meta.text = "Fase liberada: %d/%d    Ouro: %d    Ambrosia: %d    Herois: %d/%d" % \
 		[Progression.highest_stage_unlocked, StageList.count(), Progression.meta_gold, \
-		Progression.meta_essence, Roster.count()]
+		Progression.ambrosia, Progression.unlocked_ids().size(), Roster.count()]
 	add_child(meta)
 
-	var collection_btn := Button.new()
-	collection_btn.position = Vector2(40, 94)
-	collection_btn.custom_minimum_size = Vector2(220, 32)
-	collection_btn.text = "Colecao / Loja"
-	collection_btn.pressed.connect(func(): open_collection.emit())
-	add_child(collection_btn)
+	var menu_bar := HBoxContainer.new()
+	menu_bar.position = Vector2(40, 94)
+	menu_bar.add_theme_constant_override("separation", 8)
+	add_child(menu_bar)
+	var b_col := _menu_btn("Colecao / Loja")
+	b_col.pressed.connect(func(): open_collection.emit())
+	menu_bar.add_child(b_col)
+	var b_gacha := _menu_btn("Altar (Gacha)")
+	b_gacha.pressed.connect(func(): open_gacha.emit())
+	menu_bar.add_child(b_gacha)
+	var b_quests := _menu_btn("Missoes")
+	b_quests.pressed.connect(func(): open_quests.emit())
+	menu_bar.add_child(b_quests)
 
 	# Filtro de mitologia.
 	var filter_bar := HBoxContainer.new()
@@ -98,6 +107,13 @@ func _ready() -> void:
 
 	_refresh_list()
 	_refresh()
+
+
+func _menu_btn(text: String) -> Button:
+	var b := Button.new()
+	b.custom_minimum_size = Vector2(180, 32)
+	b.text = text
+	return b
 
 
 func _set_filter(myth: String) -> void:

@@ -20,6 +20,10 @@ func _ready() -> void:
 		_on_start_stage(StageList.get_stage(idx), squad, true)
 	elif args.has("--collection"):
 		_show_collection()
+	elif args.has("--gacha"):
+		_show_gacha()
+	elif args.has("--quests"):
+		_show_quests()
 	else:
 		_show_hub()
 
@@ -28,11 +32,25 @@ func _show_hub() -> void:
 	var hub := HubScreen.new()
 	hub.start_stage.connect(_on_start_stage)
 	hub.open_collection.connect(_show_collection)
+	hub.open_gacha.connect(_show_gacha)
+	hub.open_quests.connect(_show_quests)
 	_switch_to(hub)
 
 
 func _show_collection() -> void:
 	var screen := CollectionScreen.new()
+	screen.closed.connect(_show_hub)
+	_switch_to(screen)
+
+
+func _show_gacha() -> void:
+	var screen := GachaScreen.new()
+	screen.closed.connect(_show_hub)
+	_switch_to(screen)
+
+
+func _show_quests() -> void:
+	var screen := QuestsScreen.new()
 	screen.closed.connect(_show_hub)
 	_switch_to(screen)
 
@@ -56,6 +74,8 @@ func _on_start_stage(stage: StageData, squad_ids: Array, auto: bool = false) -> 
 
 func _on_game_finished(victory: bool, stage: StageData, squad_ids: Array) -> void:
 	print("Fim da fase %d - vitoria: %s" % [stage.index, victory])
+	if victory:
+		Progression.record_win()
 	var xp: int = stage.xp_reward if victory else int(round(stage.xp_reward * 0.3))
 	var summary := Progression.grant_squad_xp(squad_ids, xp)
 	var rewards := Progression.grant_rewards(stage.index, victory)

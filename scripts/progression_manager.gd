@@ -26,9 +26,16 @@ var fragments: Dictionary = {}      ## id -> quantidade de fragmentos (evoluem e
 var inventory: Array = []           ## ids de equipamentos possuídos (sem repetição)
 var equipped: Dictionary = {}       ## char_id -> { weapon: id, relic: id }
 
+# Quests / contadores.
+var stats: Dictionary = {"wins": 0, "gacha": 0, "evolves": 0}
+var daily: Dictionary = {"wins": 0, "gacha": 0}
+var quests_claimed: Array = []
+var last_daily: String = ""
+
 
 func _ready() -> void:
 	load_game()
+	_check_daily_reset()
 
 
 # --- Consultas ---
@@ -240,8 +247,67 @@ func evolve(char_id: String) -> bool:
 	fragments[char_id] = fragments_of(char_id) - cost["frag"]
 	meta_gold -= cost["gold"]
 	characters[char_id]["stars"] += 1
+	stats["evolves"] = int(stats.get("evolves", 0)) + 1
 	emit_signal("progress_changed")
 	return true
+
+
+# --- Quests ---
+func record_win() -> void:
+	stats["wins"] = int(stats.get("wins", 0)) + 1
+	daily["wins"] = int(daily.get("wins", 0)) + 1
+	emit_signal("progress_changed")
+
+
+func metric_value(metric: String) -> int:
+	match metric:
+		"stage": return highest_stage_unlocked
+		"wins": return int(stats.get("wins", 0))
+		"gacha": return int(stats.get("gacha", 0))
+		"evolves": return int(stats.get("evolves", 0))
+		"daily_wins": return int(daily.get("wins", 0))
+		"daily_gacha": return int(daily.get("gacha", 0))
+	return 0
+
+
+func quest_progress(q: Dictionary) -> int:
+	return min(metric_value(q["metric"]), q["target"])
+
+
+func quest_complete(q: Dictionary) -> bool:
+	return metric_value(q["metric"]) >= q["target"]
+
+
+func quest_claimed(q: Dictionary) -> bool:
+	return quests_claimed.has(q["id"])
+
+
+func quest_claimable(q: Dictionary) -> bool:
+	return quest_complete(q) and not quest_claimed(q)
+
+
+func claim_quest(qid: String) -> bool:
+	var q := Quests.by_id(qid)
+	if q.is_empty() or not quest_claimable(q):
+		return false
+	add_ambrosia(int(q["ambrosia"]))
+	quests_claimed.append(qid)
+	emit_signal("progress_changed")
+	return true
+
+
+func _check_daily_reset() -> void:
+	var today := Time.get_date_string_from_system()
+	if today == last_daily:
+		return
+	last_daily = today
+	daily = {"wins": 0, "gacha": 0}
+	var keep: Array = []
+	for qid in quests_claimed:
+		var q := Quests.by_id(qid)
+		if not q.is_empty() and not q.get("daily", false):
+			keep.append(qid)
+	quests_claimed = keep
 
 
 # --- Moedas e fragmentos ---
@@ -276,6 +342,8 @@ func gacha_roll() -> Dictionary:
 	var result := {"ok": false}
 	if not spend_ambrosia(GACHA_COST):
 		return result
+	stats["gacha"] = int(stats.get("gacha", 0)) + 1
+	daily["gacha"] = int(daily.get("gacha", 0)) + 1
 	var rarity := _roll_rarity()
 	var pool: Array = Roster.ids_by_rarity(rarity)
 	if pool.is_empty():
@@ -377,6 +445,10 @@ func reset() -> void:
 	fragments = {}
 	inventory = []
 	equipped = {}
+	stats = {"wins": 0, "gacha": 0, "evolves": 0}
+	daily = {"wins": 0, "gacha": 0}
+	quests_claimed = []
+	last_daily = Time.get_date_string_from_system()
 	_ensure_defaults()
 	emit_signal("progress_changed")
 
@@ -401,6 +473,10 @@ func save_to(path: String) -> void:
 		"fragments": fragments,
 		"inventory": inventory,
 		"equipped": equipped,
+		"stats": stats,
+		"daily": daily,
+		"quests_claimed": quests_claimed,
+		"last_daily": last_daily,
 	}
 	var f := FileAccess.open(path, FileAccess.WRITE)
 	if f != null:
@@ -448,4 +524,12 @@ func load_from(path: String) -> void:
 	for cid in saved_eq.keys():
 		var e: Dictionary = saved_eq[cid]
 		equipped[cid] = {"weapon": str(e.get("weapon", "")), "relic": str(e.get("relic", ""))}
+	var sv_stats: Dictionary = data.get("stats", {})
+	stats = {"wins": int(sv_stats.get("wins", 0)), "gacha": int(sv_stats.get("gacha", 0)), "evolves": int(sv_stats.get("evolves", 0))}
+	var sv_daily: Dictionary = data.get("daily", {})
+	daily = {"wins": int(sv_daily.get("wins", 0)), "gacha": int(sv_daily.get("gacha", 0))}
+	quests_claimed = []
+	for qid in data.get("quests_claimed", []):
+		quests_claimed.append(str(qid))
+	last_daily = str(data.get("last_daily", ""))
 	_ensure_defaults() # garante personagens novos que não estavam no save
