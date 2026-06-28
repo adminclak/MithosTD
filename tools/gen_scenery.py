@@ -39,6 +39,28 @@ JOBS = {
         "Kingdom Rush style", True, 512, 512),
     "bush": ("2D cartoon small green bush shrub with little berries, top-down "
         "three-quarter view, Kingdom Rush style", True, 512, 512),
+    # Chãos temáticos por mitologia (fundos sólidos, vazios).
+    "ground_grega": ("seamless top-down mediterranean meadow, green grass with scattered "
+        "white marble pebbles and small olive sprigs, sunny, flat empty ground, "
+        "hand-painted game tile, nothing on it", False, 1024, 576),
+    "ground_nordica": ("seamless top-down snow field, white snow with patches of frozen "
+        "grass and thin ice cracks, cold blue tint, flat empty ground, hand-painted game "
+        "tile, nothing on it", False, 1024, 576),
+    "ground_egipcia": ("seamless top-down desert sand dunes, golden sand with subtle "
+        "ripples and a few small pebbles, warm sunlight, flat empty ground, hand-painted "
+        "game tile, nothing on it", False, 1024, 576),
+    "ground_brasileira": ("seamless top-down lush jungle floor, dense green foliage, ferns, "
+        "moss and fallen leaves, vibrant tropical, flat empty ground, hand-painted game "
+        "tile, nothing on it", False, 1024, 576),
+    "ground_chinesa": ("seamless top-down misty meadow, jade-green grass with pink lotus "
+        "petals and small water puddles, serene, flat empty ground, hand-painted game "
+        "tile, nothing on it", False, 1024, 576),
+    "ground_japonesa": ("seamless top-down zen grass garden with scattered pink cherry "
+        "blossom petals and raked sand patches, calm, flat empty ground, hand-painted "
+        "game tile, nothing on it", False, 1024, 576),
+    "ground_asteca": ("seamless top-down jungle ground, dark volcanic soil with green vines "
+        "and small carved stone bits, warm, flat empty ground, hand-painted game tile, "
+        "nothing on it", False, 1024, 576),
 }
 
 

@@ -12,6 +12,7 @@ extends Resource
 @export var enemy_hp_mult: float = 1.0
 @export var enemy_count_mult: float = 1.0
 @export var xp_reward: int = 50
+@export var theme: String = "Grega" ## mitologia do cenário (define o chão/decoração)
 
 ## Personagens desbloqueados ao concluir esta fase (derivado do roster por
 ## unlock_stage == index — fonte única de verdade do desbloqueio).

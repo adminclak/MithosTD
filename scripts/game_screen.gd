@@ -43,6 +43,8 @@ func _ready() -> void:
 	GameState.reset_run(START_HP, START_GOLD)
 
 	var level := Level.new()
+	if _stage != null:
+		level.theme = _stage.theme
 	add_child(level)
 
 	var enemies_root := Node2D.new()
