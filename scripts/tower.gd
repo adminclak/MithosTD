@@ -80,9 +80,10 @@ func _process(delta: float) -> void:
 	_recompute_aura_buffs()
 	if data.is_melee:
 		_process_melee(delta)
-	elif data.tower_class == TowerData.TowerClass.ARCHER or data.tower_class == TowerData.TowerClass.MAGE:
+	elif data.damage > 0 and data.attack_range > 0.0:
+		# Qualquer ranged com ataque atira (Arqueiro, Mago e o golpe do Sacerdote).
 		_process_attacker(delta)
-	# Sacerdote ranged: a aura é consultada pelas entidades próximas.
+	# A aura do Sacerdote também é consultada pelas entidades próximas.
 
 	# Animação: respiração contínua + decaimento do golpe + redesenho por frame.
 	_idle += delta * 3.2
@@ -137,6 +138,17 @@ func aura_heal_per_sec() -> float:
 	return data.aura_heal_per_sec * _stat_mult()
 
 
+## Maior cura/seg entre os Sacerdotes cuja aura cobre este personagem.
+func _aura_heal_near() -> float:
+	var h := 0.0
+	for p in get_tree().get_nodes_in_group("priests"):
+		if not is_instance_valid(p) or p == self:
+			continue
+		if global_position.distance_to(p.global_position) <= p.aura_radius():
+			h = max(h, p.aura_heal_per_sec())
+	return h
+
+
 func _recompute_aura_buffs() -> void:
 	_aura_damage_mult = 1.0
 	_aura_fire_rate_mult = 1.0
@@ -180,9 +192,12 @@ func _shoot(target: Node2D) -> void:
 		col = Color(1.0, 0.55, 0.2)
 	p.setup(target, dmg, data.splash_radius, col, data.penetration)
 	p.speed = data.proj_speed
-	# Tipo de projétil pela classe: Mago = bola de fogo; Arqueiro = flecha.
+	# Tipo de projétil pela classe: Mago = bola de fogo; Sacerdote = raio dourado;
+	# Arqueiro = flecha.
 	if data.tower_class == TowerData.TowerClass.MAGE:
 		p.set_kind(Projectile.Kind.FIREBALL if data.splash_radius > 0.0 else Projectile.Kind.BOLT)
+	elif data.tower_class == TowerData.TowerClass.PRIEST:
+		p.set_kind(Projectile.Kind.BOLT)
 	else:
 		p.set_kind(Projectile.Kind.ARROW)
 	# Dispara a animação de ataque (recuo + arco/flash) virada para o alvo.
@@ -200,9 +215,10 @@ func _process_melee(delta: float) -> void:
 			queue_redraw()
 		return
 
-	# Regeneração.
-	if _hp < max_hp() and data.regen > 0.0:
-		_regen_accum += data.regen * delta
+	# Regeneração própria + cura da aura de Sacerdotes próximos.
+	var heal_rate: float = data.regen + _aura_heal_near()
+	if _hp < max_hp() and heal_rate > 0.0:
+		_regen_accum += heal_rate * delta
 		var whole := int(_regen_accum)
 		if whole > 0:
 			_hp = min(max_hp(), _hp + whole)

@@ -33,8 +33,61 @@ func _initialize() -> void:
 	_test_attributes()
 	_test_combat_stats()
 	_test_ability_families()
+	_test_all_characters_act()
 	print("\n=== RESULTADO: %d passou, %d falhou ===" % [_passed, _failed])
 	quit(0 if _failed == 0 else 1)
+
+
+## Garante que TODOS os personagens do roster AGEM em campo: ranged dispara um
+## projétil; melee trava/fere um inimigo no raio. Pega "personagens parados".
+func _test_all_characters_act() -> void:
+	print("\nTodos os personagens agem em campo (56):")
+	var gs = root.get_node_or_null(^"/root/GameState")
+	if gs != null:
+		gs.reset_run(20, 0)
+	var dead: Array = []
+	for d in Roster.defs():
+		var id: String = d[0]
+		var ch = Roster.by_id(id)
+		var data = ch.tower_data_for_level(1, 1)
+		var t = Tower.new()
+		t.setup(data)
+		root.add_child(t)
+		t.global_position = Vector2(500, 400)
+		var e = Enemy.new()
+		e.max_hp = 1000
+		e.hp = 1000
+		root.add_child(e)
+		e.global_position = Vector2(515, 400)
+		var acted := false
+		if data.is_melee:
+			t._process_melee(0.5)
+			acted = e.hp < 1000 or e.is_blocked()
+		else:
+			var before := _count_projectiles()
+			t._process(0.6)
+			acted = _count_projectiles() > before
+		if not acted:
+			dead.append(id)
+		t.free()
+		e.free()
+		_clear_projectiles()
+	var ok := dead.is_empty()
+	_check(ok, "todos os personagens agem em campo" + ("" if ok else " — PARADOS: %s" % str(dead)))
+
+
+func _count_projectiles() -> int:
+	var n := 0
+	for c in root.get_children():
+		if c is Projectile:
+			n += 1
+	return n
+
+
+func _clear_projectiles() -> void:
+	for c in root.get_children():
+		if c is Projectile:
+			c.free()
 
 func _check(cond: bool, msg: String) -> void:
 	if cond:

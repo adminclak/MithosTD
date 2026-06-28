@@ -44,6 +44,11 @@ static func build(tower_class: int, a: AttributeSet, melee: bool = false, stars:
 			d.cost = 120
 		TowerData.TowerClass.PRIEST:
 			d.cost = 130
+			# Golpe sagrado: ataque de suporte (fraco) p/ o sacerdote nunca ficar parado.
+			d.projectile_color = Color(1.0, 0.9, 0.45)
+			d.damage = int(round(2 + a.intelligence * 0.30 + a.dexterity * 0.10))
+			d.fire_rate = 0.5 + a.dexterity * 0.012 + a.agility * 0.01
+			d.attack_range = 150.0 + a.dexterity * 1.0
 
 	# --- Aura (Sacerdote): vale em melee e ranged ---
 	if tower_class == TowerData.TowerClass.PRIEST:
