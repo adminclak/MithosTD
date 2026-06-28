@@ -97,8 +97,8 @@ func _heal_from_auras(delta: float) -> void:
 	for p in get_tree().get_nodes_in_group("priests"):
 		if not is_instance_valid(p):
 			continue
-		if global_position.distance_to(p.global_position) <= p.data.aura_radius:
-			heal_rate = max(heal_rate, p.data.aura_heal_per_sec)
+		if global_position.distance_to(p.global_position) <= p.aura_radius():
+			heal_rate = max(heal_rate, p.aura_heal_per_sec())
 	if heal_rate > 0.0:
 		_heal_accum += heal_rate * delta
 		var whole := int(_heal_accum)

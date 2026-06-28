@@ -38,6 +38,4 @@ func _draw() -> void:
 	var base_pos: Vector2 = WAYPOINTS[-1]
 	draw_rect(Rect2(base_pos - Vector2(28, 28), Vector2(56, 56)), Color(0.2, 0.7, 0.3))
 	draw_circle(base_pos, 12, Color(1, 1, 1))
-
-	for slot in TOWER_SLOTS:
-		draw_arc(slot, 22, 0.0, TAU, 32, Color(1, 1, 1, 0.35), 2.0)
+	# Os marcadores de slot agora são desenhados por cada TowerSlot (BuildManager).

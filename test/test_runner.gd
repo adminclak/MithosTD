@@ -19,6 +19,8 @@ func _initialize() -> void:
 	_test_projectile_aoe()
 	_test_blocking()
 	_test_priest_aura()
+	_test_economy()
+	_test_build_menu_ui()
 	print("\n=== RESULTADO: %d passou, %d falhou ===" % [_passed, _failed])
 	quit(0 if _failed == 0 else 1)
 
@@ -192,3 +194,79 @@ func _test_priest_aura() -> void:
 	_check(is_equal_approx(enemy2._aura_speed_mult(), 1.0), "inimigo fora da aura mantem velocidade")
 
 	priest.free(); archer.free(); far.free(); enemy.free(); enemy2.free()
+
+func _test_economy() -> void:
+	print("\nEconomia (invocar / upar / vender via BuildManager):")
+	var gs = root.get_node_or_null(^"/root/GameState")
+	_check(gs != null, "autoload GameState acessivel via /root no modo -s")
+	if gs == null:
+		return
+	gs.reset_run(20, 300)
+
+	var bm = BuildManager.new()
+	bm.setup([Vector2(200, 300)], [Vector2(-40, 160), Vector2(360, 160)])
+	root.add_child(bm)
+	var slot = bm._slots[0]
+
+	# Invocar Arqueiro (100): desconta ouro e ocupa o slot.
+	_check(bm.try_build(slot, TowerData.archer()) == true, "try_build com saldo retorna true")
+	_check(gs.gold == 200, "invocar Arqueiro desconta 100 (300 -> 200)")
+	_check(slot.is_empty() == false, "slot fica ocupado apos invocar")
+
+	# Slot ocupado nao aceita nova torre.
+	_check(bm.try_build(slot, TowerData.mage()) == false, "nao invoca em slot ocupado")
+	_check(gs.gold == 200, "invocacao recusada nao gasta ouro")
+
+	# Upgrade: custo correto, sobe nivel e desconta.
+	var t = slot.tower
+	_check(t.level == 1, "torre comeca no nivel 1")
+	_check(t.upgrade_cost() == 60, "custo do 1o upgrade do Arqueiro = 60")
+	_check(bm.try_upgrade(slot) == true, "try_upgrade com saldo retorna true")
+	_check(t.level == 2, "torre sobe para o nivel 2")
+	_check(gs.gold == 140, "upgrade desconta 60 (200 -> 140)")
+
+	# Vender devolve 60% do investido (100 + 60 = 160 -> 96) e libera o slot.
+	_check(t.sell_value() == 96, "venda devolve 60% do investido (160 -> 96)")
+	var before = gs.gold
+	_check(bm.sell(slot) == true, "sell retorna true")
+	_check(gs.gold == before + 96, "vender credita o valor de venda")
+	_check(slot.is_empty() == true, "slot fica vazio apos vender")
+
+	# Sem ouro suficiente: nao invoca e nao gasta.
+	gs.reset_run(20, 50)
+	var bm2 = BuildManager.new()
+	bm2.setup([Vector2(500, 500)], [])
+	root.add_child(bm2)
+	_check(bm2.try_build(bm2._slots[0], TowerData.archer()) == false, "sem ouro nao invoca Arqueiro (100)")
+	_check(gs.gold == 50, "tentativa sem saldo nao gasta ouro")
+
+	bm.free()
+	bm2.free()
+
+func _test_build_menu_ui() -> void:
+	print("\nUI do BuildMenu (montagem dos paineis):")
+	# Painel de invocacao com ouro de sobra: 4 classes + titulo + fechar.
+	var menu = BuildMenu.new()
+	root.add_child(menu)
+	menu.open_build(Vector2(200, 300), TowerData.all_classes(), 300)
+	_check(menu._panel.visible == true, "open_build mostra o painel")
+	_check(menu._box.get_child_count() == 6, "build lista 4 classes + titulo + fechar")
+
+	# Com pouco ouro (100), so o Arqueiro (100) fica habilitado.
+	var menu2 = BuildMenu.new()
+	root.add_child(menu2)
+	menu2.open_build(Vector2(200, 300), TowerData.all_classes(), 100)
+	_check(menu2._box.get_child(1).disabled == false, "Arqueiro (100) habilitado com 100 de ouro")
+	_check(menu2._box.get_child(4).disabled == true, "Mago (150) desabilitado com 100 de ouro")
+
+	# Painel de gestao de uma torre: titulo + upar + vender + fechar.
+	var menu3 = BuildMenu.new()
+	root.add_child(menu3)
+	var t = Tower.new()
+	t.setup(TowerData.archer())
+	root.add_child(t)
+	menu3.open_manage(Vector2(200, 300), t, 300)
+	_check(menu3._panel.visible == true, "open_manage mostra o painel")
+	_check(menu3._box.get_child_count() == 4, "manage mostra titulo + upar + vender + fechar")
+
+	menu.free(); menu2.free(); menu3.free(); t.free()

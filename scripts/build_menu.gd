@@ -1,0 +1,109 @@
+class_name BuildMenu
+extends CanvasLayer
+
+## Painel flutuante de construção/gestão, montado em código.
+## - open_build: lista as 4 classes (nome + custo), desabilitando as sem ouro.
+## - open_manage: mostra a torre (nível) com botões de upar e vender.
+## Emite sinais; quem executa a economia é o BuildManager.
+
+signal build_requested(data: TowerData)
+signal upgrade_requested
+signal sell_requested
+signal closed
+
+const PANEL_WIDTH := 196.0
+const ROW_HEIGHT := 34.0
+
+var _panel: Panel
+var _box: VBoxContainer
+
+
+func _ready() -> void:
+	layer = 10
+	_panel = Panel.new()
+	_panel.visible = false
+	add_child(_panel)
+	_box = VBoxContainer.new()
+	_box.position = Vector2(8, 8)
+	_box.custom_minimum_size = Vector2(PANEL_WIDTH - 16, 0)
+	_box.add_theme_constant_override("separation", 4)
+	_panel.add_child(_box)
+
+
+func open_build(world_pos: Vector2, classes: Array, gold: int) -> void:
+	_clear()
+	_add_title("Invocar  (ouro: %d)" % gold)
+	for data in classes:
+		var b := Button.new()
+		b.custom_minimum_size = Vector2(0, 30)
+		b.text = "%s   %d" % [data.display_name, data.cost]
+		b.add_theme_color_override("font_color", data.body_color)
+		b.disabled = gold < data.cost
+		b.pressed.connect(func(): build_requested.emit(data))
+		_box.add_child(b)
+	_add_close_button()
+	_show_at(world_pos)
+
+
+func open_manage(world_pos: Vector2, tower: Tower, gold: int) -> void:
+	_clear()
+	_add_title("%s  Nv %d" % [tower.data.display_name, tower.level])
+	if tower.can_upgrade():
+		var cost := tower.upgrade_cost()
+		var up := Button.new()
+		up.custom_minimum_size = Vector2(0, 30)
+		up.text = "Upar p/ Nv %d   %d" % [tower.level + 1, cost]
+		up.disabled = gold < cost
+		up.pressed.connect(func(): upgrade_requested.emit())
+		_box.add_child(up)
+	else:
+		_add_label("Nivel maximo")
+	var sell := Button.new()
+	sell.custom_minimum_size = Vector2(0, 30)
+	sell.text = "Vender   +%d" % tower.sell_value()
+	sell.pressed.connect(func(): sell_requested.emit())
+	_box.add_child(sell)
+	_add_close_button()
+	_show_at(world_pos)
+
+
+func close() -> void:
+	if _panel != null:
+		_panel.visible = false
+
+
+func _show_at(world_pos: Vector2) -> void:
+	var rows := _box.get_child_count()
+	var height := rows * ROW_HEIGHT + 16.0
+	_panel.size = Vector2(PANEL_WIDTH, height)
+	var vp := get_viewport().get_visible_rect().size
+	var p := world_pos + Vector2(28, -height * 0.5)
+	p.x = clampf(p.x, 8.0, vp.x - PANEL_WIDTH - 8.0)
+	p.y = clampf(p.y, 8.0, vp.y - height - 8.0)
+	_panel.position = p
+	_panel.visible = true
+
+
+func _clear() -> void:
+	for c in _box.get_children():
+		c.queue_free()
+
+
+func _add_title(text: String) -> void:
+	var l := Label.new()
+	l.text = text
+	_box.add_child(l)
+
+
+func _add_label(text: String) -> void:
+	var l := Label.new()
+	l.text = text
+	_box.add_child(l)
+
+
+func _add_close_button() -> void:
+	var b := Button.new()
+	b.custom_minimum_size = Vector2(0, 28)
+	b.text = "Fechar"
+	b.pressed.connect(func(): close(); closed.emit())
+	_box.add_child(b)

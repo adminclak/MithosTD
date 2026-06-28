@@ -6,10 +6,22 @@ extends Node2D
 ## - Guerreiro: invoca e mantém unidades bloqueadoras no caminho.
 ## - Sacerdote: irradia uma aura de suporte. A aura é aplicada de forma
 ##   descentralizada: cada torre/inimigo/bloqueador consulta os Sacerdotes
-##   próximos (grupo "priests"), então a ordem de processamento não importa.
+##   próximos (grupo "priests") chamando os métodos aura_*() — que já embutem
+##   o nível atual da torre.
+##
+## Upgrade temporário de partida: nível 1→2→3, cada nível intensifica os stats
+## (_stat_mult) e custa ouro (calculado aqui; quem debita é o BuildManager).
+
+const MAX_LEVEL := 3
+const LEVEL_STAT_STEP := 0.35  ## +35% nos stats principais por nível acima do 1
+const UPGRADE_COST_FACTOR := 0.6 ## custo do 1º upgrade ≈ 60% do custo de invocar
+const UPGRADE_COST_GROWTH := 1.6 ## cada upgrade seguinte ≈ +60% do anterior
+const SELL_RATE := 0.6 ## devolve 60% do ouro investido ao vender
 
 var data: TowerData
 var waypoints: Array = [] ## usado pelo Guerreiro para achar o caminho
+var level: int = 1
+var invested_gold: int = 0 ## total gasto (invocar + upgrades), base da venda
 
 var _cooldown: float = 0.0
 
@@ -28,6 +40,7 @@ var _rally_point: Vector2 = Vector2.ZERO
 
 func setup(d: TowerData) -> void:
 	data = d
+	invested_gold = d.cost
 
 
 func _ready() -> void:
@@ -52,16 +65,64 @@ func _process(delta: float) -> void:
 			pass # a aura é consultada pelas entidades afetadas
 
 
-# --- Aura: cada torre soma o melhor buff dos Sacerdotes que a cobrem ---
+# --- Upgrade / venda ---
+func _stat_mult() -> float:
+	return 1.0 + (level - 1) * LEVEL_STAT_STEP
+
+
+func can_upgrade() -> bool:
+	return level < MAX_LEVEL
+
+
+func upgrade_cost() -> int:
+	return int(round(data.cost * UPGRADE_COST_FACTOR * pow(UPGRADE_COST_GROWTH, level - 1)))
+
+
+func sell_value() -> int:
+	return int(round(invested_gold * SELL_RATE))
+
+
+## Sobe um nível e registra o gasto. Não debita ouro (o BuildManager faz isso).
+func apply_upgrade() -> void:
+	if not can_upgrade():
+		return
+	invested_gold += upgrade_cost()
+	level += 1
+	queue_redraw()
+
+
+# --- Aura efetiva (já com o nível embutido) — consultada pelas entidades ---
+func aura_radius() -> float:
+	return data.aura_radius
+
+
+func aura_damage_mult() -> float:
+	return 1.0 + (data.aura_damage_mult - 1.0) * _stat_mult()
+
+
+func aura_fire_rate_mult() -> float:
+	return 1.0 + (data.aura_fire_rate_mult - 1.0) * _stat_mult()
+
+
+func aura_slow_mult() -> float:
+	# data.aura_slow_mult é < 1 (lentidão); o nível torna a lentidão mais forte.
+	return clampf(1.0 - (1.0 - data.aura_slow_mult) * _stat_mult(), 0.2, 1.0)
+
+
+func aura_heal_per_sec() -> float:
+	return data.aura_heal_per_sec * _stat_mult()
+
+
+# --- Buff que esta torre recebe dos Sacerdotes que a cobrem ---
 func _recompute_aura_buffs() -> void:
 	_aura_damage_mult = 1.0
 	_aura_fire_rate_mult = 1.0
 	for p in get_tree().get_nodes_in_group("priests"):
 		if not is_instance_valid(p) or p == self:
 			continue
-		if global_position.distance_to(p.global_position) <= p.data.aura_radius:
-			_aura_damage_mult = max(_aura_damage_mult, p.data.aura_damage_mult)
-			_aura_fire_rate_mult = max(_aura_fire_rate_mult, p.data.aura_fire_rate_mult)
+		if global_position.distance_to(p.global_position) <= p.aura_radius():
+			_aura_damage_mult = max(_aura_damage_mult, p.aura_damage_mult())
+			_aura_fire_rate_mult = max(_aura_fire_rate_mult, p.aura_fire_rate_mult())
 
 
 # --- Arqueiro / Mago ---
@@ -70,7 +131,7 @@ func _process_attacker(delta: float) -> void:
 	var target := _find_target()
 	if target != null and _cooldown <= 0.0:
 		_shoot(target)
-		var eff_fire_rate: float = data.fire_rate * _aura_fire_rate_mult
+		var eff_fire_rate: float = data.fire_rate * _stat_mult() * _aura_fire_rate_mult
 		_cooldown = 1.0 / max(0.1, eff_fire_rate)
 
 
@@ -91,7 +152,7 @@ func _shoot(target: Node2D) -> void:
 	var p := Projectile.new()
 	get_parent().add_child(p)
 	p.global_position = global_position
-	var eff_damage: int = int(round(data.damage * _aura_damage_mult))
+	var eff_damage: int = int(round(data.damage * _stat_mult() * _aura_damage_mult))
 	p.setup(target, eff_damage, data.splash_radius, data.projectile_color)
 
 
@@ -113,8 +174,10 @@ func _process_warrior(delta: float) -> void:
 
 func _spawn_blocker(slot_index: int) -> void:
 	var b := BlockerUnit.new()
-	b.setup(data.blocker_hp, data.blocker_damage, data.blocker_attack_rate, \
-			data.blocker_engage_radius, _hold_position_for(slot_index))
+	var hp: int = int(round(data.blocker_hp * _stat_mult()))
+	var dmg: int = int(round(data.blocker_damage * _stat_mult()))
+	b.setup(hp, dmg, data.blocker_attack_rate, data.blocker_engage_radius, \
+			_hold_position_for(slot_index))
 	b.slot_index = slot_index
 	b.died.connect(_on_blocker_died)
 	get_parent().add_child(b)
@@ -173,3 +236,6 @@ func _draw() -> void:
 			draw_arc(Vector2.ZERO, data.attack_range, 0.0, TAU, 64, Color(1, 1, 1, 0.10), 1.0)
 		TowerData.TowerClass.PRIEST:
 			draw_arc(Vector2.ZERO, data.aura_radius, 0.0, TAU, 64, Color(0.95, 0.85, 0.2, 0.20), 1.5)
+	# Pips de nível (acima da torre): 1 a 3 quadradinhos dourados.
+	for i in level:
+		draw_rect(Rect2(Vector2(-18 + i * 8, -28), Vector2(6, 5)), Color(1.0, 0.9, 0.3))

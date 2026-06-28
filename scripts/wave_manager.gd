@@ -6,6 +6,7 @@ extends Node
 @export var per_wave: int = 2
 @export var spawn_interval: float = 0.7
 @export var wave_pause: float = 3.0
+@export var wave_bonus: int = 20 ## ouro ganho ao concluir cada onda
 
 var waypoints: Array = []
 var enemies_root: Node2D
@@ -26,6 +27,8 @@ func _run_waves() -> void:
 				return
 			_spawn_one()
 			await get_tree().create_timer(spawn_interval).timeout
+		# Bônus por concluir a onda (todos os inimigos dela já foram lançados).
+		GameState.add_gold(wave_bonus)
 		if w < total_waves:
 			await get_tree().create_timer(wave_pause).timeout
 	# Espera a tela limpar de inimigos restantes.

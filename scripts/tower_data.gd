@@ -89,3 +89,9 @@ static func priest() -> TowerData:
 	d.aura_slow_mult = 0.65
 	d.aura_heal_per_sec = 6.0
 	return d
+
+
+## As 4 classes em ordem de custo crescente — usada pelo menu de invocação.
+static func all_classes() -> Array:
+	return [archer(), warrior(), priest(), mage()]
+

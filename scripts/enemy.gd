@@ -78,8 +78,8 @@ func _aura_speed_mult() -> float:
 	for p in get_tree().get_nodes_in_group("priests"):
 		if not is_instance_valid(p):
 			continue
-		if global_position.distance_to(p.global_position) <= p.data.aura_radius:
-			m = min(m, p.data.aura_slow_mult)
+		if global_position.distance_to(p.global_position) <= p.aura_radius():
+			m = min(m, p.aura_slow_mult())
 	return m
 
 

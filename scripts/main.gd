@@ -21,22 +21,10 @@ func _ready() -> void:
 	enemies_root.name = "Enemies"
 	add_child(enemies_root)
 
-	# Camada 2: uma torre de cada classe nos slots, pra ver o combate completo.
-	var slots := level.get_tower_slots()
-	var waypoints := level.get_waypoints()
-	var loadout := [
-		TowerData.archer(),  # slot 0
-		TowerData.mage(),    # slot 1
-		TowerData.warrior(), # slot 2 (perto do caminho — invoca bloqueadores)
-		TowerData.priest(),  # slot 3 (buffa o Arqueiro vizinho + lentidão/cura)
-		TowerData.archer(),  # slot 4
-	]
-	for i in slots.size():
-		var tower := Tower.new()
-		tower.setup(loadout[i % loadout.size()])
-		tower.waypoints = waypoints
-		tower.position = slots[i]
-		add_child(tower)
+	# Camada 3: o jogador invoca/upa/vende torres clicando nos slots (gastando ouro).
+	var build_manager := BuildManager.new()
+	build_manager.setup(level.get_tower_slots(), level.get_waypoints())
+	add_child(build_manager)
 
 	# Ondas de inimigos
 	var wave_manager := WaveManager.new()
