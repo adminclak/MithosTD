@@ -1,25 +1,22 @@
 class_name BuildManager
 extends Node2D
 
-## Posicionamento LIVRE com zonas: o jogador clica em qualquer lugar do mapa.
-## - Guerreiro (melee) só pode ficar perto da rota (zona do meio).
-## - Arqueiro/Mago/Sacerdote (ranged) só nas laterais (longe da rota).
-## Também valida limites do mapa, espaçamento entre torres e unicidade do
-## esquadrão. A lógica (try_place/try_upgrade/sell/can_place) é sem UI e testável.
+## Posicionamento 100% LIVRE: o jogador clica em qualquer lugar do mapa para
+## invocar um personagem do esquadrão. Não há zonas — quem define o papel é o
+## próprio personagem (melee tanka onde for posto; ranged atira de onde estiver).
+## Valida apenas limites do mapa e espaçamento entre torres.
 
-const CLICK_RADIUS := 26.0     ## clicar perto de uma torre abre a gestão dela
-const MELEE_BAND := 48.0       ## dist. à rota <= isto = zona melee (Guerreiro)
-const MIN_SPACING := 40.0      ## distância mínima entre torres
-const BOUNDS := Rect2(24, 24, 1232, 672)
+const CLICK_RADIUS := 26.0
+const MIN_SPACING := 38.0
+const BOUNDS := Rect2(20, 20, 1240, 680)
 
 var waypoints: Array = []
-var squad: Array = []          ## TowerData (com char_id) do esquadrão
+var squad: Array = []
 
-var _towers: Array = []        ## Tower posicionadas
+var _towers: Array = []
 var _menu: BuildMenu = null
 var _active_tower: Tower = null
 var _pending_pos: Vector2 = Vector2.ZERO
-var _zone_line: Line2D = null
 var _toast: Label = null
 
 @onready var _state: Node = get_node_or_null(^"/root/GameState")
@@ -31,16 +28,6 @@ func setup(wpoints: Array, squad_datas: Array = []) -> void:
 
 
 func _ready() -> void:
-	# Faixa translúcida mostrando a zona do meio (corpo-a-corpo / Guerreiro).
-	_zone_line = Line2D.new()
-	_zone_line.points = PackedVector2Array(waypoints)
-	_zone_line.width = MELEE_BAND * 2.0
-	_zone_line.default_color = Color(0.85, 0.3, 0.3, 0.10)
-	_zone_line.joint_mode = Line2D.LINE_JOINT_ROUND
-	_zone_line.begin_cap_mode = Line2D.LINE_CAP_ROUND
-	_zone_line.end_cap_mode = Line2D.LINE_CAP_ROUND
-	add_child(_zone_line)
-
 	_menu = BuildMenu.new()
 	add_child(_menu)
 	_menu.build_requested.connect(_on_build_requested)
@@ -65,44 +52,21 @@ func _unhandled_input(event: InputEvent) -> void:
 			_menu.open_build(pos, _build_entries(pos), _gold())
 
 
-# --- Validação de zona / posição ---
-func dist_to_path(p: Vector2) -> float:
-	if waypoints.size() < 2:
-		return INF
-	var best := INF
-	for i in range(waypoints.size() - 1):
-		var cp: Vector2 = Geometry2D.get_closest_point_to_segment(p, waypoints[i], waypoints[i + 1])
-		best = min(best, p.distance_to(cp))
-	return best
-
-
-func is_melee_class(tower_class: int) -> bool:
-	return tower_class == TowerData.TowerClass.WARRIOR
-
-
-func can_place(tower_class: int, pos: Vector2) -> bool:
+func can_place(_tower_class: int, pos: Vector2) -> bool:
 	if not BOUNDS.has_point(pos):
 		return false
 	for t in _towers:
 		if is_instance_valid(t) and t.global_position.distance_to(pos) < MIN_SPACING:
 			return false
-	var d := dist_to_path(pos)
-	if is_melee_class(tower_class):
-		return d <= MELEE_BAND # Guerreiro fica no meio (sobre/junto à rota)
-	return d > MELEE_BAND      # ranged fica nas laterais
+	return true
 
 
-func _place_reason(tower_class: int, pos: Vector2) -> String:
+func _place_reason(_tower_class: int, pos: Vector2) -> String:
 	if not BOUNDS.has_point(pos):
 		return "fora do mapa"
 	for t in _towers:
 		if is_instance_valid(t) and t.global_position.distance_to(pos) < MIN_SPACING:
 			return "perto demais"
-	var d := dist_to_path(pos)
-	if is_melee_class(tower_class) and d > MELEE_BAND:
-		return "melee: so no meio"
-	if not is_melee_class(tower_class) and d <= MELEE_BAND:
-		return "ranged: so na lateral"
 	return ""
 
 
@@ -134,9 +98,9 @@ func _tower_at(pos: Vector2) -> Tower:
 	for t in _towers:
 		if not is_instance_valid(t):
 			continue
-		var d: float = t.global_position.distance_to(pos)
-		if d <= best_d:
-			best_d = d
+		var dd: float = t.global_position.distance_to(pos)
+		if dd <= best_d:
+			best_d = dd
 			best = t
 	return best
 
@@ -218,7 +182,7 @@ func _show_toast(msg: String) -> void:
 		_toast.add_theme_font_size_override("font_size", 22)
 		_toast.add_theme_color_override("font_color", Color(1.0, 0.5, 0.4))
 		add_child(_toast)
-	_toast.text = "Nao pode posicionar aqui (%s)" % msg
+	_toast.text = "Nao da pra posicionar aqui (%s)" % msg
 	_toast.position = _pending_pos + Vector2(-90, -40)
 	_toast.visible = true
 	get_tree().create_timer(1.3).timeout.connect(func(): if is_instance_valid(_toast): _toast.visible = false)

@@ -35,13 +35,15 @@ func apply_to(d: TowerData) -> void:
 	match stat:
 		Stat.DAMAGE:
 			d.damage = int(round(d.damage * f))
-			d.blocker_damage = int(round(d.blocker_damage * f))
+			d.melee_damage = int(round(d.melee_damage * f))
 		Stat.RANGE:
 			d.attack_range *= f
 		Stat.FIRE_RATE:
 			d.fire_rate *= f
+			d.melee_attack_rate *= f
 		Stat.BLOCKER_HP:
-			d.blocker_hp = int(round(d.blocker_hp * f))
+			d.max_hp = int(round(d.max_hp * f))
+			d.defense = int(round(d.defense * f))
 		Stat.AURA_POWER:
 			d.aura_heal_per_sec *= f
 			if d.aura_damage_mult > 1.0:

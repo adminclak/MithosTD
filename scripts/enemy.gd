@@ -130,8 +130,12 @@ func is_stunned() -> bool:
 	return _stun_timer > 0.0
 
 
-func take_damage(amount: int) -> void:
-	hp -= amount
+## pen (penetração) fura a defesa do inimigo. Dano mínimo de 1.
+func take_damage(amount: int, pen: int = 0) -> void:
+	var dealt := amount
+	if data != null and data.defense > 0:
+		dealt = max(1, amount - max(0, data.defense - pen))
+	hp -= dealt
 	queue_redraw()
 	if hp <= 0:
 		_die()

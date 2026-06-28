@@ -12,8 +12,9 @@ enum Special { NONE, SPLIT }
 @export var speed: float = 140.0
 @export var gold_reward: int = 5
 @export var base_damage: int = 1   ## dano à base ao escapar
-@export var attack_damage: int = 3 ## dano corpo-a-corpo nos bloqueadores
+@export var attack_damage: int = 3 ## dano corpo-a-corpo nos personagens melee
 @export var attack_rate: float = 1.0
+@export var defense: int = 0 ## reduz o dano recebido (furado por penetracao)
 @export var radius: float = 14.0
 @export var color: Color = Color(0.85, 0.3, 0.3)
 

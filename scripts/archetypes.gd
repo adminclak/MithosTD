@@ -14,6 +14,11 @@ enum Kind {
 }
 
 
+## Personagens melee tankam na rota; ranged atiram/irradiam à distância.
+static func is_melee(kind: int) -> bool:
+	return kind == Kind.WARRIOR_TANK or kind == Kind.WARRIOR_DPS
+
+
 static func tower_class_of(kind: int) -> int:
 	match kind:
 		Kind.ARCHER_SNIPER, Kind.ARCHER_RAPID:

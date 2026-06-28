@@ -10,12 +10,14 @@ extends Node2D
 var _target: Node2D = null
 var _damage: int = 0
 var _splash: float = 0.0
+var _pen: int = 0
 
-func setup(target: Node2D, dmg: int, splash: float = 0.0, col: Color = Color(1, 1, 0.4)) -> void:
+func setup(target: Node2D, dmg: int, splash: float = 0.0, col: Color = Color(1, 1, 0.4), pen: int = 0) -> void:
 	_target = target
 	_damage = dmg
 	_splash = splash
 	color = col
+	_pen = pen
 
 func _physics_process(delta) -> void:
 	if _target == null or not is_instance_valid(_target):
@@ -37,11 +39,11 @@ func _impact() -> void:
 				continue
 			if global_position.distance_to(e.global_position) <= _splash:
 				if e.has_method("take_damage"):
-					e.take_damage(_damage)
+					e.take_damage(_damage, _pen)
 	else:
 		# Dano de alvo único.
 		if is_instance_valid(_target) and _target.has_method("take_damage"):
-			_target.take_damage(_damage)
+			_target.take_damage(_damage, _pen)
 	queue_free()
 
 func _draw() -> void:

@@ -10,8 +10,10 @@ signal finished(victory: bool)
 
 const START_HP := 20
 const START_GOLD := 220
+const PREP_TIME := 10.0 ## segundos de preparação antes da 1ª onda
 
 var auto_start: bool = false ## smoke test: começa as ondas sozinho
+var _prep_timer: float = PREP_TIME
 
 var _stage: StageData
 var _squad: Array = []
@@ -52,8 +54,8 @@ func _ready() -> void:
 	_match_hud.advance_pressed.connect(_on_advance)
 	_match_hud.pause_pressed.connect(_on_pause)
 	_match_hud.speed_pressed.connect(_on_speed)
-	_match_hud.abandon_pressed.connect(_on_abandon)
-	_match_hud.set_phase("Preparacao — posicione suas torres e clique Lancar Onda")
+	_match_hud.abandon_pressed.connect(_confirm_abandon)
+	_match_hud.set_phase("Preparacao: %ds — posicione e clique Lancar Onda" % int(PREP_TIME))
 
 	_wave_manager = WaveManager.new()
 	_wave_manager.waypoints = level.get_waypoints()
@@ -91,6 +93,16 @@ func _auto_place_demo() -> void:
 		_build_manager.try_place(pos, data)
 
 
+func _process(delta: float) -> void:
+	# Contagem regressiva da preparação (só antes da 1ª onda).
+	if _wave_manager != null and _wave_manager.is_in_prep() and not _ended:
+		_prep_timer -= delta
+		if _prep_timer <= 0.0:
+			_wave_manager.player_advance()
+		else:
+			_match_hud.set_phase("Preparacao: %ds — posicione e clique Lancar Onda" % ceil(_prep_timer))
+
+
 func _on_advance() -> void:
 	if _wave_manager.can_advance():
 		_wave_manager.player_advance()
@@ -113,7 +125,27 @@ func _on_speed() -> void:
 	_match_hud.set_fast(_fast)
 
 
-func _on_abandon() -> void:
+func _confirm_abandon() -> void:
+	if _ended:
+		return
+	get_tree().paused = true
+	var dlg := ConfirmationDialog.new()
+	dlg.title = "Abandonar"
+	dlg.dialog_text = "Abandonar a partida? Voce perde o progresso desta fase."
+	dlg.ok_button_text = "Abandonar"
+	dlg.cancel_button_text = "Continuar jogando"
+	dlg.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(dlg)
+	dlg.confirmed.connect(func():
+		get_tree().paused = false
+		_do_abandon())
+	dlg.canceled.connect(func():
+		get_tree().paused = false
+		dlg.queue_free())
+	dlg.popup_centered()
+
+
+func _do_abandon() -> void:
 	if _ended:
 		return
 	_ended = true

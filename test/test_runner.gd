@@ -29,6 +29,7 @@ func _initialize() -> void:
 	_test_bestiary()
 	_test_wave_composition()
 	_test_attributes()
+	_test_combat_stats()
 	print("\n=== RESULTADO: %d passou, %d falhou ===" % [_passed, _failed])
 	quit(0 if _failed == 0 else 1)
 
@@ -93,8 +94,9 @@ func _test_tower_data() -> void:
 
 	var w = TowerData.warrior()
 	_check(w.tower_class == TowerData.TowerClass.WARRIOR, "warrior() tem classe WARRIOR")
-	_check(w.blocker_count >= 1, "Guerreiro invoca >= 1 bloqueador")
-	_check(w.blocker_hp > 0, "bloqueador tem vida")
+	_check(w.is_melee == true, "Guerreiro e melee (tanka na rota)")
+	_check(w.max_hp > 0, "melee tem vida")
+	_check(w.block_capacity >= 1, "melee segura ao menos 1 inimigo")
 
 	var p = TowerData.priest()
 	_check(p.tower_class == TowerData.TowerClass.PRIEST, "priest() tem classe PRIEST")
@@ -127,46 +129,42 @@ func _test_projectile_aoe() -> void:
 	e1.free(); e2.free(); e3.free()
 
 func _test_blocking() -> void:
-	print("\nBloqueio do Guerreiro (combate corpo-a-corpo):")
+	print("\nCombate melee (personagem tanka na rota):")
+	var gs = root.get_node_or_null(^"/root/GameState")
+	gs.reset_run(20, 0)
+
+	var t = Tower.new()
+	t.setup(TowerData.warrior()) # is_melee, max_hp 120, defense 6, melee_damage 8, cap 3
+	root.add_child(t)
+	t.global_position = Vector2(500, 420)
+	_check(t.data.is_melee == true, "Guerreiro entra como melee")
+	_check(t.max_hp() > 0, "melee tem vida")
+
 	var enemy = Enemy.new()
 	enemy.max_hp = 100
-	enemy.attack_damage = 7
-	enemy.attack_rate = 100.0
+	enemy.attack_damage = 16
 	root.add_child(enemy)
-	enemy.global_position = Vector2(500, 420)
+	enemy.global_position = Vector2(520, 420) # dentro do engage_radius
 
-	var blocker = BlockerUnit.new()
-	blocker.setup(40, 5, 100.0, 60.0, Vector2(500, 420))
-	root.add_child(blocker)
-	blocker.global_position = Vector2(500, 420)
+	# Um frame de combate melee: trava e ataca o inimigo.
+	t._process_melee(0.2)
+	_check(enemy.is_blocked() == true, "melee trava o inimigo no raio")
+	_check(enemy.hp < 100, "melee causa dano ao inimigo travado")
 
-	_check(enemy.is_blocked() == false, "inimigo comeca livre")
-
-	# O bloqueador encontra e prende o inimigo no raio.
-	var found = blocker._find_enemy()
-	_check(found == enemy, "bloqueador encontra o inimigo no raio")
-	blocker._target_enemy = found
-	found.engage(blocker)
-	_check(enemy.is_blocked() == true, "engage prende o inimigo")
-
-	# Inimigo bloqueado dá dano corpo-a-corpo no bloqueador.
+	# Inimigo travado bate no melee (dano reduzido pela defesa: 16-6=10).
+	var hp_before = t._hp
 	enemy._attack_cd = 0.0
-	enemy._fight(0.016)
-	_check(blocker.hp == 33, "inimigo bloqueado causa dano no bloqueador (40-7)")
+	enemy._blocked_by = t
+	enemy._fight(0.1)
+	_check(t._hp == hp_before - 10, "inimigo causa dano no melee menos a defesa (16-6)")
 
-	# Outro bloqueador não pega um inimigo já bloqueado.
-	var blocker2 = BlockerUnit.new()
-	blocker2.setup(40, 5, 1.0, 60.0, Vector2(500, 420))
-	root.add_child(blocker2)
-	blocker2.global_position = Vector2(500, 420)
-	_check(blocker2._find_enemy() == null, "inimigo ja bloqueado nao e pego por outro bloqueador")
+	# Cair libera os inimigos travados.
+	t._go_down()
+	_check(t.is_down() == true, "melee cai ao ser derrotado")
+	_check(enemy.is_blocked() == false, "ao cair, o melee solta os inimigos")
 
-	# Morte do bloqueador libera o inimigo.
-	blocker.take_damage(999)
-	_check(enemy.is_blocked() == false, "morte do bloqueador libera o inimigo")
-
+	t.free()
 	enemy.free()
-	blocker2.free()
 
 func _test_priest_aura() -> void:
 	print("\nAura do Sacerdote (buff / lentidao):")
@@ -216,9 +214,9 @@ func _test_economy() -> void:
 	root.add_child(bm)
 	var ranged_pos := Vector2(200, 440) # lateral (longe da rota)
 
-	# Invocar Arqueiro (100) numa posicao livre valida: desconta ouro.
+	# Invocar Arqueiro (100) em qualquer ponto livre: desconta ouro.
 	var archer = TowerData.archer()
-	_check(bm.can_place(archer.tower_class, ranged_pos) == true, "ranged pode na lateral")
+	_check(bm.can_place(archer.tower_class, ranged_pos) == true, "pode posicionar em ponto livre")
 	_check(bm.try_place(ranged_pos, archer) == true, "try_place com saldo retorna true")
 	_check(gs.gold == 200, "invocar Arqueiro desconta 100 (300 -> 200)")
 	_check(bm._towers.size() == 1, "torre fica posicionada")
@@ -241,13 +239,11 @@ func _test_economy() -> void:
 	_check(gs.gold == before + 96, "vender credita o valor de venda")
 	_check(bm._towers.size() == 0, "torre removida apos vender")
 
-	# Zonas: Guerreiro (melee) so no meio; ranged so na lateral.
-	var meio := Vector2(300, 312)    # dist ~12 <= 48 (zona melee)
-	var lateral := Vector2(300, 460) # dist ~160 (zona lateral)
-	_check(bm.can_place(TowerData.warrior().tower_class, meio) == true, "Guerreiro pode no meio da rota")
-	_check(bm.can_place(TowerData.warrior().tower_class, lateral) == false, "Guerreiro NAO pode na lateral")
-	_check(bm.can_place(TowerData.archer().tower_class, lateral) == true, "Arqueiro pode na lateral")
-	_check(bm.can_place(TowerData.archer().tower_class, meio) == false, "Arqueiro NAO pode no meio")
+	# Posicionamento livre: qualquer classe pode em qualquer ponto valido.
+	var ponto := Vector2(300, 200)
+	_check(bm.can_place(TowerData.warrior().tower_class, ponto) == true, "Guerreiro pode em qualquer ponto livre")
+	_check(bm.can_place(TowerData.archer().tower_class, ponto) == true, "Arqueiro pode em qualquer ponto livre")
+	_check(bm.can_place(TowerData.archer().tower_class, Vector2(-50, 200)) == false, "fora do mapa e bloqueado")
 
 	# Sem ouro suficiente: nao invoca e nao gasta.
 	gs.reset_run(20, 50)
@@ -385,21 +381,17 @@ func _test_abilities() -> void:
 	th.use_ability()
 	_check(th._temp_mult() == 2.0, "BUFF_TOWER aplica buff temporario (x2)")
 
-	# Escudo e cura nos bloqueadores.
-	var b = BlockerUnit.new()
-	b.setup(40, 5, 1.0, 50.0, Vector2.ZERO)
-	root.add_child(b)
-	b.apply_shield(5.0)
-	b.take_damage(20)
-	_check(b.hp == 40, "bloqueador com escudo ignora o dano")
-	var b2 = BlockerUnit.new()
-	b2.setup(40, 5, 1.0, 50.0, Vector2.ZERO)
-	root.add_child(b2)
-	b2.take_damage(30)
-	b2.heal(15)
-	_check(b2.hp == 25, "heal cura o bloqueador (10 -> 25)")
+	# Escudo e cura em personagem melee (habilidades de suporte).
+	var mt = Tower.new(); mt.setup(TowerData.warrior()); root.add_child(mt); mt.global_position = Vector2(0, 200)
+	mt.apply_shield(5.0)
+	mt.take_damage(50)
+	_check(mt._hp == mt.max_hp(), "melee com escudo ignora o dano")
+	var mt2 = Tower.new(); mt2.setup(TowerData.warrior()); root.add_child(mt2); mt2.global_position = Vector2(0, 260)
+	mt2.take_damage(40) # 40 - defesa 6 = 34
+	mt2.heal(20)
+	_check(mt2._hp == mt2.max_hp() - 14, "heal recupera o melee (dano 34, cura 20 = -14)")
 
-	t.free(); tm.free(); th.free(); e1.free(); e2.free(); e3.free(); b.free(); b2.free()
+	t.free(); tm.free(); th.free(); e1.free(); e2.free(); e3.free(); mt.free(); mt2.free()
 
 func _test_equipment() -> void:
 	print("\nEquipamentos (bonus nos stats):")
@@ -530,12 +522,36 @@ func _test_attributes() -> void:
 	var strong = AttributeStats.build(TowerData.TowerClass.ARCHER, AttributeSet.make(40, 10, 10, 10, 20, 10))
 	_check(strong.damage > weak.damage, "mais STR = mais dano no Arqueiro")
 
-	# INT manda no Mago; VIT na vida dos bloqueadores do Guerreiro.
+	# INT manda no Mago; VIT na vida do Guerreiro melee.
 	var mage = AttributeStats.build(TowerData.TowerClass.MAGE, AttributeSet.make(10, 10, 10, 50, 20, 10))
 	_check(mage.damage > weak.damage, "Mago com INT alta tem dano alto")
-	var war = AttributeStats.build(TowerData.TowerClass.WARRIOR, AttributeSet.make(10, 10, 50, 10, 10, 10))
-	_check(war.blocker_hp > 50, "VIT alta da bloqueadores resistentes")
+	var war = AttributeStats.build(TowerData.TowerClass.WARRIOR, AttributeSet.make(10, 10, 50, 10, 10, 10), true)
+	_check(war.max_hp > 50, "VIT alta da muita vida ao melee")
 
 	# LUK alta gera chance de critico.
 	var lucky = AttributeStats.build(TowerData.TowerClass.ARCHER, AttributeSet.make(10, 10, 10, 10, 10, 80))
 	_check(lucky.crit_chance > 0.2, "LUK alta da chance de critico")
+
+func _test_combat_stats() -> void:
+	print("\nDefesa / penetracao / melee (builds):")
+	# Defesa do inimigo reduz dano; penetracao fura.
+	var e = Enemy.new()
+	e.max_hp = 100
+	root.add_child(e)
+	e.data = GreekBestiary.by_id("esqueleto") # defense 5
+	e.take_damage(20, 0)
+	_check(e.hp == 85, "defesa reduz o dano (20 - 5 = 15)")
+	e.take_damage(20, 5)
+	_check(e.hp == 65, "penetracao fura a defesa (dano cheio 20)")
+	e.free()
+
+	# Build melee: VIT da vida/defesa; STR/VIT/estrelas dao capacidade; AGI da esquiva.
+	var m1 = AttributeStats.build(TowerData.TowerClass.WARRIOR, AttributeSet.make(20, 10, 40, 10, 10, 10), true, 1)
+	var m3 = AttributeStats.build(TowerData.TowerClass.WARRIOR, AttributeSet.make(20, 10, 40, 10, 10, 10), true, 3)
+	_check(m1.is_melee and m1.max_hp > 0, "build melee tem vida")
+	_check(m1.defense > 0, "VIT da defesa ao melee")
+	_check(m3.block_capacity > m1.block_capacity, "estrelas aumentam a capacidade de bloqueio")
+	var agile = AttributeStats.build(TowerData.TowerClass.WARRIOR, AttributeSet.make(10, 90, 20, 10, 10, 10), true, 1)
+	_check(agile.dodge > 0.1, "AGI alta da esquiva ao melee")
+	var penet = AttributeStats.build(TowerData.TowerClass.ARCHER, AttributeSet.make(60, 10, 10, 10, 40, 10))
+	_check(penet.penetration > 0, "STR/DEX dao penetracao")

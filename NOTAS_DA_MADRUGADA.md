@@ -33,6 +33,13 @@ Data de início: 2026-06-28 (madrugada). Base: MVP completo (Camadas 1–6, comm
 - Rodar os testes: `Godot..._console.exe --headless --path c:/projetos/jogoTD -s res://test/test_runner.gd`
 - Smoke da partida (sem input): `... --quit-after 6000 -- --auto-stage`
 
+## Sessão seguinte (com você acordado) — definições novas
+- **Combate melee redesenhado:** personagens melee (Guerreiro; Sacerdote pode ser melee no futuro) **tankam onde forem postos**, travam vários inimigos (capacidade escala STR+VIT+estrelas), levam dano com **defesa/esquiva/regeneração/lifesteal** e, ao cair, **se recuperam** após alguns segundos. Acabaram os "bloqueadores" gerados (BlockerUnit removido).
+- **Atributos profundos:** 6 primários (Força/Agilidade/Vitalidade/Inteligência/Destreza/Sorte) que derivam muitos secundários (ATK, defesa, vel. ataque, alcance, crítico, esquiva, regen, lifesteal, penetração, redução de cooldown, capacidade de bloqueio). Inimigos ganharam **defesa** (penetração fura). Tudo em `attribute_stats.gd`.
+- **Posicionamento 100% livre** (zonas removidas).
+- **Prep de 10s** antes da 1ª onda (com contador) + **abandono com confirmação**.
+- Decidido com você; pendências abaixo continuam valendo.
+
 ## Onde mexer no balanceamento (centralizado)
 - **Fórmulas de stats por atributo:** [scripts/attribute_stats.gd](scripts/attribute_stats.gd) — muda TUDO de uma vez (dano, alcance, cadência, vida de bloqueador, aura, crítico).
 - **Atributos por arquétipo:** [scripts/archetypes.gd](scripts/archetypes.gd) — base e crescimento por nível de cada papel.

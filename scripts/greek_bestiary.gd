@@ -29,9 +29,10 @@ static func _espectro() -> EnemyData:
 	return e
 
 
-# Lento e resistente — esponja de dano.
+# Lento e resistente — esponja de dano (alta defesa: premia penetracao).
 static func _esqueleto() -> EnemyData:
 	var e := EnemyData.make("esqueleto", "Soldado Esqueleto", 46, 80.0, 11, 1, 4, 16.0, Color(0.8, 0.8, 0.72))
+	e.defense = 5
 	return e
 
 
@@ -52,16 +53,22 @@ static func _hidra_filhote() -> EnemyData:
 static func _centauro() -> EnemyData:
 	var e := EnemyData.make("centauro", "Centauro", 64, 178.0, 20, 2, 6, 18.0, Color(0.6, 0.4, 0.25))
 	e.attack_rate = 1.2
+	e.defense = 3
 	return e
 
+
+# Elite: rapido E forte (sobrescreve para dar defesa).
+# (centauro definido acima; aqui so reforço de defesa via _centauro)
 
 # Mini-boss tanque, dano alto de perto.
 static func _ciclope() -> EnemyData:
 	var e := EnemyData.make("ciclope", "Ciclope", 150, 70.0, 30, 3, 11, 22.0, Color(0.45, 0.45, 0.5))
+	e.defense = 8
 	return e
 
 
 # BOSS do mundo grego (fase 5): muita vida, investidas.
 static func _talos() -> EnemyData:
 	var e := EnemyData.make("talos", "Talos, o Colosso", 650, 60.0, 120, 5, 16, 30.0, Color(0.75, 0.55, 0.25))
+	e.defense = 14
 	return e

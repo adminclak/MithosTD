@@ -21,18 +21,25 @@ enum TowerClass { ARCHER, MAGE, WARRIOR, PRIEST }
 @export var projectile_color: Color = Color(1, 1, 0.4)
 @export var splash_radius: float = 0.0 ## > 0 = dano em área (Mago)
 
-## Crítico (derivado de LUK/DEX) — aplicado ao dano de ataque.
+## Stats secundários derivados dos atributos (ver AttributeStats).
 @export var crit_chance: float = 0.0
 @export var crit_mult: float = 1.5
+@export var penetration: int = 0     ## fura a defesa do inimigo
+@export var cdr: float = 0.0         ## redução de cooldown de habilidade (0..0.5)
+@export var proj_speed: float = 460.0
 
-## Guerreiro (unidades bloqueadoras)
-@export var blocker_count: int = 0
-@export var blocker_hp: int = 0
-@export var blocker_damage: int = 0
-@export var blocker_attack_rate: float = 1.0
-@export var blocker_respawn_time: float = 4.0
-@export var blocker_engage_radius: float = 50.0
-@export var blocker_move_speed: float = 120.0
+## Combate corpo-a-corpo (is_melee = true): o próprio personagem tanka na rota.
+@export var is_melee: bool = false
+@export var max_hp: int = 0          ## vida do personagem melee
+@export var defense: int = 0         ## reduz o dano recebido (flat)
+@export var dodge: float = 0.0       ## chance de esquivar (0..0.6)
+@export var regen: float = 0.0       ## vida regenerada por segundo
+@export var lifesteal: float = 0.0   ## fração do dano causado que vira cura (0..0.5)
+@export var block_capacity: int = 1  ## quantos inimigos segura ao mesmo tempo
+@export var melee_damage: int = 0    ## dano do ataque corpo-a-corpo
+@export var melee_attack_rate: float = 1.0
+@export var engage_radius: float = 80.0 ## raio em que trava inimigos
+@export var revive_time: float = 5.0 ## tempo caído antes de voltar com vida cheia
 
 ## Sacerdote (aura de suporte)
 @export var aura_radius: float = 0.0
@@ -75,12 +82,13 @@ static func warrior() -> TowerData:
 	d.display_name = "Guerreiro"
 	d.cost = 120
 	d.body_color = Color(0.85, 0.25, 0.25)
-	d.blocker_count = 2
-	d.blocker_hp = 40
-	d.blocker_damage = 5
-	d.blocker_attack_rate = 1.2
-	d.blocker_respawn_time = 4.0
-	d.blocker_engage_radius = 50.0
+	d.is_melee = true
+	d.max_hp = 120
+	d.defense = 6
+	d.melee_damage = 8
+	d.melee_attack_rate = 1.2
+	d.block_capacity = 3
+	d.regen = 4.0
 	return d
 
 

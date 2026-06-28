@@ -42,7 +42,7 @@ func _on_start_stage(stage: StageData, squad_ids: Array, auto: bool = false) -> 
 	for id in squad_ids:
 		var ch := Roster.by_id(id)
 		if ch != null:
-			var data := ch.tower_data_for_level(Progression.level_of(id))
+			var data := ch.tower_data_for_level(Progression.level_of(id), Progression.stars_of(id))
 			for item in Progression.equipped_data(id):
 				item.apply_to(data)
 			squad_datas.append(data)
