@@ -241,8 +241,9 @@ func _draw() -> void:
 	# Balanço vertical da caminhada (o corpo sobe/desce; a sombra não).
 	var off := Vector2(0, sin(_bob) * 2.0)
 	if _sprite != null:
-		var s := _radius * 2.2
-		draw_texture_rect(_sprite, Rect2(off + Vector2(-s * 0.5, -s * 0.5), Vector2(s, s)), false)
+		var s := _radius * 2.4
+		var dest := Rect2(off + Vector2(-s * 0.5, -s * 0.55), Vector2(s, s))
+		Anim.draw_swayed(self, _sprite, dest, _bob, 2.6, 0.0, 0.04)
 	else:
 		# "Monstrinho" placeholder: corpo + olhos (vivos/aterrorizantes).
 		draw_circle(off, _radius, body_color)

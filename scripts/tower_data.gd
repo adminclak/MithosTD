@@ -13,6 +13,7 @@ enum TowerClass { ARCHER, MAGE, WARRIOR, PRIEST }
 @export var body_color: Color = Color(0.3, 0.5, 0.9)
 @export var char_id: String = "" ## id do personagem (vazio = torre genérica); garante unicidade em campo
 @export var ability: AbilityData = null ## habilidade ativa de assinatura (null = torre genérica)
+@export var equip_icons: Dictionary = {} ## slot(int) -> icon_id; itens vestidos no boneco
 @export var attributes: AttributeSet = null ## atributos primários no nível atual (p/ exibir na HUD)
 
 ## Ataque (Arqueiro / Mago)

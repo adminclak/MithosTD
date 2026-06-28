@@ -457,13 +457,16 @@ func _draw() -> void:
 	if not _down:
 		_draw_weapon_back(off)
 	if _sprite != null:
-		var sz := Vector2(48, 48)
-		draw_texture_rect(_sprite, Rect2(off + (-sz * 0.5) + Vector2(0, -6), sz), false, \
-			Color(1, 1, 1, 0.7) if _down else Color.WHITE)
+		var sz := Vector2(52, 52)
+		var dest := Rect2(off + (-sz * 0.5) + Vector2(0, -8), sz)
+		var mod := Color(1, 1, 1, 0.7) if _down else Color.WHITE
+		var lean := _face.x * 9.0 * _atk
+		Anim.draw_swayed(self, _sprite, dest, _idle, 1.4, lean, 0.035, mod)
 	else:
 		_draw_doll_at(off, c, dark)
 	if not _down:
 		_draw_weapon_front(off)
+		_draw_equipment(off)
 
 	# Sobreposições.
 	if data.is_melee:
@@ -525,6 +528,28 @@ func _draw_weapon_front(off: Vector2) -> void:
 			_draw_shield(off)
 		else:
 			_draw_sword_slash(off)
+
+
+## Itens equipados visíveis no boneco (elmo na cabeça, arma na mão do alvo, escudo
+## no lado oposto). Usa os ícones em pixel dos itens (assets/items).
+func _draw_equipment(off: Vector2) -> void:
+	if data.equip_icons.is_empty():
+		return
+	var perp := Vector2(-_face.y, _face.x)
+	var slots := EquipmentData.Slot
+	_blit_item(off + _face * 6.0 + _atk * _face * 6.0 + Vector2(0, -2), 22.0, slots.WEAPON)
+	_blit_item(off - _face * 9.0, 20.0, slots.SHIELD)
+	_blit_item(off + Vector2(0, -26.0), 18.0, slots.HELMET)
+	perp = perp # silencia aviso
+
+
+func _blit_item(center: Vector2, sz: float, slot: int) -> void:
+	if not data.equip_icons.has(slot):
+		return
+	var tex := Art.item(data.equip_icons[slot])
+	if tex == null:
+		return
+	draw_texture_rect(tex, Rect2(center - Vector2(sz, sz) * 0.5, Vector2(sz, sz)), false)
 
 
 ## Escudeiro: escudo do lado do alvo, que avança (block shove) no golpe.

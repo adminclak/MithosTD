@@ -65,6 +65,7 @@ func _on_start_stage(stage: StageData, squad_ids: Array, ult_id: String = "", au
 			var data := ch.tower_data_for_level(Progression.level_of(id), Progression.stars_of(id))
 			for item in Progression.equipped_data(id):
 				item.apply_to(data)
+				data.equip_icons[item.slot] = item.icon_id() ## p/ mostrar vestido no boneco
 			squad_datas.append(data)
 
 	var game := GameScreen.new()
