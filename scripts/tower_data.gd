@@ -21,6 +21,10 @@ enum TowerClass { ARCHER, MAGE, WARRIOR, PRIEST }
 @export var projectile_color: Color = Color(1, 1, 0.4)
 @export var splash_radius: float = 0.0 ## > 0 = dano em área (Mago)
 
+## Crítico (derivado de LUK/DEX) — aplicado ao dano de ataque.
+@export var crit_chance: float = 0.0
+@export var crit_mult: float = 1.5
+
 ## Guerreiro (unidades bloqueadoras)
 @export var blocker_count: int = 0
 @export var blocker_hp: int = 0
@@ -28,6 +32,7 @@ enum TowerClass { ARCHER, MAGE, WARRIOR, PRIEST }
 @export var blocker_attack_rate: float = 1.0
 @export var blocker_respawn_time: float = 4.0
 @export var blocker_engage_radius: float = 50.0
+@export var blocker_move_speed: float = 120.0
 
 ## Sacerdote (aura de suporte)
 @export var aura_radius: float = 0.0

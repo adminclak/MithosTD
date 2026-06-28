@@ -1,8 +1,8 @@
 class_name HubScreen
 extends CanvasLayer
 
-## Tela de base: monta o esquadrão (até SQUAD_MAX personagens desbloqueados) e
-## escolhe a fase a jogar. Emite start_stage(stage, squad_ids).
+## Tela de base: monta o esquadrão (até SQUAD_MAX personagens) filtrando por
+## mitologia, e escolhe a fase. Emite start_stage(stage, squad_ids).
 
 signal start_stage(stage: StageData, squad_ids: Array)
 signal open_collection
@@ -10,79 +10,115 @@ signal open_collection
 const CLASS_NAMES := ["Arqueiro", "Mago", "Guerreiro", "Sacerdote"]
 
 var _selected: Array = []
-var _stage_buttons: Array = [] ## { button, stage }
+var _filter: String = "Todas"
+var _list_box: VBoxContainer
+var _stage_buttons: Array = []
 var _hint: Label
+var _squad_label: Label
 
 
 func _ready() -> void:
 	layer = 5
 	var bg := ColorRect.new()
-	bg.color = Color(0.08, 0.09, 0.13)
+	bg.color = Color(0.09, 0.10, 0.14)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
-	var root := VBoxContainer.new()
-	root.position = Vector2(48, 32)
-	root.add_theme_constant_override("separation", 10)
-	add_child(root)
-
 	var title := Label.new()
-	title.text = "MITHOS TD  -  Mundo Grego"
-	title.add_theme_font_size_override("font_size", 36)
-	root.add_child(title)
+	title.position = Vector2(40, 20)
+	title.text = "MITHOS TD"
+	title.add_theme_font_size_override("font_size", 34)
+	add_child(title)
 
 	var meta := Label.new()
-	meta.text = "Fase mais alta liberada: %d/%d    Ouro meta: %d    Essencia: %d" % \
-		[Progression.highest_stage_unlocked, StageList.count(), Progression.meta_gold, Progression.meta_essence]
-	root.add_child(meta)
+	meta.position = Vector2(40, 66)
+	meta.text = "Fase liberada: %d/%d    Ouro meta: %d    Essencia: %d    (%d herois)" % \
+		[Progression.highest_stage_unlocked, StageList.count(), Progression.meta_gold, \
+		Progression.meta_essence, Roster.count()]
+	add_child(meta)
 
 	var collection_btn := Button.new()
-	collection_btn.custom_minimum_size = Vector2(220, 34)
+	collection_btn.position = Vector2(40, 94)
+	collection_btn.custom_minimum_size = Vector2(220, 32)
 	collection_btn.text = "Colecao / Loja"
 	collection_btn.pressed.connect(func(): open_collection.emit())
-	root.add_child(collection_btn)
+	add_child(collection_btn)
 
-	var cols := HBoxContainer.new()
-	cols.add_theme_constant_override("separation", 64)
-	root.add_child(cols)
+	# Filtro de mitologia.
+	var filter_bar := HBoxContainer.new()
+	filter_bar.position = Vector2(40, 138)
+	filter_bar.add_theme_constant_override("separation", 4)
+	add_child(filter_bar)
+	for myth in (["Todas"] + Roster.MYTHOLOGIES):
+		var fb := Button.new()
+		fb.custom_minimum_size = Vector2(96, 28)
+		fb.text = myth
+		fb.pressed.connect(_set_filter.bind(myth))
+		filter_bar.add_child(fb)
 
-	# Coluna do esquadrão.
-	var squad_col := VBoxContainer.new()
-	squad_col.add_theme_constant_override("separation", 4)
-	cols.add_child(squad_col)
-	var squad_title := Label.new()
-	squad_title.text = "Esquadrao (max %d)" % Progression.SQUAD_MAX
-	squad_col.add_child(squad_title)
-	for id in Progression.unlocked_ids():
-		squad_col.add_child(_make_char_row(id))
+	# Lista de personagens (rolável).
+	var squad_head := Label.new()
+	squad_head.position = Vector2(40, 176)
+	squad_head.text = "Esquadrao (ate %d) — clique para selecionar:" % Progression.SQUAD_MAX
+	add_child(squad_head)
+
+	var scroll := ScrollContainer.new()
+	scroll.position = Vector2(40, 204)
+	scroll.custom_minimum_size = Vector2(560, 440)
+	add_child(scroll)
+	_list_box = VBoxContainer.new()
+	_list_box.add_theme_constant_override("separation", 2)
+	scroll.add_child(_list_box)
 
 	# Coluna das fases.
+	var stage_head := Label.new()
+	stage_head.position = Vector2(640, 176)
+	stage_head.text = "Fases"
+	stage_head.add_theme_font_size_override("font_size", 20)
+	add_child(stage_head)
 	var stage_col := VBoxContainer.new()
-	stage_col.add_theme_constant_override("separation", 4)
-	cols.add_child(stage_col)
-	var stage_title := Label.new()
-	stage_title.text = "Fases"
-	stage_col.add_child(stage_title)
+	stage_col.position = Vector2(640, 206)
+	stage_col.add_theme_constant_override("separation", 6)
+	add_child(stage_col)
 	for s in StageList.all():
 		var b := Button.new()
-		b.custom_minimum_size = Vector2(280, 34)
+		b.custom_minimum_size = Vector2(320, 36)
 		b.text = "Fase %d  -  %s" % [s.index, s.display_name]
 		b.pressed.connect(_try_start.bind(s))
 		stage_col.add_child(b)
 		_stage_buttons.append({"button": b, "stage": s})
 
+	_squad_label = Label.new()
+	_squad_label.position = Vector2(640, 440)
+	add_child(_squad_label)
 	_hint = Label.new()
-	root.add_child(_hint)
+	_hint.position = Vector2(640, 470)
+	_hint.custom_minimum_size = Vector2(560, 0)
+	add_child(_hint)
 
+	_refresh_list()
 	_refresh()
 
 
-func _make_char_row(id: String) -> CheckButton:
-	var ch := GreekRoster.by_id(id)
-	var cb := CheckButton.new()
-	cb.text = "%s  (%s)  Nv %d" % [ch.display_name, CLASS_NAMES[ch.tower_class], Progression.level_of(id)]
-	cb.toggled.connect(_on_char_toggled.bind(id, cb))
-	return cb
+func _set_filter(myth: String) -> void:
+	_filter = myth
+	_refresh_list()
+
+
+func _refresh_list() -> void:
+	for c in _list_box.get_children():
+		c.queue_free()
+	for ch in Roster.all():
+		if _filter != "Todas" and ch.mythology != _filter:
+			continue
+		if not Progression.is_unlocked(ch.id):
+			continue
+		var cb := CheckButton.new()
+		cb.text = "%s  [%s]  (%s)  Nv %d" % [ch.display_name, ch.mythology, \
+			CLASS_NAMES[ch.tower_class], Progression.level_of(ch.id)]
+		cb.set_pressed_no_signal(_selected.has(ch.id))
+		cb.toggled.connect(_on_char_toggled.bind(ch.id, cb))
+		_list_box.add_child(cb)
 
 
 func _on_char_toggled(pressed: bool, id: String, cb: CheckButton) -> void:
@@ -107,7 +143,13 @@ func _refresh() -> void:
 	for entry in _stage_buttons:
 		var locked: bool = entry["stage"].index > Progression.highest_stage_unlocked
 		entry["button"].disabled = locked or _selected.is_empty()
+	_squad_label.text = "Esquadrao: %d/%d" % [_selected.size(), Progression.SQUAD_MAX]
 	if _selected.is_empty():
-		_hint.text = "Selecione ao menos 1 personagem para liberar as fases."
+		_hint.text = "Selecione ao menos 1 heroi para liberar as fases."
 	else:
-		_hint.text = "Esquadrao: %d/%d  -  escolha uma fase." % [_selected.size(), Progression.SQUAD_MAX]
+		var names: Array = []
+		for id in _selected:
+			var c := Roster.by_id(id)
+			if c != null:
+				names.append(c.display_name)
+		_hint.text = "Levando: " + ", ".join(names)

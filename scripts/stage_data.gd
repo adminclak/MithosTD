@@ -17,7 +17,7 @@ extends Resource
 ## unlock_stage == index — fonte única de verdade do desbloqueio).
 func unlock_ids() -> Array:
 	var ids: Array = []
-	for c in GreekRoster.all():
+	for c in Roster.all():
 		if c.unlock_stage == index:
 			ids.append(c.id)
 	return ids

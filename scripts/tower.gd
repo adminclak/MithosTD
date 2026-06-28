@@ -162,7 +162,12 @@ func _shoot(target: Node2D) -> void:
 	get_parent().add_child(p)
 	p.global_position = global_position
 	var eff_damage: int = int(round(data.damage * _stat_mult() * _aura_damage_mult * _temp_mult()))
-	p.setup(target, eff_damage, data.splash_radius, data.projectile_color)
+	# Crítico (derivado de LUK/DEX).
+	var col: Color = data.projectile_color
+	if randf() < data.crit_chance:
+		eff_damage = int(round(eff_damage * data.crit_mult))
+		col = Color(1.0, 0.55, 0.2) # projétil laranja no crit
+	p.setup(target, eff_damage, data.splash_radius, col)
 
 
 func _temp_mult() -> float:
@@ -254,7 +259,7 @@ func _spawn_blocker(slot_index: int) -> void:
 	var hp: int = int(round(data.blocker_hp * _stat_mult()))
 	var dmg: int = int(round(data.blocker_damage * _stat_mult()))
 	b.setup(hp, dmg, data.blocker_attack_rate, data.blocker_engage_radius, \
-			_hold_position_for(slot_index))
+			_hold_position_for(slot_index), data.blocker_move_speed)
 	b.slot_index = slot_index
 	b.died.connect(_on_blocker_died)
 	get_parent().add_child(b)

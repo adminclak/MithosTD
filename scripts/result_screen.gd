@@ -59,7 +59,7 @@ func _ready() -> void:
 				box.add_child(il)
 
 	for id in _summary.keys():
-		var ch := GreekRoster.by_id(id)
+		var ch := Roster.by_id(id)
 		var info: Dictionary = _summary[id]
 		var line := Label.new()
 		var name_txt: String = ch.display_name if ch != null else id
@@ -71,7 +71,7 @@ func _ready() -> void:
 		box.add_child(line)
 
 	for id in _newly:
-		var ch := GreekRoster.by_id(id)
+		var ch := Roster.by_id(id)
 		var line := Label.new()
 		line.text = "NOVO PERSONAGEM desbloqueado: %s!" % (ch.display_name if ch != null else id)
 		line.add_theme_color_override("font_color", Color(0.5, 0.85, 1.0))

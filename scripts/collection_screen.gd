@@ -69,7 +69,7 @@ func _build_characters() -> VBoxContainer:
 	col.add_child(head)
 
 	for id in Progression.unlocked_ids():
-		var ch := GreekRoster.by_id(id)
+		var ch := Roster.by_id(id)
 		var panel := PanelContainer.new()
 		var v := VBoxContainer.new()
 		panel.add_child(v)

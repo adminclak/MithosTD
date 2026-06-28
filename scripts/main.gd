@@ -35,7 +35,7 @@ func _show_collection() -> void:
 func _on_start_stage(stage: StageData, squad_ids: Array) -> void:
 	var squad_datas: Array = []
 	for id in squad_ids:
-		var ch := GreekRoster.by_id(id)
+		var ch := Roster.by_id(id)
 		if ch != null:
 			var data := ch.tower_data_for_level(Progression.level_of(id))
 			for item in Progression.equipped_data(id):

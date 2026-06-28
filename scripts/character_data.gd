@@ -1,51 +1,45 @@
 class_name CharacterData
 extends Resource
 
-## Um personagem do roster (deus/ser). Carrega a identidade (id, nome, classe)
-## e um TowerData base já configurado. O nível permanente escala os stats base
-## na hora de entrar em campo via tower_data_for_level().
-##
-## As variações por personagem aqui são provisórias (dão identidade); o ajuste
-## fino mecânico (sniper, metralhadora, raio em cadeia, petrificação) entra na
-## Camada 6 junto com habilidades.
-
-const PERM_LEVEL_STEP := 0.04 ## +4% nos stats principais por nível permanente
+## Um personagem do roster. Identidade (id, nome, mitologia, classe) + atributos
+## (base no nível 1 e crescimento por nível) + habilidade. Os stats de combate
+## são derivados dos atributos via AttributeStats no nível em que entra em campo.
 
 @export var id: String = ""
 @export var display_name: String = ""
+@export var mythology: String = ""
 @export var tower_class: TowerData.TowerClass = TowerData.TowerClass.ARCHER
-@export var unlock_stage: int = 0 ## fase cuja conclusão desbloqueia (0 = inicial)
+@export var base_attr: AttributeSet = null
+@export var growth_attr: AttributeSet = null
+@export var ability: AbilityData = null
+@export var unlock_stage: int = 0 ## 0 = já desbloqueado
 
-var _base: TowerData = null
 
-
-static func make(p_id: String, p_name: String, base: TowerData, unlock: int) -> CharacterData:
+static func from_archetype(p_id: String, p_name: String, p_myth: String, \
+		archetype: int, unlock: int = 0) -> CharacterData:
 	var c := CharacterData.new()
 	c.id = p_id
 	c.display_name = p_name
-	c.tower_class = base.tower_class
-	c._base = base
+	c.mythology = p_myth
+	c.tower_class = Archetypes.tower_class_of(archetype)
+	c.base_attr = Archetypes.base_attr(archetype)
+	c.growth_attr = Archetypes.growth_attr(archetype)
+	c.ability = Archetypes.ability(archetype)
 	c.unlock_stage = unlock
-	base.display_name = p_name
 	return c
 
 
-func base_data() -> TowerData:
-	return _base
+func attributes_at(level: int) -> AttributeSet:
+	return base_attr.plus_scaled(growth_attr, max(0, level - 1))
 
 
-## Cópia do TowerData base com os stats principais escalados pelo nível permanente.
-func tower_data_for_level(perm_level: int) -> TowerData:
-	var mult := 1.0 + (perm_level - 1) * PERM_LEVEL_STEP
-	var d: TowerData = _base.duplicate(true)
+func tower_data_for_level(level: int) -> TowerData:
+	var d := AttributeStats.build(tower_class, attributes_at(level))
 	d.char_id = id
 	d.display_name = display_name
-	d.damage = int(round(_base.damage * mult))
-	d.blocker_hp = int(round(_base.blocker_hp * mult))
-	d.blocker_damage = int(round(_base.blocker_damage * mult))
-	d.aura_heal_per_sec = _base.aura_heal_per_sec * mult
-	# Sacerdote: o buff fica um pouco mais forte com o nível permanente.
-	if _base.aura_damage_mult > 1.0:
-		d.aura_damage_mult = 1.0 + (_base.aura_damage_mult - 1.0) * mult
-		d.aura_fire_rate_mult = 1.0 + (_base.aura_fire_rate_mult - 1.0) * mult
+	d.ability = ability
 	return d
+
+
+func base_data() -> TowerData:
+	return tower_data_for_level(1)

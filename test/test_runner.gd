@@ -28,6 +28,7 @@ func _initialize() -> void:
 	_test_shop_evolution()
 	_test_bestiary()
 	_test_wave_composition()
+	_test_attributes()
 	print("\n=== RESULTADO: %d passou, %d falhou ===" % [_passed, _failed])
 	quit(0 if _failed == 0 else 1)
 
@@ -286,10 +287,10 @@ func _test_progression() -> void:
 		return
 	pr.reset()
 
-	# Iniciais: 4 desbloqueados (1 por classe).
-	_check(pr.unlocked_ids().size() == 4, "comeca com 4 personagens desbloqueados")
-	_check(pr.is_unlocked("artemis") == true, "Artemis (inicial) desbloqueada")
-	_check(pr.is_unlocked("hermes") == false, "Hermes comeca bloqueado")
+	# Roster grande, todos desbloqueados (decisao da madrugada — livre escolha).
+	_check(Roster.count() >= 50, "roster tem 50+ personagens")
+	_check(pr.unlocked_ids().size() == Roster.count(), "todos os personagens comecam desbloqueados")
+	_check(pr.is_unlocked("artemis") == true, "Artemis desbloqueada")
 	_check(pr.highest_stage_unlocked == 1, "comeca com a fase 1 liberada")
 
 	# XP sobe de nivel: xp_to_next(1) = 40, entao 100 sobe ao menos 1 nivel.
@@ -297,40 +298,34 @@ func _test_progression() -> void:
 	_check(pr.level_of("artemis") >= 2, "100 de XP sobe Artemis de nivel")
 	_check(s["artemis"]["new_level"] == pr.level_of("artemis"), "resumo bate com o nivel novo")
 
-	# Concluir fase 1: desbloqueia Hermes e libera a fase 2.
-	var newly = pr.mark_stage_cleared(1)
-	_check(newly.has("hermes"), "concluir a fase 1 desbloqueia Hermes")
-	_check(pr.is_unlocked("hermes") == true, "Hermes desbloqueado apos a fase 1")
+	# Concluir a fase 1 libera a fase 2.
+	pr.mark_stage_cleared(1)
 	_check(pr.highest_stage_unlocked == 2, "fase 2 liberada apos concluir a 1")
-	_check(pr.unlocked_ids().size() == 5, "agora 5 personagens desbloqueados")
 
 	# Save/load roundtrip num arquivo temporario (nao toca o save real).
 	var tmp = "user://test_save_%d.json" % Time.get_ticks_usec()
-	pr.save_to(tmp)
 	var lvl = pr.level_of("artemis")
+	pr.save_to(tmp)
 	pr.reset()
-	_check(pr.is_unlocked("hermes") == false, "reset volta ao estado inicial")
+	_check(pr.level_of("artemis") == 1, "reset volta o nivel para 1")
 	pr.load_from(tmp)
-	_check(pr.is_unlocked("hermes") == true, "load restaura o desbloqueio do Hermes")
 	_check(pr.level_of("artemis") == lvl, "load restaura o nivel da Artemis")
 	_check(pr.highest_stage_unlocked == 2, "load restaura a fase liberada")
 	if FileAccess.file_exists(tmp):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(tmp))
 
-	# Nivel permanente escala os stats base.
-	var ch = GreekRoster.by_id("artemis")
-	var base = ch.base_data()
+	# Nivel escala os stats (via atributos).
+	var ch = Roster.by_id("artemis")
 	var d10 = ch.tower_data_for_level(10)
 	_check(d10.char_id == "artemis", "tower_data_for_level marca o char_id")
-	_check(d10.damage > base.damage, "nivel permanente aumenta o dano base")
-
+	_check(d10.damage > ch.tower_data_for_level(1).damage, "nivel aumenta o dano (atributos)")
 	pr.reset()
 
 func _test_squad_uniqueness() -> void:
 	print("\nEsquadrao de personagens unicos (BuildManager):")
 	var gs = root.get_node_or_null(^"/root/GameState")
 	gs.reset_run(20, 1000)
-	var data = GreekRoster.by_id("artemis").tower_data_for_level(1)
+	var data = Roster.by_id("artemis").tower_data_for_level(1)
 	var bm = BuildManager.new()
 	bm.setup([Vector2(200, 300), Vector2(560, 300)], [], [data])
 	root.add_child(bm)
@@ -345,7 +340,7 @@ func _test_abilities() -> void:
 	print("\nHabilidades ativas:")
 	# DAMAGE_AOE (Flecha Perfurante da Artemis): power 30, raio 230.
 	var t = Tower.new()
-	t.setup(GreekRoster.by_id("artemis").tower_data_for_level(1))
+	t.setup(Roster.by_id("artemis").tower_data_for_level(1))
 	root.add_child(t)
 	t.global_position = Vector2(0, 0)
 	var e1 = Enemy.new(); e1.max_hp = 100
@@ -356,14 +351,14 @@ func _test_abilities() -> void:
 	_check(t.has_ability(), "Artemis tem habilidade")
 	_check(t.ability_cooldown_left() == 0.0, "habilidade comeca pronta")
 	_check(t.use_ability() == true, "use_ability dispara")
-	_check(e1.hp == 70, "DAMAGE_AOE fere inimigo no raio (-30)")
+	_check(e1.hp == 72, "DAMAGE_AOE fere inimigo no raio (-28)")
 	_check(e2.hp == 100, "DAMAGE_AOE nao fere inimigo fora do raio")
 	_check(t.ability_cooldown_left() > 0.0, "entra em cooldown apos o uso")
 	_check(t.use_ability() == false, "nao dispara enquanto em cooldown")
 
 	# STUN_AOE (Olhar Petrificante da Medusa): atordoa e fere leve.
 	var tm = Tower.new()
-	tm.setup(GreekRoster.by_id("medusa").tower_data_for_level(1))
+	tm.setup(Roster.by_id("medusa").tower_data_for_level(1))
 	root.add_child(tm)
 	tm.global_position = Vector2(0, 0)
 	var e3 = Enemy.new(); e3.max_hp = 100
@@ -374,7 +369,7 @@ func _test_abilities() -> void:
 
 	# BUFF_TOWER (Velocidade Divina do Hermes): buff temporario na propria torre.
 	var th = Tower.new()
-	th.setup(GreekRoster.by_id("hermes").tower_data_for_level(1))
+	th.setup(Roster.by_id("hermes").tower_data_for_level(1))
 	root.add_child(th)
 	th.global_position = Vector2(0, 0)
 	th.use_ability()
@@ -511,3 +506,26 @@ func _test_wave_composition() -> void:
 		if g["id"] == "talos":
 			has_talos = true
 	_check(has_talos, "onda final da fase 5 inclui o boss Talos")
+
+func _test_attributes() -> void:
+	print("\nAtributos (Ragnarok-like) + critico:")
+	var base = AttributeSet.make(10, 10, 10, 10, 10, 10)
+	var growth = AttributeSet.make(2, 0, 0, 0, 0, 0)
+	var at5 = base.plus_scaled(growth, 4) # nivel 5 = base + growth * 4
+	_check(at5.strength == 18, "plus_scaled: STR 10 + 2*4 = 18")
+	_check(at5.agility == 10, "plus_scaled nao mexe nos outros atributos")
+
+	# STR aumenta o dano do Arqueiro.
+	var weak = AttributeStats.build(TowerData.TowerClass.ARCHER, AttributeSet.make(10, 10, 10, 10, 20, 10))
+	var strong = AttributeStats.build(TowerData.TowerClass.ARCHER, AttributeSet.make(40, 10, 10, 10, 20, 10))
+	_check(strong.damage > weak.damage, "mais STR = mais dano no Arqueiro")
+
+	# INT manda no Mago; VIT na vida dos bloqueadores do Guerreiro.
+	var mage = AttributeStats.build(TowerData.TowerClass.MAGE, AttributeSet.make(10, 10, 10, 50, 20, 10))
+	_check(mage.damage > weak.damage, "Mago com INT alta tem dano alto")
+	var war = AttributeStats.build(TowerData.TowerClass.WARRIOR, AttributeSet.make(10, 10, 50, 10, 10, 10))
+	_check(war.blocker_hp > 50, "VIT alta da bloqueadores resistentes")
+
+	# LUK alta gera chance de critico.
+	var lucky = AttributeStats.build(TowerData.TowerClass.ARCHER, AttributeSet.make(10, 10, 10, 10, 10, 80))
+	_check(lucky.crit_chance > 0.2, "LUK alta da chance de critico")

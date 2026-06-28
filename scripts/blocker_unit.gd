@@ -29,13 +29,14 @@ var _shield_timer: float = 0.0 ## invulnerável enquanto > 0 (Força Indomável)
 signal died(blocker)
 
 
-func setup(hp_: int, dmg: int, rate: float, radius: float, hold: Vector2) -> void:
+func setup(hp_: int, dmg: int, rate: float, radius: float, hold: Vector2, move_spd: float = 120.0) -> void:
 	max_hp = max(1, hp_)
 	hp = max_hp
 	attack_damage = dmg
 	attack_rate = rate
 	engage_radius = radius
 	hold_position = hold
+	move_speed = move_spd
 
 
 func _ready() -> void:

@@ -39,7 +39,7 @@ func is_unlocked(id: String) -> bool:
 func unlocked_ids() -> Array:
 	_ensure_defaults()
 	var ids: Array = []
-	for c in GreekRoster.all():
+	for c in Roster.all():
 		if characters[c.id]["unlocked"]:
 			ids.append(c.id)
 	return ids
@@ -105,7 +105,7 @@ func mark_stage_cleared(index: int) -> Array:
 	if index + 1 > highest_stage_unlocked and index < StageList.count():
 		highest_stage_unlocked = index + 1
 	var newly: Array = []
-	for c in GreekRoster.all():
+	for c in Roster.all():
 		if c.unlock_stage == index and not characters[c.id]["unlocked"]:
 			characters[c.id]["unlocked"] = true
 			newly.append(c.id)
@@ -262,7 +262,7 @@ func grant_rewards(stage_index: int, victory: bool) -> Dictionary:
 
 # --- Defaults / persistência ---
 func _ensure_defaults() -> void:
-	for c in GreekRoster.all():
+	for c in Roster.all():
 		if not characters.has(c.id):
 			characters[c.id] = {
 				"unlocked": c.unlock_stage == 0,
