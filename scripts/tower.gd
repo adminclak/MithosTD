@@ -312,12 +312,26 @@ func _path_direction_at(p: Vector2) -> Vector2:
 func _draw() -> void:
 	if data == null:
 		return
-	draw_rect(Rect2(Vector2(-18, -18), Vector2(36, 36)), data.body_color)
+	var c: Color = data.body_color
+	var dark := Color(c.r * 0.45, c.g * 0.45, c.b * 0.45)
+	var faint := Color(c.r, c.g, c.b, 0.07)
+	# Sombra sob a torre.
+	draw_circle(Vector2(0, 5), 18.0, Color(0, 0, 0, 0.22))
+	# Forma própria por classe.
 	match data.tower_class:
-		TowerData.TowerClass.ARCHER, TowerData.TowerClass.MAGE:
-			draw_arc(Vector2.ZERO, data.attack_range, 0.0, TAU, 64, Color(1, 1, 1, 0.10), 1.0)
+		TowerData.TowerClass.ARCHER:
+			draw_arc(Vector2.ZERO, data.attack_range, 0.0, TAU, 64, faint, 1.0)
+			draw_colored_polygon(PackedVector2Array([Vector2(0, -19), Vector2(17, 15), Vector2(-17, 15)]), c)
+		TowerData.TowerClass.MAGE:
+			draw_arc(Vector2.ZERO, data.attack_range, 0.0, TAU, 64, faint, 1.0)
+			draw_colored_polygon(PackedVector2Array([Vector2(0, -19), Vector2(18, 0), Vector2(0, 19), Vector2(-18, 0)]), c)
+		TowerData.TowerClass.WARRIOR:
+			draw_rect(Rect2(-16, -16, 32, 32), c)
+			draw_rect(Rect2(-16, -16, 32, 32), dark, false, 2.0)
 		TowerData.TowerClass.PRIEST:
-			draw_arc(Vector2.ZERO, data.aura_radius, 0.0, TAU, 64, Color(0.95, 0.85, 0.2, 0.20), 1.5)
-	# Pips de nível (acima da torre): 1 a 3 quadradinhos dourados.
+			draw_arc(Vector2.ZERO, data.aura_radius, 0.0, TAU, 64, Color(c.r, c.g, c.b, 0.14), 1.5)
+			draw_circle(Vector2.ZERO, 17.0, c)
+			draw_arc(Vector2.ZERO, 17.0, 0.0, TAU, 24, dark, 2.0)
+	# Pips de nível (acima da torre): 1 a 3 marcadores dourados.
 	for i in level:
-		draw_rect(Rect2(Vector2(-18 + i * 8, -28), Vector2(6, 5)), Color(1.0, 0.9, 0.3))
+		draw_rect(Rect2(Vector2(-18 + i * 8, -32), Vector2(6, 5)), Color(1.0, 0.9, 0.3))

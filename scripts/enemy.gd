@@ -167,8 +167,10 @@ func _reach_end() -> void:
 
 
 func _draw() -> void:
-	# Corpo do inimigo: circulo preenchido na cor body_color.
+	# Sombra + corpo do inimigo com contorno escuro (destaca do fundo).
+	draw_circle(Vector2(0, 3), _radius * 0.95, Color(0, 0, 0, 0.20))
 	draw_circle(Vector2.ZERO, _radius, body_color)
+	draw_arc(Vector2.ZERO, _radius, 0.0, TAU, 24, Color(0.08, 0.08, 0.08, 0.7), 1.5)
 	# Barra de vida acima do corpo (largura proporcional ao tamanho).
 	var bar_width: float = _radius * 2.0
 	var bar_height: float = 4.0

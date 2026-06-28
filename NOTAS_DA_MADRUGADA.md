@@ -25,7 +25,7 @@ Data de início: 2026-06-28 (madrugada). Base: MVP completo (Camadas 1–6, comm
 - [x] **Bloco 2 — 56 personagens em 7 mitologias** (commit). `Archetypes` (8 presets) + `Roster` (Grega, Nórdica, Japonesa, Brasileira, Egípcia, Chinesa, Asteca). Hub reescrito com **filtro por mitologia + scroll**. Todos desbloqueados (livre escolha).
 - [x] **Bloco 3 — Posicionamento livre com zonas** (commit `6199cf1`). Clica em qualquer lugar; Guerreiro só na faixa do meio (< 48px da rota), ranged só nas laterais. Faixa translúcida mostra a zona; toast avisa posição inválida. Esquadrão (6) é o limite de torres.
 - [x] **Bloco 4 — Fase de prep + botões de partida** (commit). Botões: **Lancar Onda** (inicia a 1ª / antecipa a próxima com bônus de ouro), **Pause**, **x1/x2** (velocidade) e **Abandonar**. Fase de preparação antes da 1ª onda. `MatchHud` (process ALWAYS p/ funcionar em pause), `WaveManager` refatorado.
-- [ ] Bloco 5 — Melhorias visuais
+- [x] **Bloco 5 — Melhorias visuais** (commit). Mapa com fundo + caminho com borda + base/entrada; **forma própria por classe de torre** (Arqueiro=triângulo, Mago=losango, Guerreiro=quadrado, Sacerdote=círculo+aura), sombras, pips de nível; inimigos com contorno; HUD com painel de fundo + cores; mensagem central de vitória/derrota centralizada. Crítico já pinta o projétil de laranja. **Sem assets externos** (tudo via `_draw`). Auto-stage agora posiciona o esquadrão sozinho (demo jogável).
 - [ ] Bloco 6 — Balanceamento
 
 ## Como testar amanhã

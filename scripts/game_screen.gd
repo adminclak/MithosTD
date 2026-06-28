@@ -16,6 +16,7 @@ var auto_start: bool = false ## smoke test: começa as ondas sozinho
 var _stage: StageData
 var _squad: Array = []
 var _wave_manager: WaveManager
+var _build_manager: BuildManager
 var _match_hud: MatchHud
 var _fast: bool = false
 var _ended: bool = false
@@ -36,9 +37,9 @@ func _ready() -> void:
 	enemies_root.name = "Enemies"
 	add_child(enemies_root)
 
-	var build_manager := BuildManager.new()
-	build_manager.setup(level.get_waypoints(), _squad)
-	add_child(build_manager)
+	_build_manager = BuildManager.new()
+	_build_manager.setup(level.get_waypoints(), _squad)
+	add_child(_build_manager)
 
 	var hud := Hud.new()
 	add_child(hud)
@@ -67,7 +68,27 @@ func _ready() -> void:
 	GameState.game_over.connect(_on_game_over)
 
 	if auto_start:
+		_auto_place_demo()
 		_wave_manager.player_advance()
+
+
+## Demo automática (smoke / auto-stage): posiciona o esquadrão sozinho, em zonas
+## válidas, para exercitar o combate e o desenho das torres sem input.
+func _auto_place_demo() -> void:
+	GameState.add_gold(3000) # ouro extra apenas para a demo
+	var ranged := [Vector2(200, 280), Vector2(560, 300), Vector2(900, 280), Vector2(1130, 300)]
+	var melee := [Vector2(360, 290), Vector2(760, 300), Vector2(1040, 360)]
+	var ri := 0
+	var mi := 0
+	for data in _squad:
+		var pos: Vector2
+		if data.tower_class == TowerData.TowerClass.WARRIOR:
+			pos = melee[mi % melee.size()]
+			mi += 1
+		else:
+			pos = ranged[ri % ranged.size()]
+			ri += 1
+		_build_manager.try_place(pos, data)
 
 
 func _on_advance() -> void:
