@@ -5,7 +5,47 @@
 > **testar todos os personagens**. Trabalhei com autonomia, em 2D, commitando por
 > partes. Este doc resume tudo e as decisões.
 
-## >>> ATUALIZAÇÃO: PIXEL ART (estilo Tangy TD) + SISTEMA DE ITENS
+## >>> ATUALIZAÇÃO 3: UI nova, Poder Supremo, esquadrão salvo, mapa e padronização
+(sessão com você saindo 1h; autonomia total)
+
+**Você não precisa importar nada** — baixei tudo por terminal: fontes OFL
+(Press Start 2P / Jersey 15 / VT323) e o **kit de UI Kenney (CC0)**. (Canal pra me
+dar arquivos no futuro: salvar em `C:\Users\leoar\Downloads`.)
+
+Feito e commitado (170/170 testes + smoke a cada passo):
+- **UI com cara de jogo**: tema global (fonte + molduras 9-slice Kenney) em TODAS
+  as telas — botões/painéis bonitos. `UiTheme.apply(get_window())`.
+- **Poder Supremo CONSERTADO e direcionado**: clica no botão → tela escurece com
+  **mira** → **clica no mapa** → animação dispara numa CanvasLayer **acima de
+  tudo** (antes não aparecia nada). Corrigi o bug do botão (âncora) e a captura do
+  clique (via `_input`).
+- **Barras de baixo rotuladas**: "ESQUADRÃO (clique p/ posicionar)" e
+  "HABILIDADES (heróis em campo)" — você tinha perguntado o que eram.
+- **Menu HD**: `menu_bg` regerado em **alta resolução** (ilustração, sem o pixel
+  borrado de antes).
+- **Esquadrão salvo**: a comp montada agora **persiste** (Progression.squad/ult);
+  a Hub carrega ao abrir e salva ao alterar. Lista mostra a **arte** de cada herói.
+- **Padronização dos personagens** ✅: `tools/normalize_sprites.py` deixa todos no
+  **mesmo tamanho/base** (recorta, escala p/ altura fixa, ancora os pés). Rodado
+  nos 64.
+- **Mapa mais bonito**: sombra + listra central no caminho, mais decorações
+  (espelhadas) e **vinheta** de profundidade.
+
+### O que ficou como PRÓXIMO GRANDE PASSO (honestidade)
+Você escolheu **rig 2D** (membros se mexendo) + **paper-doll completo** (itens
+vestidos em camadas). **Não rushei** isso no fim para não entregar quebrado — é um
+pipeline à parte e trabalhoso **por personagem**:
+1. **Rig 2D**: recortar cada herói em peças (tronco/braço/antebraço/perna/cabeça/
+   arma) — a parte difícil é obter as peças limpas (a IA gera o boneco "fechado").
+   Plano: gerar/recortar as peças, montar `Skeleton2D` com ossos, e animar
+   idle/andar/atacar. Faço **1 piloto** primeiro p/ você aprovar antes de escalar.
+2. **Paper-doll**: precisa do personagem em **camadas** alinhadas (corpo + cada
+   equipamento). Plano: definir uma **base comum** (a padronização de tamanho já
+   ajuda) e gerar peças de equipamento alinhadas a essa base.
+Isso é o foco da próxima leva. Hoje deixei toda a base (UI, tamanho padronizado,
+itens, telas) pronta pra receber.
+
+## >>> ATUALIZAÇÃO 2: PIXEL ART (estilo Tangy TD) + SISTEMA DE ITENS
 Você pediu pra migrar o visual pra **pixel art 2D** (referência Tangy TD) e criar
 **centenas de itens** (míticos + básicos estilo Tibia). Feito e commitado:
 
