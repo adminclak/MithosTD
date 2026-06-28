@@ -7,6 +7,8 @@ extends Node
 @export var spawn_interval: float = 0.7
 @export var wave_pause: float = 3.0
 @export var wave_bonus: int = 20 ## ouro ganho ao concluir cada onda
+@export var enemy_hp_mult: float = 1.0   ## dificuldade da fase
+@export var enemy_count_mult: float = 1.0 ## dificuldade da fase
 
 var waypoints: Array = []
 var enemies_root: Node2D
@@ -21,7 +23,7 @@ func _run_waves() -> void:
 		if GameState.is_over():
 			return
 		GameState.set_wave(w, total_waves)
-		var count: int = base_count + (w - 1) * per_wave
+		var count: int = int(round((base_count + (w - 1) * per_wave) * enemy_count_mult))
 		for i in count:
 			if GameState.is_over():
 				return
@@ -42,6 +44,7 @@ func _run_waves() -> void:
 
 func _spawn_one() -> void:
 	var e := Enemy.new()
+	e.max_hp = int(round(e.max_hp * enemy_hp_mult))
 	e.setup(waypoints)
 	if enemies_root != null:
 		enemies_root.add_child(e)

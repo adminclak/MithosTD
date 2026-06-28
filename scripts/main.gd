@@ -1,39 +1,58 @@
 extends Node2D
-## Cena principal — Camada 1.
-## Monta o nível, posiciona torres de teste nos slots, cria a HUD e inicia as ondas.
+## App / gerenciador de telas (Camada 4).
+## Fluxo: Hub (esquadrão + fases) -> GameScreen (partida) -> ResultScreen
+## (XP/desbloqueio) -> Hub. A persistência fica no autoload Progression.
 
-const START_HP := 20
-const START_GOLD := 150
+var _current: Node = null
+
 
 func _ready() -> void:
-	GameState.reset_run(START_HP, START_GOLD)
+	# Atalho de smoke test: "-- --auto-stage" inicia a fase 1 direto com os
+	# personagens iniciais, exercitando o fluxo Partida -> Resultado sem input.
+	if OS.get_cmdline_user_args().has("--auto-stage"):
+		var squad := Progression.unlocked_ids()
+		_on_start_stage(StageList.get_stage(1), squad.slice(0, Progression.SQUAD_MAX))
+	else:
+		_show_hub()
 
-	# Nível: caminho, base e slots de torre
-	var level := Level.new()
-	add_child(level)
 
-	# HUD (CanvasLayer, fica sempre por cima)
-	var hud := Hud.new()
-	add_child(hud)
+func _show_hub() -> void:
+	var hub := HubScreen.new()
+	hub.start_stage.connect(_on_start_stage)
+	_switch_to(hub)
 
-	# Container para os inimigos vivos
-	var enemies_root := Node2D.new()
-	enemies_root.name = "Enemies"
-	add_child(enemies_root)
 
-	# Camada 3: o jogador invoca/upa/vende torres clicando nos slots (gastando ouro).
-	var build_manager := BuildManager.new()
-	build_manager.setup(level.get_tower_slots(), level.get_waypoints())
-	add_child(build_manager)
+func _on_start_stage(stage: StageData, squad_ids: Array) -> void:
+	var squad_datas: Array = []
+	for id in squad_ids:
+		var ch := GreekRoster.by_id(id)
+		if ch != null:
+			squad_datas.append(ch.tower_data_for_level(Progression.level_of(id)))
 
-	# Ondas de inimigos
-	var wave_manager := WaveManager.new()
-	wave_manager.waypoints = level.get_waypoints()
-	wave_manager.enemies_root = enemies_root
-	add_child(wave_manager)
-	wave_manager.start_waves()
+	var game := GameScreen.new()
+	game.setup(stage, squad_datas)
+	game.finished.connect(_on_game_finished.bind(stage, squad_ids))
+	_switch_to(game)
 
-	GameState.game_over.connect(_on_game_over)
 
-func _on_game_over(victory: bool) -> void:
-	print("FIM DE JOGO — vitoria: ", victory)
+func _on_game_finished(victory: bool, stage: StageData, squad_ids: Array) -> void:
+	print("Fim da fase %d - vitoria: %s (XP +%d)" % [stage.index, victory, \
+		stage.xp_reward if victory else int(round(stage.xp_reward * 0.3))])
+	var xp: int = stage.xp_reward if victory else int(round(stage.xp_reward * 0.3))
+	var summary := Progression.grant_squad_xp(squad_ids, xp)
+	var newly: Array = []
+	if victory:
+		newly = Progression.mark_stage_cleared(stage.index)
+	Progression.save_game()
+
+	var result := ResultScreen.new()
+	result.setup(victory, xp, summary, newly)
+	result.continue_pressed.connect(_show_hub)
+	_switch_to(result)
+
+
+func _switch_to(screen: Node) -> void:
+	if _current != null and is_instance_valid(_current):
+		_current.queue_free()
+	_current = screen
+	add_child(screen)

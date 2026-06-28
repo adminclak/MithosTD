@@ -17,6 +17,7 @@ config/features=PackedStringArray("4.7")
 [autoload]
 
 GameState="*res://scripts/game_state.gd"
+Progression="*res://scripts/progression_manager.gd"
 
 [display]
 

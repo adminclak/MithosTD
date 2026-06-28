@@ -21,6 +21,8 @@ func _initialize() -> void:
 	_test_priest_aura()
 	_test_economy()
 	_test_build_menu_ui()
+	_test_progression()
+	_test_squad_uniqueness()
 	print("\n=== RESULTADO: %d passou, %d falhou ===" % [_passed, _failed])
 	quit(0 if _failed == 0 else 1)
 
@@ -270,3 +272,66 @@ func _test_build_menu_ui() -> void:
 	_check(menu3._box.get_child_count() == 4, "manage mostra titulo + upar + vender + fechar")
 
 	menu.free(); menu2.free(); menu3.free(); t.free()
+
+func _test_progression() -> void:
+	print("\nProgressao (XP / nivel / desbloqueio / save):")
+	var pr = root.get_node_or_null(^"/root/Progression")
+	_check(pr != null, "autoload Progression acessivel via /root no modo -s")
+	if pr == null:
+		return
+	pr.reset()
+
+	# Iniciais: 4 desbloqueados (1 por classe).
+	_check(pr.unlocked_ids().size() == 4, "comeca com 4 personagens desbloqueados")
+	_check(pr.is_unlocked("artemis") == true, "Artemis (inicial) desbloqueada")
+	_check(pr.is_unlocked("hermes") == false, "Hermes comeca bloqueado")
+	_check(pr.highest_stage_unlocked == 1, "comeca com a fase 1 liberada")
+
+	# XP sobe de nivel: xp_to_next(1) = 40, entao 100 sobe ao menos 1 nivel.
+	var s = pr.grant_squad_xp(["artemis"], 100)
+	_check(pr.level_of("artemis") >= 2, "100 de XP sobe Artemis de nivel")
+	_check(s["artemis"]["new_level"] == pr.level_of("artemis"), "resumo bate com o nivel novo")
+
+	# Concluir fase 1: desbloqueia Hermes e libera a fase 2.
+	var newly = pr.mark_stage_cleared(1)
+	_check(newly.has("hermes"), "concluir a fase 1 desbloqueia Hermes")
+	_check(pr.is_unlocked("hermes") == true, "Hermes desbloqueado apos a fase 1")
+	_check(pr.highest_stage_unlocked == 2, "fase 2 liberada apos concluir a 1")
+	_check(pr.unlocked_ids().size() == 5, "agora 5 personagens desbloqueados")
+
+	# Save/load roundtrip num arquivo temporario (nao toca o save real).
+	var tmp = "user://test_save_%d.json" % Time.get_ticks_usec()
+	pr.save_to(tmp)
+	var lvl = pr.level_of("artemis")
+	pr.reset()
+	_check(pr.is_unlocked("hermes") == false, "reset volta ao estado inicial")
+	pr.load_from(tmp)
+	_check(pr.is_unlocked("hermes") == true, "load restaura o desbloqueio do Hermes")
+	_check(pr.level_of("artemis") == lvl, "load restaura o nivel da Artemis")
+	_check(pr.highest_stage_unlocked == 2, "load restaura a fase liberada")
+	if FileAccess.file_exists(tmp):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(tmp))
+
+	# Nivel permanente escala os stats base.
+	var ch = GreekRoster.by_id("artemis")
+	var base = ch.base_data()
+	var d10 = ch.tower_data_for_level(10)
+	_check(d10.char_id == "artemis", "tower_data_for_level marca o char_id")
+	_check(d10.damage > base.damage, "nivel permanente aumenta o dano base")
+
+	pr.reset()
+
+func _test_squad_uniqueness() -> void:
+	print("\nEsquadrao de personagens unicos (BuildManager):")
+	var gs = root.get_node_or_null(^"/root/GameState")
+	gs.reset_run(20, 1000)
+	var data = GreekRoster.by_id("artemis").tower_data_for_level(1)
+	var bm = BuildManager.new()
+	bm.setup([Vector2(200, 300), Vector2(560, 300)], [], [data])
+	root.add_child(bm)
+	_check(bm._available_squad().size() == 1, "esquadrao com 1 personagem: 1 disponivel")
+	bm.try_build(bm._slots[0], data)
+	_check(bm._available_squad().size() == 0, "apos invocar, 0 disponiveis (personagem unico)")
+	bm.sell(bm._slots[0])
+	_check(bm._available_squad().size() == 1, "apos vender, o personagem volta a ficar disponivel")
+	bm.free()

@@ -231,8 +231,8 @@ Single-player, **mundo grego completo** como fatia vertical do jogo final:
 1. ✅ **Esqueleto da partida** — mapa, caminho, slots, torre que atira, ondas, vida da base. **CONCLUÍDA**: jogável, validada (vitória confirmada + 13 testes), publicada no GitHub.
 2. ✅ **As 4 classes** — Arqueiro (alvo único), Mago (AoE), Guerreiro (bloqueadores) e Sacerdote (aura de buff/lentidão/cura). **CONCLUÍDA**: comportamento data-driven via `TowerData`, validada (smoke test + 40 testes).
 3. ✅ **Economia da partida** — invocar torres clicando nos slots (painel das 4 classes + custo), upgrade temporário (Nv 1→2→3) e venda; bônus de ouro por onda. **CONCLUÍDA**: `BuildManager`/`BuildMenu`/`TowerSlot`, validada (smoke test + 63 testes). Montagem de esquadrão movida para a Camada 4.
-4. ⏭️ **Meta-progressão** (PRÓXIMA) — XP, níveis, desbloqueio de personagens por fase, montagem de esquadrão, save local.
-5. **Equipamentos + habilidades + loja.**
+4. ✅ **Meta-progressão** — 8 personagens gregos, XP/níveis permanentes, desbloqueio por fase, montagem de esquadrão (Hub) e save local em `user://` (JSON). 5 fases com dificuldade crescente. **CONCLUÍDA**: autoload `Progression`, fluxo Hub→Partida→Resultado, validada (smoke + 83 testes).
+5. ⏭️ **Equipamentos + habilidades + loja** (PRÓXIMA).
 6. **Conteúdo** — completar o mundo grego (5 fases + inimigos), balancear.
 
 ---

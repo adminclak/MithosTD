@@ -18,7 +18,14 @@ const TOWER_SLOTS: Array = [
 	Vector2(560, 560),
 	Vector2(900, 320),
 	Vector2(900, 440),
+	Vector2(700, 300),
+	Vector2(1130, 360),
+	Vector2(1000, 500),
 ]
+
+## Os primeiros `n` slots — usado para limitar os slots disponíveis por fase.
+func get_tower_slots_for(n: int) -> Array:
+	return TOWER_SLOTS.slice(0, clampi(n, 0, TOWER_SLOTS.size()))
 
 func _ready() -> void:
 	var path := Line2D.new()

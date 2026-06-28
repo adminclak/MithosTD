@@ -9,6 +9,7 @@ const CLICK_RADIUS := 34.0
 
 var waypoints: Array = []
 var slot_positions: Array = []
+var squad: Array = [] ## TowerData (com char_id) do esquadrão levado à fase
 
 var _slots: Array = [] ## TowerSlot
 var _menu: BuildMenu = null
@@ -18,9 +19,10 @@ var _active_slot: TowerSlot = null
 @onready var _state: Node = get_node_or_null(^"/root/GameState")
 
 
-func setup(positions: Array, wpoints: Array) -> void:
+func setup(positions: Array, wpoints: Array, squad_datas: Array = []) -> void:
 	slot_positions = positions.duplicate()
 	waypoints = wpoints.duplicate()
+	squad = squad_datas.duplicate()
 
 
 func _ready() -> void:
@@ -62,9 +64,25 @@ func _slot_at(world: Vector2) -> TowerSlot:
 func _open_for(slot: TowerSlot) -> void:
 	_set_active(slot)
 	if slot.is_empty():
-		_menu.open_build(slot.global_position, TowerData.all_classes(), _gold())
+		_menu.open_build(slot.global_position, _available_squad(), _gold())
 	else:
 		_menu.open_manage(slot.global_position, slot.tower, _gold())
+
+
+## Personagens do esquadrão que ainda não estão em campo (cada um é único).
+## Sem esquadrão definido, cai nas 4 classes genéricas (modo de protótipo).
+func _available_squad() -> Array:
+	if squad.is_empty():
+		return TowerData.all_classes()
+	var in_field := {}
+	for s in _slots:
+		if not s.is_empty() and s.tower.data.char_id != "":
+			in_field[s.tower.data.char_id] = true
+	var out: Array = []
+	for d in squad:
+		if not in_field.has(d.char_id):
+			out.append(d)
+	return out
 
 
 func _set_active(slot) -> void:
