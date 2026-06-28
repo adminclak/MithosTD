@@ -28,9 +28,11 @@ func _ready() -> void:
 		tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		add_child(tr)
 	var scrim := ColorRect.new()
-	scrim.color = Color(0.04, 0.05, 0.09, 0.35)
+	scrim.color = Color(0.04, 0.05, 0.09, 0.30)
 	scrim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(scrim)
+	# Moldura de madeira ornamentada emoldurando o mapa (estilo Kingdom Rush).
+	add_child(UiTheme.ornate_frame())
 
 	# Caminho ligando as fases.
 	var stages := StageList.all()
@@ -43,7 +45,7 @@ func _ready() -> void:
 	add_child(path)
 
 	var title := Label.new()
-	title.position = Vector2(0, 24)
+	title.position = Vector2(0, 80)
 	title.size = Vector2(1280, 50)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 34)
@@ -101,8 +103,8 @@ func _ready() -> void:
 	_update_squad_msg()
 
 	var back_btn := Button.new()
-	back_btn.position = Vector2(24, 660)
-	back_btn.custom_minimum_size = Vector2(160, 44)
+	back_btn.position = Vector2(96, 648)
+	back_btn.custom_minimum_size = Vector2(150, 42)
 	back_btn.text = "Voltar"
 	back_btn.pressed.connect(func(): back.emit())
 	add_child(back_btn)

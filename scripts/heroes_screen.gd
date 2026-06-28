@@ -17,10 +17,11 @@ var _root: Control
 
 func _ready() -> void:
 	layer = 5
-	var bg := ColorRect.new()
-	bg.color = Color(0.07, 0.08, 0.12)
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(bg)
+	add_child(UiTheme.wood_bg()) ## fundo de madeira (estilo Kingdom Rush)
+	var scrim := ColorRect.new()
+	scrim.color = Color(0, 0, 0, 0.22)
+	scrim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(scrim)
 	_root = Control.new()
 	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(_root)
@@ -57,18 +58,24 @@ func _rebuild() -> void:
 		tb.pressed.connect(func(idx = i): Progression.set_active_team(idx); _rebuild())
 		tabs.add_child(tb)
 
-	# Filtro de mitologia.
-	var fbar := HBoxContainer.new()
-	fbar.position = Vector2(24, 96)
-	fbar.add_theme_constant_override("separation", 4)
-	_root.add_child(fbar)
-	for myth in (["Todas"] + Roster.MYTHOLOGIES):
-		var fb := Button.new()
-		fb.custom_minimum_size = Vector2(88, 24)
-		fb.text = myth
-		fb.add_theme_font_size_override("font_size", 13)
-		fb.pressed.connect(func(m = myth): _filter = m; _rebuild())
-		fbar.add_child(fb)
+	# Filtro de mitologia — só aparece se houver mais de uma mitologia liberada.
+	var present := {}
+	for id in Progression.unlocked_ids():
+		var c := Roster.by_id(id)
+		if c != null:
+			present[c.mythology] = true
+	if present.size() > 1:
+		var fbar := HBoxContainer.new()
+		fbar.position = Vector2(24, 96)
+		fbar.add_theme_constant_override("separation", 4)
+		_root.add_child(fbar)
+		for myth in (["Todas"] + present.keys()):
+			var fb := Button.new()
+			fb.custom_minimum_size = Vector2(88, 24)
+			fb.text = myth
+			fb.add_theme_font_size_override("font_size", 13)
+			fb.pressed.connect(func(m = myth): _filter = m; _rebuild())
+			fbar.add_child(fb)
 
 	_build_grid()
 	if _sel_id != "":
@@ -271,4 +278,7 @@ func _label(text: String, pos: Vector2, fsize: int, col: Color) -> Label:
 	l.text = text
 	l.add_theme_font_size_override("font_size", fsize)
 	l.add_theme_color_override("font_color", col)
+	# Contorno escuro = legível tanto na madeira quanto no pergaminho.
+	l.add_theme_color_override("font_outline_color", Color(0.15, 0.08, 0.02, 0.95))
+	l.add_theme_constant_override("outline_size", 4)
 	return l

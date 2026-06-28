@@ -16,10 +16,11 @@ var _box: VBoxContainer
 
 func _ready() -> void:
 	layer = 5
-	var bg := ColorRect.new()
-	bg.color = Color(0.07, 0.08, 0.12)
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(bg)
+	add_child(UiTheme.wood_bg()) ## fundo de madeira (Kingdom Rush)
+	var scrim := ColorRect.new()
+	scrim.color = Color(0, 0, 0, 0.30)
+	scrim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(scrim)
 
 	_root = ScrollContainer.new()
 	_root.position = Vector2(40, 24)

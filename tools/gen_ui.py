@@ -41,6 +41,13 @@ JOBS = {
         "center plate for a logo, symmetrical", 896, 320, True),
     "ui_emblem": ("fantasy game emblem crest, golden laurel wreath around a round shield "
         "with crossed sword and lightning bolt, mythological, symmetrical, blank center", 320, 320, True),
+    "tex_wood": ("seamless tileable wooden planks texture, warm dark brown fantasy wood "
+        "boards with grain, top-down flat, even lighting, no objects", 640, 384, False),
+    "tex_parchment": ("seamless tileable old parchment paper texture, warm aged beige with "
+        "subtle stains, slightly darker worn edges, flat, no text, no border", 512, 512, False),
+    "frame_wood": ("ornate rectangular wooden frame border, thick carved brown wood with "
+        "golden corner ornaments and rivets, large completely empty hollow center, fantasy "
+        "game UI frame, symmetrical, centered", 768, 512, True),
 }
 
 

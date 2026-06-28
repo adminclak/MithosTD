@@ -83,10 +83,11 @@ static func build_theme() -> Theme:
 	# CheckButton herda visual de botão simples.
 	t.set_color("font_color", "CheckButton", TEXT)
 
-	# Painéis.
-	var panel_sb := _sb("res://assets/ui/panel.png", 24, 16, 16, 16, 16)
+	# Painéis = pergaminho ornamentado (9-slice).
+	var panel_sb := _sb("res://assets/ui/tex_parchment.png", 86, 60, 56, 60, 60)
 	t.set_stylebox("panel", "Panel", panel_sb)
 	t.set_stylebox("panel", "PanelContainer", panel_sb)
+	# Texto escuro dentro do pergaminho fica ilegível; deixo claro com contorno.
 
 	# Labels.
 	t.set_color("font_color", "Label", TEXT)
@@ -102,6 +103,35 @@ static func build_theme() -> Theme:
 static func apply(win: Window) -> void:
 	if win != null:
 		win.theme = build_theme()
+
+
+## Fundo de madeira (tela cheia) — base das telas de menu.
+static func wood_bg() -> TextureRect:
+	var t := TextureRect.new()
+	var tex = _load("res://assets/ui/tex_wood.png")
+	if tex != null:
+		t.texture = tex
+	t.set_anchors_preset(Control.PRESET_FULL_RECT)
+	t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	t.stretch_mode = TextureRect.STRETCH_SCALE
+	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return t
+
+
+## Moldura de madeira ornamentada (centro vazado) sobre a tela toda.
+static func ornate_frame() -> NinePatchRect:
+	var n := NinePatchRect.new()
+	var tex = _load("res://assets/ui/frame_wood.png")
+	if tex != null:
+		n.texture = tex
+	n.set_anchors_preset(Control.PRESET_FULL_RECT)
+	n.draw_center = false
+	n.patch_margin_left = 70
+	n.patch_margin_right = 70
+	n.patch_margin_top = 64
+	n.patch_margin_bottom = 64
+	n.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return n
 
 
 # --- Compat: agora o tema global cuida; mantido p/ não quebrar chamadas ---
