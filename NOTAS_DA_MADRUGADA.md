@@ -40,6 +40,10 @@ Data de início: 2026-06-28 (madrugada). Base: MVP completo (Camadas 1–6, comm
 - **Prep de 10s** antes da 1ª onda (com contador) + **abandono com confirmação**.
 - Decidido com você; pendências abaixo continuam valendo.
 
+## Habilidades únicas (B8)
+- **56 habilidades temáticas** (nome do mito por personagem) reaproveitando **11 famílias de efeito**: dano em área, perfurante (LINE), raio em cadeia (CHAIN), atordoar (STUN), lentidão (SLOW), empurrão (KNOCKBACK), veneno/fogo (DOT), buff de torres, cura de aliados, escudo de aliados e invocar aliado (SUMMON). Catálogo em `scripts/abilities.gd` (mexer aqui muda nome/efeito/números). Inimigos ganharam status: lentidão, DoT e knockback (`enemy.gd`).
+- Pendente (polish): os efeitos ainda são por FAMÍLIA (ex.: vários "dano em área" idênticos em números); dá pra afinar números por personagem depois. Nomes/temas já são únicos.
+
 ## Onde mexer no balanceamento (centralizado)
 - **Fórmulas de stats por atributo:** [scripts/attribute_stats.gd](scripts/attribute_stats.gd) — muda TUDO de uma vez (dano, alcance, cadência, vida de bloqueador, aura, crítico).
 - **Atributos por arquétipo:** [scripts/archetypes.gd](scripts/archetypes.gd) — base e crescimento por nível de cada papel.

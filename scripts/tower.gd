@@ -300,7 +300,66 @@ func use_ability() -> bool:
 		AbilityData.Kind.SHIELD_BLOCKERS:
 			for t in _melee_allies_in(ab.radius):
 				t.apply_shield(ab.duration)
+		AbilityData.Kind.CHAIN:
+			_chain_damage(ab)
+		AbilityData.Kind.LINE:
+			for e in _enemies_in(ab.radius):
+				e.take_damage(int(round(ab.power)), 9999) # perfurante: ignora defesa
+		AbilityData.Kind.SLOW_AOE:
+			for e in _enemies_in(ab.radius):
+				e.take_damage(int(round(ab.power)), data.penetration)
+				if e.has_method("apply_slow"):
+					e.apply_slow(0.45, ab.duration)
+		AbilityData.Kind.KNOCKBACK:
+			for e in _enemies_in(ab.radius):
+				e.take_damage(int(round(ab.power)), data.penetration)
+				if e.has_method("knockback"):
+					e.knockback(70.0)
+		AbilityData.Kind.DOT_AOE:
+			for e in _enemies_in(ab.radius):
+				if e.has_method("apply_dot"):
+					e.apply_dot(ab.power, ab.duration)
+		AbilityData.Kind.SUMMON:
+			_summon_ally(ab)
 	return true
+
+
+func _chain_damage(ab: AbilityData) -> void:
+	var hit := {}
+	var from := global_position
+	for i in 5: # até 5 saltos
+		var best: Node2D = null
+		var bd := ab.radius if i == 0 else 200.0
+		for e in get_tree().get_nodes_in_group("enemies"):
+			if not is_instance_valid(e) or hit.has(e):
+				continue
+			var dd: float = from.distance_to(e.global_position)
+			if dd <= bd:
+				bd = dd
+				best = e
+		if best == null:
+			break
+		best.take_damage(int(round(ab.power)), data.penetration)
+		hit[best] = true
+		from = best.global_position
+
+
+func _summon_ally(ab: AbilityData) -> void:
+	var d := TowerData.new()
+	d.is_melee = true
+	d.max_hp = int(round(40 + ab.power * 5))
+	d.defense = 3
+	d.melee_damage = int(round(max(4, ab.power)))
+	d.melee_attack_rate = 1.0
+	d.block_capacity = 1
+	d.engage_radius = 80.0
+	d.body_color = Color(0.7, 0.75, 0.95)
+	var ally := Tower.new()
+	ally.setup(d)
+	get_parent().add_child(ally)
+	ally.global_position = global_position + Vector2(randf_range(-30, 30), 30)
+	var dur: float = ab.duration if ab.duration > 0.0 else 8.0
+	get_tree().create_timer(dur).timeout.connect(func(): if is_instance_valid(ally): ally.queue_free())
 
 func _enemies_in(r: float) -> Array:
 	return _nodes_in_group_within("enemies", r)

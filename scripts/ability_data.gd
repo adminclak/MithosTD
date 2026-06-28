@@ -7,11 +7,17 @@ extends Resource
 ## tipo com números diferentes; o ajuste fino fica na Camada 6.
 
 enum Kind {
-	DAMAGE_AOE,     ## dano instantâneo em área ao redor da torre
-	STUN_AOE,       ## paralisa (e fere leve) inimigos em área
-	BUFF_TOWER,     ## buff temporário de dano/cadência nas torres da área
-	HEAL_BLOCKERS,  ## cura bloqueadores em área e fere inimigos
-	SHIELD_BLOCKERS ## deixa os bloqueadores da área invulneráveis por um tempo
+	DAMAGE_AOE,      ## dano instantâneo em área ao redor da torre
+	STUN_AOE,        ## paralisa/petrifica/congela (e fere leve) inimigos em área
+	BUFF_TOWER,      ## buff temporário de dano/cadência nas torres da área
+	HEAL_BLOCKERS,   ## cura aliados melee em área e fere inimigos
+	SHIELD_BLOCKERS, ## deixa os aliados melee da área invulneráveis por um tempo
+	CHAIN,           ## raio em cadeia: salta entre vários inimigos
+	LINE,            ## tiro perfurante: dano alto que ignora defesa em área
+	SLOW_AOE,        ## lentidão temporária nos inimigos em área
+	KNOCKBACK,       ## empurra os inimigos para trás (e fere leve)
+	DOT_AOE,         ## veneno/queimadura/sangramento: dano ao longo do tempo
+	SUMMON,          ## invoca um aliado melee temporário
 }
 
 @export var id: String = ""

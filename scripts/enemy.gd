@@ -19,8 +19,13 @@ var _index: int = 0
 var _blocked_by: Node2D = null
 var _attack_cd: float = 0.0
 
-# Atordoamento (habilidade Olhar Petrificante da Medusa): para tudo enquanto > 0.
-var _stun_timer: float = 0.0
+# Status de habilidades.
+var _stun_timer: float = 0.0          ## atordoado: para tudo
+var _slow_timer: float = 0.0          ## lentidão temporária
+var _slow_mult: float = 1.0
+var _dot_timer: float = 0.0           ## dano ao longo do tempo (veneno/fogo)
+var _dot_dps: float = 0.0
+var _dot_accum: float = 0.0
 
 # Estado global resolvido pelo nó autoload (/root/GameState). Acessar por nó em
 # vez do identificador global deixa a entidade compilável fora do jogo (testes
@@ -63,6 +68,10 @@ func _physics_process(delta: float) -> void:
 	if _state != null and _state.is_over():
 		return
 
+	_process_status(delta)
+	if not is_instance_valid(self) or hp <= 0:
+		return
+
 	# Atordoado: não move, não luta.
 	if _stun_timer > 0.0:
 		_stun_timer -= delta
@@ -80,7 +89,7 @@ func _physics_process(delta: float) -> void:
 	if _waypoints.is_empty() or _index >= _waypoints.size():
 		return
 	var target: Vector2 = _waypoints[_index]
-	var spd: float = speed * _aura_speed_mult()
+	var spd: float = speed * _aura_speed_mult() * _slow_factor()
 	global_position = global_position.move_toward(target, spd * delta)
 	if global_position.distance_to(target) < 4.0:
 		_index += 1
@@ -128,6 +137,48 @@ func apply_stun(duration: float) -> void:
 
 func is_stunned() -> bool:
 	return _stun_timer > 0.0
+
+
+func apply_slow(mult: float, duration: float) -> void:
+	_slow_mult = mult
+	_slow_timer = max(_slow_timer, duration)
+
+
+func is_slowed() -> bool:
+	return _slow_timer > 0.0
+
+
+func apply_dot(dps: float, duration: float) -> void:
+	_dot_dps = max(_dot_dps, dps)
+	_dot_timer = max(_dot_timer, duration)
+
+
+func has_dot() -> bool:
+	return _dot_timer > 0.0
+
+
+func knockback(amount: float) -> void:
+	if _waypoints.is_empty() or _index >= _waypoints.size():
+		return
+	var dir: Vector2 = (_waypoints[_index] - global_position).normalized()
+	global_position -= dir * amount
+
+
+func _slow_factor() -> float:
+	return _slow_mult if _slow_timer > 0.0 else 1.0
+
+
+func _process_status(delta: float) -> void:
+	if _slow_timer > 0.0:
+		_slow_timer -= delta
+	if _dot_timer > 0.0:
+		_dot_timer -= delta
+		_dot_accum += _dot_dps * delta
+		var whole := int(_dot_accum)
+		if whole > 0:
+			_dot_accum -= whole
+			take_damage(whole, 999) # veneno/fogo ignora defesa
+			queue_redraw()
 
 
 ## pen (penetração) fura a defesa do inimigo. Dano mínimo de 1.

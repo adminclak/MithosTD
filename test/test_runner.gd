@@ -30,6 +30,7 @@ func _initialize() -> void:
 	_test_wave_composition()
 	_test_attributes()
 	_test_combat_stats()
+	_test_ability_families()
 	print("\n=== RESULTADO: %d passou, %d falhou ===" % [_passed, _failed])
 	quit(0 if _failed == 0 else 1)
 
@@ -357,8 +358,8 @@ func _test_abilities() -> void:
 	_check(t.has_ability(), "Artemis tem habilidade")
 	_check(t.ability_cooldown_left() == 0.0, "habilidade comeca pronta")
 	_check(t.use_ability() == true, "use_ability dispara")
-	_check(e1.hp == 72, "DAMAGE_AOE fere inimigo no raio (-28)")
-	_check(e2.hp == 100, "DAMAGE_AOE nao fere inimigo fora do raio")
+	_check(e1.hp == 66, "Chuva de Flechas (LINE) fere inimigo no raio (-34)")
+	_check(e2.hp == 100, "habilidade nao fere inimigo fora do raio")
 	_check(t.ability_cooldown_left() > 0.0, "entra em cooldown apos o uso")
 	_check(t.use_ability() == false, "nao dispara enquanto em cooldown")
 
@@ -379,7 +380,7 @@ func _test_abilities() -> void:
 	root.add_child(th)
 	th.global_position = Vector2(0, 0)
 	th.use_ability()
-	_check(th._temp_mult() == 2.0, "BUFF_TOWER aplica buff temporario (x2)")
+	_check(th._temp_mult() == 1.6, "BUFF_TOWER aplica buff temporario (x1.6)")
 
 	# Escudo e cura em personagem melee (habilidades de suporte).
 	var mt = Tower.new(); mt.setup(TowerData.warrior()); root.add_child(mt); mt.global_position = Vector2(0, 200)
@@ -555,3 +556,46 @@ func _test_combat_stats() -> void:
 	_check(agile.dodge > 0.1, "AGI alta da esquiva ao melee")
 	var penet = AttributeStats.build(TowerData.TowerClass.ARCHER, AttributeSet.make(60, 10, 10, 10, 40, 10))
 	_check(penet.penetration > 0, "STR/DEX dao penetracao")
+
+func _test_ability_families() -> void:
+	print("\nFamilias de habilidade (lentidao / DoT / empurrao / catalogo):")
+	# Todos os 56 personagens tem habilidade.
+	var faltando := 0
+	for c in Roster.all():
+		if c.ability == null:
+			faltando += 1
+	_check(faltando == 0, "todos os personagens tem habilidade definida")
+	_check(Abilities.for_character("zeus").kind == AbilityData.Kind.CHAIN, "Zeus = raio em cadeia")
+	_check(Abilities.for_character("boitata").kind == AbilityData.Kind.DOT_AOE, "Boitata = fogo (DoT)")
+
+	# Efeitos de status no inimigo.
+	var e = Enemy.new()
+	e.max_hp = 100
+	root.add_child(e)
+	e.setup([Vector2(0, 0), Vector2(400, 0)], 1) # indo para o ponto da direita
+	e.global_position = Vector2(100, 0)
+	e.apply_slow(0.5, 3.0)
+	_check(e.is_slowed() == true, "apply_slow deixa o inimigo lento")
+	e.apply_dot(10.0, 3.0)
+	_check(e.has_dot() == true, "apply_dot aplica veneno/fogo")
+	var pos_before = e.global_position.x
+	e.knockback(60.0)
+	_check(e.global_position.x < pos_before, "knockback empurra o inimigo para tras")
+	e.free()
+
+	# CHAIN (Zeus): fere varios inimigos em cadeia.
+	var tz = Tower.new(); tz.setup(Roster.by_id("zeus").tower_data_for_level(1))
+	root.add_child(tz); tz.global_position = Vector2(0, 0)
+	var c1 = Enemy.new(); c1.max_hp = 100; root.add_child(c1); c1.global_position = Vector2(50, 0)
+	var c2 = Enemy.new(); c2.max_hp = 100; root.add_child(c2); c2.global_position = Vector2(130, 0)
+	tz.use_ability()
+	_check(c1.hp < 100 and c2.hp < 100, "CHAIN (Zeus) fere varios inimigos em cadeia")
+	tz.free(); c1.free(); c2.free()
+
+	# SUMMON (Mictlan): invoca um aliado melee temporario.
+	var tsum = Tower.new(); tsum.setup(Roster.by_id("mictlan").tower_data_for_level(1))
+	root.add_child(tsum); tsum.global_position = Vector2(0, 320)
+	var before_allies = get_nodes_in_group("melee_allies").size()
+	tsum.use_ability()
+	_check(get_nodes_in_group("melee_allies").size() == before_allies + 1, "SUMMON invoca um aliado melee")
+	tsum.free()

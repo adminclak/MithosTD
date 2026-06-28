@@ -26,7 +26,9 @@ static func from_archetype(p_id: String, p_name: String, p_myth: String, \
 	c.is_melee = Archetypes.is_melee(archetype)
 	c.base_attr = Archetypes.base_attr(archetype)
 	c.growth_attr = Archetypes.growth_attr(archetype)
-	c.ability = Archetypes.ability(archetype)
+	# Habilidade única do personagem (tema do mito); fallback para o arquétipo.
+	var custom := Abilities.for_character(p_id)
+	c.ability = custom if custom != null else Archetypes.ability(archetype)
 	c.unlock_stage = unlock
 	return c
 
