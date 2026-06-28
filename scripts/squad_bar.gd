@@ -25,12 +25,19 @@ func setup(bm: BuildManager) -> void:
 func _ready() -> void:
 	layer = 6
 	var bg := ColorRect.new()
-	bg.color = Color(0, 0, 0, 0.40)
+	bg.color = Color(0, 0, 0, 0.45)
 	bg.position = Vector2(0, 628)
 	bg.size = Vector2(1280, 92)
 	add_child(bg)
+	var head := Label.new()
+	head.position = Vector2(12, 638)
+	head.custom_minimum_size = Vector2(120, 0)
+	head.add_theme_font_size_override("font_size", 15)
+	head.add_theme_color_override("font_color", Color(0.95, 0.85, 0.45))
+	head.text = "ESQUADRAO\nclique p/ posicionar"
+	add_child(head)
 	_bar = HBoxContainer.new()
-	_bar.position = Vector2(16, 636)
+	_bar.position = Vector2(150, 636)
 	_bar.add_theme_constant_override("separation", 8)
 	add_child(_bar)
 

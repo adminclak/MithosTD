@@ -12,8 +12,15 @@ var _tracked: Array = [] ## instance ids das torres atualmente na barra
 
 func _ready() -> void:
 	layer = 4
+	var head := Label.new()
+	head.position = Vector2(12, 566)
+	head.custom_minimum_size = Vector2(130, 0)
+	head.add_theme_font_size_override("font_size", 15)
+	head.add_theme_color_override("font_color", Color(0.6, 0.85, 1.0))
+	head.text = "HABILIDADES\nherois em campo"
+	add_child(head)
 	_bar = HBoxContainer.new()
-	_bar.position = Vector2(20, 560) ## acima da SquadBar (rodapé)
+	_bar.position = Vector2(150, 560) ## acima da SquadBar (rodapé)
 	_bar.add_theme_constant_override("separation", 8)
 	add_child(_bar)
 
