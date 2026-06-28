@@ -27,6 +27,7 @@ const STAT_NAMES := ["Dano", "Alcance", "Vel. Ataque", "Vida", "Defesa", "Críti
 @export var stats: PackedInt32Array = PackedInt32Array()  ## quais Stat
 @export var values: PackedFloat32Array = PackedFloat32Array() ## valor de cada um
 @export var icon: String = "" ## id de ícone único (lendários); "" = genérico do slot
+@export var set_id: String = "" ## conjunto a que pertence (p/ bônus de 2/4 peças)
 
 
 static func make(p_id: String, p_name: String, p_slot: int, p_rarity: int, \
@@ -55,6 +56,11 @@ func apply_to(d: TowerData) -> void:
 
 
 func _apply_one(d: TowerData, stat: int, value: float) -> void:
+	apply_stat(d, stat, value)
+
+
+## Aplica UM modificador a um TowerData (estático: reutilizado por sets/sinergias).
+static func apply_stat(d: TowerData, stat: int, value: float) -> void:
 	var f := 1.0 + value
 	match stat:
 		Stat.DAMAGE:

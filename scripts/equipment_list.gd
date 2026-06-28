@@ -15,6 +15,9 @@ static var _cache: Array = []
 static func all() -> Array:
 	if _cache.is_empty():
 		_cache = _basics() + _legendaries()
+		# Marca a que conjunto cada item pertence (bônus de set).
+		for e in _cache:
+			e.set_id = EquipSets.set_of(e.id)
 	return _cache
 
 

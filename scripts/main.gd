@@ -85,10 +85,15 @@ func _on_start_stage(stage: StageData, squad_ids: Array, ult_id: String = "", au
 		var ch := Roster.by_id(id)
 		if ch != null:
 			var data := ch.tower_data_for_level(Progression.level_of(id), Progression.stars_of(id))
-			for item in Progression.equipped_data(id):
+			var worn: Array = Progression.equipped_data(id)
+			for item in worn:
 				item.apply_to(data)
 				data.equip_icons[item.slot] = item.icon_id() ## p/ mostrar vestido no boneco
+			EquipSets.apply(data, worn) ## bônus de conjunto (2/4 peças)
 			squad_datas.append(data)
+
+	# Sinergias de equipe (mitologia / duplas / classe / elemento) aplicadas a todos.
+	Synergy.apply(squad_ids, squad_datas)
 
 	var game := GameScreen.new()
 	game.setup(stage, squad_datas, ult_id)

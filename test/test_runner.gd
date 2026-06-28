@@ -34,6 +34,7 @@ func _initialize() -> void:
 	_test_combat_stats()
 	_test_ability_families()
 	_test_elements()
+	_test_sets_synergy()
 	_test_all_characters_act()
 	print("\n=== RESULTADO: %d passou, %d falhou ===" % [_passed, _failed])
 	quit(0 if _failed == 0 else 1)
@@ -99,6 +100,31 @@ func _test_elements() -> void:
 	e.take_damage(20, 0, E.AR) # ar fraco vs terra: 20 -> 15
 	_check(e.hp == 85, "Ar (fraco) -25% no inimigo Terra (20->15)")
 	e.free()
+
+
+func _test_sets_synergy() -> void:
+	print("\nSets de equipamento + sinergia de equipe:")
+	# Set Olimpo: 2 pecas dao +12% dano.
+	var d = TowerData.mage() # dano 6
+	var items2 = [EquipmentList.by_id("raio_zeus"), EquipmentList.by_id("egide_atena")]
+	EquipSets.apply(d, items2)
+	_check(d.damage == 7, "Set Olimpo 2pc: +12% dano (6->7)")
+	# 4 pecas: aplica 2pc + 4pc (dano e critico).
+	var d2 = TowerData.mage()
+	var items4 = [EquipmentList.by_id("raio_zeus"), EquipmentList.by_id("egide_atena"),
+		EquipmentList.by_id("sandalias_hermes"), EquipmentList.by_id("coroa_louros")]
+	EquipSets.apply(d2, items4)
+	_check(d2.damage == 9 and d2.crit_chance > 0.09, "Set Olimpo 4pc: dano e critico maiores")
+	# Sinergia: trio iconico.
+	var syn = Synergy.active(["zeus", "poseidon", "hades"])
+	var names: Array = []
+	for s in syn:
+		names.append(s["name"])
+	_check(names.has("Os Tres Tronos"), "combo 'Os Tres Tronos' ativo")
+	var datas = [TowerData.mage()]
+	var before = datas[0].damage
+	Synergy.apply(["zeus", "poseidon", "hades"], datas)
+	_check(datas[0].damage > before, "sinergia aumenta o dano de todos")
 
 
 func _count_projectiles() -> int:
