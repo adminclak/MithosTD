@@ -19,8 +19,9 @@ var _result: Label
 
 func _ready() -> void:
 	layer = 5
+	add_child(UiTheme.wood_bg())
 	var bg := ColorRect.new()
-	bg.color = Color(0.10, 0.08, 0.14)
+	bg.color = Color(0.05, 0.03, 0.08, 0.45)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
