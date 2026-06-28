@@ -1,0 +1,11 @@
+# Godot 4 — cache de import/engine (gerado, não versionar)
+.godot/
+
+# Ferramentas externas com repositório próprio (não fazem parte do jogo)
+Godot-Claude-Skills/
+.gdunit4_tmp/
+
+# Sistema / temporários
+*.tmp
+Thumbs.db
+.DS_Store
