@@ -53,22 +53,22 @@ func _ready() -> void:
 		em.size = Vector2(112, 112)
 		add_child(em)
 
-	# Logo (fonte elegante, dourado com contorno).
+	# Logo (fonte cartoon, dourado com contorno) — centralizado na placa do banner.
 	var logo := Label.new()
-	logo.position = Vector2(0, 96)
-	logo.size = Vector2(1280, 110)
+	logo.position = Vector2(340, 96)
+	logo.size = Vector2(600, 96)
 	logo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	logo.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	logo.text = "Mithos TD"
+	logo.text = "MITHOS TD"
 	var tf := UiTheme.fancy_font()
 	if tf != null:
 		logo.add_theme_font_override("font", tf)
-	logo.add_theme_font_size_override("font_size", 58)
-	logo.add_theme_color_override("font_color", Color(1.0, 0.88, 0.45))
-	logo.add_theme_color_override("font_outline_color", Color(0.25, 0.12, 0.02))
-	logo.add_theme_constant_override("outline_size", 8)
-	logo.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
-	logo.add_theme_constant_override("shadow_offset_y", 4)
+	logo.add_theme_font_size_override("font_size", 50)
+	logo.add_theme_color_override("font_color", Color(1.0, 0.9, 0.4))
+	logo.add_theme_color_override("font_outline_color", Color(0.3, 0.14, 0.02))
+	logo.add_theme_constant_override("outline_size", 7)
+	logo.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.5))
+	logo.add_theme_constant_override("shadow_offset_y", 3)
 	add_child(logo)
 
 	var sub := Label.new()

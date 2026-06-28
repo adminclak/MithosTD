@@ -29,11 +29,11 @@ static func title_font() -> Font:
 	return _font_title
 
 
-## Fonte de título elegante (serifada, mitológica) para logos/cabeçalhos grandes.
+## Fonte de título divertida e robusta (cartoon) para logos/cabeçalhos grandes.
 static var _font_fancy: Font = null
 static func fancy_font() -> Font:
 	if _font_fancy == null:
-		_font_fancy = _load("res://assets/fonts/CinzelDecorative-Bold.ttf")
+		_font_fancy = _load("res://assets/fonts/LilitaOne.ttf")
 	return _font_fancy
 
 

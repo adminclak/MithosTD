@@ -33,6 +33,7 @@ func _initialize() -> void:
 	_test_attributes()
 	_test_combat_stats()
 	_test_ability_families()
+	_test_elements()
 	_test_all_characters_act()
 	print("\n=== RESULTADO: %d passou, %d falhou ===" % [_passed, _failed])
 	quit(0 if _failed == 0 else 1)
@@ -74,6 +75,30 @@ func _test_all_characters_act() -> void:
 		_clear_projectiles()
 	var ok := dead.is_empty()
 	_check(ok, "todos os personagens agem em campo" + ("" if ok else " — PARADOS: %s" % str(dead)))
+
+
+func _test_elements() -> void:
+	print("\nElementos (ciclo + luz/trevas):")
+	var E = Elements.E
+	_check(is_equal_approx(Elements.mult(E.AGUA, E.FOGO), 1.5), "Agua forte vs Fogo (+50%)")
+	_check(is_equal_approx(Elements.mult(E.FOGO, E.AGUA), 0.75), "Fogo fraco vs Agua (-25%)")
+	_check(is_equal_approx(Elements.mult(E.FOGO, E.TERRA), 1.5), "Fogo forte vs Terra")
+	_check(is_equal_approx(Elements.mult(E.LUZ, E.TREVAS), 1.5), "Luz forte vs Trevas")
+	_check(is_equal_approx(Elements.mult(E.TREVAS, E.LUZ), 1.5), "Trevas forte vs Luz")
+	_check(is_equal_approx(Elements.mult(E.FOGO, E.FOGO), 1.0), "mesmo elemento = neutro")
+	_check(Elements.of_character("zeus") == E.AR, "Zeus = Ar")
+	_check(Elements.of_character("hades") == E.TREVAS, "Hades = Trevas")
+	# Aplicacao no inimigo (lacaio = Terra).
+	var e = Enemy.new()
+	e.apply_data(GreekBestiary.by_id("lacaio"))
+	root.add_child(e)
+	e.hp = 100
+	e.take_damage(20, 0, E.FOGO) # fogo forte vs terra: 20 -> 30
+	_check(e.hp == 70, "Fogo (forte) +50% no inimigo Terra (20->30)")
+	e.hp = 100
+	e.take_damage(20, 0, E.AR) # ar fraco vs terra: 20 -> 15
+	_check(e.hp == 85, "Ar (fraco) -25% no inimigo Terra (20->15)")
+	e.free()
 
 
 func _count_projectiles() -> int:

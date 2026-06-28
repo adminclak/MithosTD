@@ -16,16 +16,18 @@ var _target: Node2D = null
 var _damage: int = 0
 var _splash: float = 0.0
 var _pen: int = 0
+var _element: int = -1
 var _life: float = 0.0
 var _trail: Array = [] ## últimas posições (rastro)
 
 
-func setup(target: Node2D, dmg: int, splash: float = 0.0, col: Color = Color(1, 1, 0.4), pen: int = 0) -> void:
+func setup(target: Node2D, dmg: int, splash: float = 0.0, col: Color = Color(1, 1, 0.4), pen: int = 0, element: int = -1) -> void:
 	_target = target
 	_damage = dmg
 	_splash = splash
 	color = col
 	_pen = pen
+	_element = element
 
 
 func set_kind(k: int) -> void:
@@ -59,10 +61,10 @@ func _impact() -> void:
 				continue
 			if global_position.distance_to(e.global_position) <= _splash:
 				if e.has_method("take_damage"):
-					e.take_damage(_damage, _pen)
+					e.take_damage(_damage, _pen, _element)
 	else:
 		if is_instance_valid(_target) and _target.has_method("take_damage"):
-			_target.take_damage(_damage, _pen)
+			_target.take_damage(_damage, _pen, _element)
 	_spawn_impact()
 	queue_free()
 

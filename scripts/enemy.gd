@@ -194,11 +194,14 @@ func _process_status(delta: float) -> void:
 			queue_redraw()
 
 
-## pen (penetração) fura a defesa do inimigo. Dano mínimo de 1.
-func take_damage(amount: int, pen: int = 0) -> void:
+## pen (penetração) fura a defesa do inimigo. element (Elements.E) aplica vantagem/
+## desvantagem elemental do atacante contra este inimigo. Dano mínimo de 1.
+func take_damage(amount: int, pen: int = 0, element: int = -1) -> void:
 	var dealt := amount
+	if element >= 0 and data != null:
+		dealt = int(round(dealt * Elements.mult(element, data.element)))
 	if data != null and data.defense > 0:
-		dealt = max(1, amount - max(0, data.defense - pen))
+		dealt = max(1, dealt - max(0, data.defense - pen))
 	hp -= dealt
 	_flash = 0.12
 	queue_redraw()

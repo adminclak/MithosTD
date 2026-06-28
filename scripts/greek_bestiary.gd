@@ -19,13 +19,16 @@ static func by_id(target_id: String) -> EnemyData:
 
 # Básico equilibrado — preenche ondas.
 static func _lacaio() -> EnemyData:
-	return EnemyData.make("lacaio", "Lacaio", 12, 140.0, 5, 1, 3, 14.0, Color(0.85, 0.3, 0.3))
+	var e := EnemyData.make("lacaio", "Lacaio", 12, 140.0, 5, 1, 3, 14.0, Color(0.85, 0.3, 0.3))
+	e.element = Elements.E.TERRA
+	return e
 
 
 # Rápido e frágil — pressiona quem não tem bloqueio.
 static func _espectro() -> EnemyData:
 	var e := EnemyData.make("espectro", "Espectro Veloz", 8, 245.0, 6, 1, 2, 12.0, Color(0.55, 0.7, 0.95))
 	e.attack_rate = 1.4
+	e.element = Elements.E.AR
 	return e
 
 
@@ -33,6 +36,7 @@ static func _espectro() -> EnemyData:
 static func _esqueleto() -> EnemyData:
 	var e := EnemyData.make("esqueleto", "Soldado Esqueleto", 46, 80.0, 11, 1, 4, 16.0, Color(0.8, 0.8, 0.72))
 	e.defense = 5
+	e.element = Elements.E.TREVAS
 	return e
 
 
@@ -42,11 +46,14 @@ static func _hidra() -> EnemyData:
 	e.special = EnemyData.Special.SPLIT
 	e.split_into = "hidra_filhote"
 	e.split_count = 2
+	e.element = Elements.E.AGUA
 	return e
 
 
 static func _hidra_filhote() -> EnemyData:
-	return EnemyData.make("hidra_filhote", "Filhote de Hidra", 8, 150.0, 3, 1, 2, 10.0, Color(0.45, 0.85, 0.55))
+	var e := EnemyData.make("hidra_filhote", "Filhote de Hidra", 8, 150.0, 3, 1, 2, 10.0, Color(0.45, 0.85, 0.55))
+	e.element = Elements.E.AGUA
+	return e
 
 
 # Elite: rápido E forte — exige bloqueio + foco.
@@ -54,6 +61,7 @@ static func _centauro() -> EnemyData:
 	var e := EnemyData.make("centauro", "Centauro", 64, 178.0, 20, 2, 6, 18.0, Color(0.6, 0.4, 0.25))
 	e.attack_rate = 1.2
 	e.defense = 3
+	e.element = Elements.E.TERRA
 	return e
 
 
@@ -64,6 +72,7 @@ static func _centauro() -> EnemyData:
 static func _ciclope() -> EnemyData:
 	var e := EnemyData.make("ciclope", "Ciclope", 150, 70.0, 30, 3, 11, 22.0, Color(0.45, 0.45, 0.5))
 	e.defense = 8
+	e.element = Elements.E.FOGO
 	return e
 
 
@@ -71,4 +80,5 @@ static func _ciclope() -> EnemyData:
 static func _talos() -> EnemyData:
 	var e := EnemyData.make("talos", "Talos, o Colosso", 650, 60.0, 120, 5, 16, 30.0, Color(0.75, 0.55, 0.25))
 	e.defense = 14
+	e.element = Elements.E.LUZ
 	return e

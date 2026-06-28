@@ -42,8 +42,10 @@ LORA = "pixel-art-xl.safetensors"
 PIXEL_LORA_W = float(os.environ.get("PIXEL_LORA_W", "1.1"))
 PIXEL_SIZE = int(os.environ.get("PIXEL_SIZE", "256"))
 PIXEL_STYLE_HERO = ("pixel art, pixel-art game sprite, full body single character, centered, "
-    "front view, heroic dynamic pose, both hands visible, strong iconic recognizable features, "
-    "signature weapon and outfit clearly visible, bold clean outline, vibrant saturated palette, ")
+    "front view, dynamic energetic action pose, exaggerated confident expression, big "
+    "personality, bold readable silhouette, both hands visible, strong iconic recognizable "
+    "features, signature weapon and outfit clearly visible, bold clean outline, vibrant "
+    "saturated colors, warm top light, fun heroic Brawlhalla energy, ")
 PIXEL_STYLE_ENEMY = ("pixel art, pixel-art game sprite, enemy monster, full body single creature, "
     "centered, front view, menacing, strong iconic recognizable features, bold clean outline, "
     "vibrant saturated palette, ")

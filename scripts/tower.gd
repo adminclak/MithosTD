@@ -190,7 +190,7 @@ func _shoot(target: Node2D) -> void:
 	if randf() < data.crit_chance:
 		dmg = int(round(dmg * data.crit_mult))
 		col = Color(1.0, 0.55, 0.2)
-	p.setup(target, dmg, data.splash_radius, col, data.penetration)
+	p.setup(target, dmg, data.splash_radius, col, data.penetration, data.element)
 	p.speed = data.proj_speed
 	# Tipo de projétil pela classe: Mago = bola de fogo; Sacerdote = raio dourado;
 	# Arqueiro = flecha.
@@ -263,7 +263,7 @@ func _process_melee(delta: float) -> void:
 				if randf() < data.crit_chance:
 					d2 = int(round(dmg * data.crit_mult))
 				if e.has_method("take_damage"):
-					e.take_damage(d2, data.penetration)
+					e.take_damage(d2, data.penetration, data.element)
 				if data.lifesteal > 0.0:
 					heal(int(round(d2 * data.lifesteal)))
 			_melee_cd = 1.0 / max(0.1, data.melee_attack_rate * _temp_mult())

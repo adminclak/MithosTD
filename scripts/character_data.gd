@@ -42,6 +42,7 @@ func tower_data_for_level(level: int, stars: int = 1) -> TowerData:
 	d.char_id = id
 	d.display_name = display_name
 	d.ability = ability
+	d.element = Elements.of_character(id)
 	return d
 
 

@@ -17,6 +17,7 @@ enum Special { NONE, SPLIT }
 @export var defense: int = 0 ## reduz o dano recebido (furado por penetracao)
 @export var radius: float = 14.0
 @export var color: Color = Color(0.85, 0.3, 0.3)
+@export var element: int = -1 ## tipo do inimigo (Elements.E); -1 = neutro
 
 @export var special: Special = Special.NONE
 @export var split_into: String = "" ## id do inimigo gerado ao dividir
