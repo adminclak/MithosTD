@@ -35,6 +35,21 @@ IP_WEIGHT = float(os.environ.get("IP_WEIGHT", "0.7"))
 IP_START = float(os.environ.get("IP_START", "0.40"))  # estilo entra so apos a forma se criar
 STEPS = int(os.environ.get("STEPS", "10"))
 
+# Modo PIXEL ART (padrao agora): usa o LoRA Pixel Art XL no lugar do IPAdapter e
+# reduz a imagem (nearest) para "pixels" nitidos estilo Tangy TD.
+PIXEL = os.environ.get("PIXEL", "1") == "1"
+LORA = "pixel-art-xl.safetensors"
+PIXEL_LORA_W = float(os.environ.get("PIXEL_LORA_W", "1.1"))
+PIXEL_SIZE = int(os.environ.get("PIXEL_SIZE", "256"))
+PIXEL_STYLE_HERO = ("pixel art, pixel-art game sprite, full body single character, centered, "
+    "front view, heroic dynamic pose, both hands visible, strong iconic recognizable features, "
+    "signature weapon and outfit clearly visible, bold clean outline, vibrant saturated palette, ")
+PIXEL_STYLE_ENEMY = ("pixel art, pixel-art game sprite, enemy monster, full body single creature, "
+    "centered, front view, menacing, strong iconic recognizable features, bold clean outline, "
+    "vibrant saturated palette, ")
+PIXEL_NEG = (", blurry, antialiased, smooth shading, gradient, 3d render, realistic, photo, "
+    "soft, depth of field")
+
 ENEMY_IDS = {"lacaio", "espectro", "esqueleto", "hidra", "hidra_filhote",
              "centauro", "ciclope", "talos"}
 
@@ -64,22 +79,26 @@ def api(path, data=None):
 
 
 def build_workflow(pos_text, seed, prefix):
-    # MODEL base = checkpoint; se IPAdapter ligado, passa por ele antes do LayerDiffuse.
+    # MODEL/CLIP base = checkpoint. PIXEL usa LoRA; senao IPAdapter (estilo cartoon).
     model_src = ["1", 0]
+    clip_src = ["1", 1]
+    neg = NEG + (PIXEL_NEG if PIXEL else "")
     wf = {
         "1": {"class_type": "CheckpointLoaderSimple", "inputs": {"ckpt_name": CKPT}},
-        "6": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["1", 1], "text": pos_text}},
-        "7": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["1", 1], "text": NEG}},
         "8": {"class_type": "EmptyLatentImage",
               "inputs": {"width": 1024, "height": 1024, "batch_size": 1}},
         "10": {"class_type": "VAEDecode", "inputs": {"samples": ["9", 0], "vae": ["1", 2]}},
         "11": {"class_type": "LayeredDiffusionDecodeRGBA",
                "inputs": {"samples": ["9", 0], "images": ["10", 0],
                           "sd_version": "SDXL", "sub_batch_size": 16}},
-        "12": {"class_type": "SaveImage",
-               "inputs": {"images": ["11", 0], "filename_prefix": prefix}},
     }
-    if IP_WEIGHT > 0:
+    if PIXEL:
+        wf["20"] = {"class_type": "LoraLoader",
+                    "inputs": {"model": ["1", 0], "clip": ["1", 1], "lora_name": LORA,
+                               "strength_model": PIXEL_LORA_W, "strength_clip": 1.0}}
+        model_src = ["20", 0]
+        clip_src = ["20", 1]
+    elif IP_WEIGHT > 0:
         wf["2"] = {"class_type": "LoadImage", "inputs": {"image": IP_REF}}
         wf["3"] = {"class_type": "IPAdapterUnifiedLoader",
                    "inputs": {"model": ["1", 0], "preset": IP_PRESET}}
@@ -88,12 +107,23 @@ def build_workflow(pos_text, seed, prefix):
                               "weight": IP_WEIGHT, "start_at": IP_START, "end_at": 1.0,
                               "weight_type": "style transfer"}}
         model_src = ["4", 0]
+    wf["6"] = {"class_type": "CLIPTextEncode", "inputs": {"clip": clip_src, "text": pos_text}}
+    wf["7"] = {"class_type": "CLIPTextEncode", "inputs": {"clip": clip_src, "text": neg}}
     wf["5"] = {"class_type": "LayeredDiffusionApply",
                "inputs": {"model": model_src, "config": "SDXL, Conv Injection", "weight": 1.0}}
     wf["9"] = {"class_type": "KSampler",
                "inputs": {"model": ["5", 0], "positive": ["6", 0], "negative": ["7", 0],
                           "latent_image": ["8", 0], "seed": seed, "steps": STEPS, "cfg": 2.0,
                           "sampler_name": "dpmpp_sde", "scheduler": "karras", "denoise": 1.0}}
+    # Reduz para pixels nitidos (nearest) preservando a transparencia (RGBA).
+    save_src = ["11", 0]
+    if PIXEL:
+        wf["13"] = {"class_type": "ImageScale",
+                    "inputs": {"image": ["11", 0], "upscale_method": "nearest-exact",
+                               "width": PIXEL_SIZE, "height": PIXEL_SIZE, "crop": "disabled"}}
+        save_src = ["13", 0]
+    wf["12"] = {"class_type": "SaveImage",
+                "inputs": {"images": save_src, "filename_prefix": prefix}}
     return wf
 
 
@@ -122,7 +152,10 @@ def main():
         if cid not in jobs:
             print("  (sem descricao no ARTE.md):", cid)
             continue
-        style = STYLE_ENEMY if cid in ENEMY_IDS else STYLE_HERO
+        if PIXEL:
+            style = PIXEL_STYLE_ENEMY if cid in ENEMY_IDS else PIXEL_STYLE_HERO
+        else:
+            style = STYLE_ENEMY if cid in ENEMY_IDS else STYLE_HERO
         wf = build_workflow(style + jobs[cid], random.randint(1, 2_000_000_000), "mithos/" + cid)
         try:
             r = api("/prompt", {"prompt": wf})

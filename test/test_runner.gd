@@ -454,27 +454,40 @@ func _test_abilities() -> void:
 func _test_equipment() -> void:
 	print("\nEquipamentos (bonus nos stats):")
 	var d = TowerData.archer() # alcance 200
-	EquipmentList.by_id("olho_aguia").apply_to(d) # RANGE +14%
-	_check(abs(d.attack_range - 228.0) < 0.01, "Olho de Aguia: +14% no alcance (200 -> 228)")
+	EquipmentList.by_id("amuleto_vista").apply_to(d) # RANGE +12%
+	_check(abs(d.attack_range - 224.0) < 0.01, "Amuleto da Vista: +12% no alcance (200 -> 224)")
 
 	var d2 = TowerData.mage() # dano 6
-	EquipmentList.by_id("gladio_olimpico").apply_to(d2) # DAMAGE +38%
-	_check(d2.damage == 8, "Gladio Olimpico: +38% no dano (6 -> 8)")
+	EquipmentList.by_id("espada_longa").apply_to(d2) # DAMAGE +20%
+	_check(d2.damage == 7, "Espada Longa: +20% no dano (6 -> 7)")
+
+	var d3 = TowerData.mage()
+	EquipmentList.by_id("mjolnir").apply_to(d3) # lendario: +45% dano, +14% crit
+	_check(d3.damage == 9 and d3.crit_chance > 0.13, "Mjolnir (lendario) some dano e critico")
 
 	var pr = root.get_node_or_null(^"/root/Progression")
 	pr.reset()
 	pr.meta_gold = 1000
-	_check(pr.buy_item("espada_bronze") == true, "compra item com ouro meta")
-	_check(pr.owns_item("espada_bronze") == true, "passa a possuir o item")
+	_check(pr.buy_item("espada_curta") == true, "compra item com ouro meta")
+	_check(pr.owns_item("espada_curta") == true, "passa a possuir o item")
 	_check(pr.meta_gold == 880, "compra desconta o preco (120)")
-	_check(pr.buy_item("espada_bronze") == false, "nao compra item ja possuido")
+	_check(pr.buy_item("espada_curta") == false, "nao compra item ja possuido")
 
-	_check(pr.equip("artemis", EquipmentData.Slot.WEAPON, "espada_bronze") == true, "equipa arma compativel")
-	_check(pr.is_item_available("espada_bronze") == false, "item equipado fica indisponivel")
-	_check(pr.equip("hermes", EquipmentData.Slot.WEAPON, "espada_bronze") == false, "nao equipa item ja em outro personagem")
-	_check(pr.equip("artemis", EquipmentData.Slot.RELIC, "espada_bronze") == false, "nao equipa arma no slot de reliquia")
+	_check(pr.equip("artemis", EquipmentData.Slot.WEAPON, "espada_curta") == true, "equipa arma compativel")
+	_check(pr.is_item_available("espada_curta") == false, "item equipado fica indisponivel")
+	_check(pr.equip("hermes", EquipmentData.Slot.WEAPON, "espada_curta") == false, "nao equipa item ja em outro personagem")
+	_check(pr.equip("artemis", EquipmentData.Slot.HELMET, "espada_curta") == false, "nao equipa arma no slot de elmo")
 	pr.unequip("artemis", EquipmentData.Slot.WEAPON)
-	_check(pr.is_item_available("espada_bronze") == true, "desequipar devolve a disponibilidade")
+	_check(pr.is_item_available("espada_curta") == true, "desequipar devolve a disponibilidade")
+
+	# 8 slots ocupaveis ao mesmo tempo (um item por slot).
+	pr.reset()
+	for iid in ["kabuto_oni", "oyoroi", "megingjord", "botas_vidar", "mjolnir", "egide_atena", "olho_odin", "anel_ouro"]:
+		pr.add_item(iid)
+		var it = EquipmentList.by_id(iid)
+		pr.equip("zeus", it.slot, iid)
+	_check(pr.equipped_data("zeus").size() == 8, "personagem pode usar os 8 slots ao mesmo tempo")
+	_check(EquipmentList.count() >= 200, "catalogo com centenas de itens (%d)" % EquipmentList.count())
 
 func _test_shop_evolution() -> void:
 	print("\nLoja / evolucao de estrela:")

@@ -81,10 +81,12 @@ func _build_characters() -> VBoxContainer:
 			STAR.repeat(Progression.stars_of(id)), Progression.fragments_of(id)]
 		v.add_child(name_lbl)
 
-		var slots := HBoxContainer.new()
-		slots.add_theme_constant_override("separation", 6)
-		slots.add_child(_slot_button(id, EquipmentData.Slot.WEAPON, "Arma"))
-		slots.add_child(_slot_button(id, EquipmentData.Slot.RELIC, "Reliquia"))
+		var slots := GridContainer.new()
+		slots.columns = 4
+		slots.add_theme_constant_override("h_separation", 6)
+		slots.add_theme_constant_override("v_separation", 4)
+		for s in range(EquipmentData.SLOT_NAMES.size()):
+			slots.add_child(_slot_button(id, s, EquipmentData.slot_name(s)))
 		v.add_child(slots)
 
 		var evo := Button.new()
@@ -105,10 +107,12 @@ func _build_characters() -> VBoxContainer:
 
 func _slot_button(char_id: String, slot: int, slot_label: String) -> Button:
 	var b := Button.new()
-	b.custom_minimum_size = Vector2(180, 28)
-	var cur: String = Progression.equipped_ids(char_id).get("weapon" if slot == EquipmentData.Slot.WEAPON else "relic", "")
+	b.custom_minimum_size = Vector2(150, 28)
+	var cur: String = Progression.equipped_ids(char_id).get(str(slot), "")
 	var item := EquipmentList.by_id(cur) if cur != "" else null
 	b.text = "%s: %s" % [slot_label, (item.display_name if item != null else "-")]
+	if item != null:
+		b.add_theme_color_override("font_color", EquipmentData.rarity_color(item.rarity))
 	b.pressed.connect(_on_cycle_slot.bind(char_id, slot))
 	return b
 
@@ -121,12 +125,17 @@ func _build_shop() -> VBoxContainer:
 	head.add_theme_font_size_override("font_size", 22)
 	col.add_child(head)
 
+	var head_n := Label.new()
+	head_n.text = "(%d itens)" % EquipmentList.count()
+	head_n.add_theme_color_override("font_color", Color(0.7, 0.7, 0.75))
+	col.add_child(head_n)
 	for item in EquipmentList.all():
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 8)
 		var lbl := Label.new()
-		lbl.custom_minimum_size = Vector2(230, 0)
-		lbl.text = "%s (%s)" % [item.display_name, EquipmentData.rarity_name(item.rarity)]
+		lbl.custom_minimum_size = Vector2(360, 0)
+		lbl.text = "[%s] %s — %s" % [EquipmentData.slot_name(item.slot), item.display_name, item.effects_text()]
+		lbl.add_theme_color_override("font_color", EquipmentData.rarity_color(item.rarity))
 		row.add_child(lbl)
 		var buy := Button.new()
 		buy.custom_minimum_size = Vector2(120, 28)
@@ -178,8 +187,7 @@ func _on_buy_char(char_id: String) -> void:
 
 
 func _on_cycle_slot(char_id: String, slot: int) -> void:
-	var key := "weapon" if slot == EquipmentData.Slot.WEAPON else "relic"
-	var cur: String = Progression.equipped_ids(char_id).get(key, "")
+	var cur: String = Progression.equipped_ids(char_id).get(str(slot), "")
 	var options: Array = [""]
 	for id in Progression.inventory:
 		var item := EquipmentList.by_id(id)

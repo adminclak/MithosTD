@@ -144,7 +144,14 @@ func spend_meta_gold(amount: int) -> bool:
 # --- Equipamentos ---
 func _ensure_equip(char_id: String) -> void:
 	if not equipped.has(char_id):
-		equipped[char_id] = {"weapon": "", "relic": ""}
+		var slots := {}
+		for s in range(EquipmentData.SLOT_NAMES.size()):
+			slots[str(s)] = ""
+		equipped[char_id] = slots
+	else:
+		for s in range(EquipmentData.SLOT_NAMES.size()):
+			if not equipped[char_id].has(str(s)):
+				equipped[char_id][str(s)] = ""
 
 
 func owns_item(item_id: String) -> bool:
@@ -159,9 +166,9 @@ func add_item(item_id: String) -> void:
 
 func _item_owner(item_id: String) -> String:
 	for cid in equipped.keys():
-		var e: Dictionary = equipped[cid]
-		if e.get("weapon", "") == item_id or e.get("relic", "") == item_id:
-			return cid
+		for v in equipped[cid].values():
+			if v == item_id:
+				return cid
 	return ""
 
 
@@ -183,10 +190,10 @@ func equipped_ids(char_id: String) -> Dictionary:
 
 
 func equipped_data(char_id: String) -> Array:
+	_ensure_equip(char_id)
 	var out: Array = []
-	var ids := equipped_ids(char_id)
-	for key in ["weapon", "relic"]:
-		var item_id: String = ids.get(key, "")
+	for s in range(EquipmentData.SLOT_NAMES.size()):
+		var item_id: String = equipped[char_id].get(str(s), "")
 		if item_id != "":
 			var item := EquipmentList.by_id(item_id)
 			if item != null:
@@ -202,16 +209,14 @@ func equip(char_id: String, slot: int, item_id: String) -> bool:
 	if owner != "" and owner != char_id:
 		return false # equipado em outro personagem
 	_ensure_equip(char_id)
-	var key := "weapon" if slot == EquipmentData.Slot.WEAPON else "relic"
-	equipped[char_id][key] = item_id
+	equipped[char_id][str(slot)] = item_id
 	emit_signal("progress_changed")
 	return true
 
 
 func unequip(char_id: String, slot: int) -> void:
 	_ensure_equip(char_id)
-	var key := "weapon" if slot == EquipmentData.Slot.WEAPON else "relic"
-	equipped[char_id][key] = ""
+	equipped[char_id][str(slot)] = ""
 	emit_signal("progress_changed")
 
 
@@ -523,7 +528,10 @@ func load_from(path: String) -> void:
 	var saved_eq: Dictionary = data.get("equipped", {})
 	for cid in saved_eq.keys():
 		var e: Dictionary = saved_eq[cid]
-		equipped[cid] = {"weapon": str(e.get("weapon", "")), "relic": str(e.get("relic", ""))}
+		var slots := {}
+		for s in range(EquipmentData.SLOT_NAMES.size()):
+			slots[str(s)] = str(e.get(str(s), ""))
+		equipped[cid] = slots
 	var sv_stats: Dictionary = data.get("stats", {})
 	stats = {"wins": int(sv_stats.get("wins", 0)), "gacha": int(sv_stats.get("gacha", 0)), "evolves": int(sv_stats.get("evolves", 0))}
 	var sv_daily: Dictionary = data.get("daily", {})
