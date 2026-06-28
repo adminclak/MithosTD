@@ -53,32 +53,41 @@ func _ready() -> void:
 	title.text = "ESCOLHA A FASE"
 	add_child(title)
 
-	# Nós das fases.
+	# Marcadores das fases (disco + estrelas) desenhados pelo overlay.
+	var overlay := MapOverlay.new()
+	add_child(overlay)
+	var empty_sb := StyleBoxEmpty.new()
 	for i in min(NODES.size(), stages.size()):
 		var s: StageData = stages[i]
 		var locked: bool = s.index > Progression.highest_stage_unlocked
 		var is_next: bool = s.index == Progression.highest_stage_unlocked
+		var state := 0
+		if not locked:
+			state = 2 if s.index < Progression.highest_stage_unlocked else 1
+		overlay.nodes.append({"pos": NODES[i], "idx": s.index, "state": state})
+		# Botão transparente só para captar o clique.
 		var b := Button.new()
-		b.size = Vector2(76, 76)
-		b.custom_minimum_size = Vector2(76, 76)
-		b.position = NODES[i] - Vector2(38, 38)
-		b.text = str(s.index)
-		b.add_theme_font_size_override("font_size", 28)
+		b.size = Vector2(80, 80)
+		b.custom_minimum_size = Vector2(80, 80)
+		b.position = NODES[i] - Vector2(40, 40)
+		b.add_theme_stylebox_override("normal", empty_sb)
+		b.add_theme_stylebox_override("hover", empty_sb)
+		b.add_theme_stylebox_override("pressed", empty_sb)
+		b.add_theme_stylebox_override("disabled", empty_sb)
 		b.disabled = locked
-		if is_next:
-			b.add_theme_color_override("font_color", Color(1.0, 0.95, 0.5))
-		b.tooltip_text = "%s\n%s" % [s.display_name, ("BLOQUEADA" if locked else "Tema: " + s.theme)]
+		b.tooltip_text = "%s\n%s" % [s.display_name, ("BLOQUEADA" if locked else "Jogar")]
 		if not locked:
 			b.pressed.connect(_on_node.bind(s))
 		add_child(b)
-		# Nome da fase sob o nó.
+		# Nome da fase numa plaquinha sob o nó.
 		var nl := Label.new()
-		nl.position = NODES[i] + Vector2(-80, 40)
-		nl.size = Vector2(160, 20)
+		nl.position = NODES[i] + Vector2(-90, 44)
+		nl.size = Vector2(180, 20)
 		nl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		nl.add_theme_font_size_override("font_size", 14)
-		nl.add_theme_color_override("font_color", Color(1, 1, 1) if not locked else Color(0.6, 0.6, 0.65))
-		nl.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+		nl.add_theme_font_size_override("font_size", 15)
+		nl.add_theme_color_override("font_color", Color(1, 1, 0.85) if not locked else Color(0.6, 0.6, 0.65))
+		nl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+		nl.add_theme_constant_override("outline_size", 4)
 		nl.text = s.display_name
 		add_child(nl)
 

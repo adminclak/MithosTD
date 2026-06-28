@@ -43,7 +43,7 @@ func _initialize() -> void:
 ## Garante que TODOS os personagens do roster AGEM em campo: ranged dispara um
 ## projétil; melee trava/fere um inimigo no raio. Pega "personagens parados".
 func _test_all_characters_act() -> void:
-	print("\nTodos os personagens agem em campo (56):")
+	print("\nTodos os personagens agem em campo:")
 	var gs = root.get_node_or_null(^"/root/GameState")
 	if gs != null:
 		gs.reset_run(20, 0)
@@ -399,9 +399,9 @@ func _test_progression() -> void:
 		return
 	pr.reset()
 
-	# Roster grande; comeca com os iniciais (1 por mitologia).
-	_check(Roster.count() >= 50, "roster tem 50+ personagens")
-	_check(pr.unlocked_ids().size() == Roster.STARTERS.size(), "comeca com os iniciais (1 por mitologia)")
+	# Foco grego: 8 personagens; comeca com os iniciais.
+	_check(Roster.count() == 8, "roster grego tem 8 personagens")
+	_check(pr.unlocked_ids().size() == Roster.STARTERS.size(), "comeca com os iniciais")
 	_check(pr.is_unlocked("artemis") == true, "Artemis (inicial) desbloqueada")
 	_check(pr.is_unlocked("zeus") == false, "Zeus comeca bloqueado")
 	_check(pr.highest_stage_unlocked == 1, "comeca com a fase 1 liberada")
@@ -411,10 +411,11 @@ func _test_progression() -> void:
 	_check(pr.level_of("artemis") >= 2, "100 de XP sobe Artemis de nivel")
 	_check(s["artemis"]["new_level"] == pr.level_of("artemis"), "resumo bate com o nivel novo")
 
-	# Concluir a fase 1 libera a fase 2 e desbloqueia o personagem de campanha.
-	var newly = pr.mark_stage_cleared(1)
+	# Concluir a fase 1 libera a fase 2; concluir a 5 desbloqueia Zeus (campanha).
+	pr.mark_stage_cleared(1)
 	_check(pr.highest_stage_unlocked == 2, "fase 2 liberada apos concluir a 1")
-	_check(newly.has("ares"), "fase 1 desbloqueia Ares (campanha)")
+	var newly = pr.mark_stage_cleared(5)
+	_check(newly.has("zeus"), "fase 5 (Olimpo) desbloqueia Zeus")
 
 	# Save/load roundtrip num arquivo temporario (nao toca o save real).
 	var tmp = "user://test_save_%d.json" % Time.get_ticks_usec()

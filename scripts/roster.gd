@@ -11,8 +11,9 @@ const MYTHOLOGIES := ["Grega", "Nordica", "Japonesa", "Brasileira", "Egipcia", "
 
 enum Rarity { COMMON, RARE, EPIC, LEGENDARY }
 
-## Personagens iniciais: 1 por mitologia (variando classes). O resto é conquistado.
-const STARTERS := ["artemis", "odin", "benkei", "iara", "horus", "longwang", "huitzilo"]
+## FOCO GREGO: por enquanto o jogo é só dos 8 personagens gregos, todos liberados.
+## (O roster completo das 7 mitologias está preservado em defs_all() para o futuro.)
+const STARTERS := ["artemis", "hermes", "hercules", "ares", "atena", "apolo", "medusa"]
 
 
 static func is_starter(id: String) -> bool:
@@ -51,9 +52,23 @@ static func ids_by_rarity(r: int) -> Array:
 	return out
 
 
-# [id, nome, mitologia, arquétipo]. Função (não const) porque referencia enums
-# de outra classe, que não são expressões constantes em GDScript.
+# [id, nome, mitologia, arquétipo]. FOCO GREGO: defs() devolve só os 8 gregos.
+# O elenco completo fica em defs_all() (reativar quando expandir as mitologias).
 static func defs() -> Array:
+	var K := Archetypes.Kind
+	return [
+		["artemis", "Artemis", "Grega", K.ARCHER_SNIPER],
+		["hermes", "Hermes", "Grega", K.ARCHER_RAPID],
+		["hercules", "Hercules", "Grega", K.WARRIOR_TANK],
+		["ares", "Ares", "Grega", K.WARRIOR_DPS],
+		["atena", "Atena", "Grega", K.PRIEST_BUFF],
+		["apolo", "Apolo", "Grega", K.PRIEST_HEAL],
+		["medusa", "Medusa", "Grega", K.MAGE_AOE],
+		["zeus", "Zeus", "Grega", K.MAGE_BURST],
+	]
+
+
+static func defs_all() -> Array:
 	var K := Archetypes.Kind
 	return [
 		# --- Grega ---

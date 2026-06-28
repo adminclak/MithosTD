@@ -15,7 +15,7 @@ const LEVEL_CAP := {1: 10, 2: 20, 3: 30}
 signal progress_changed
 
 const GACHA_COST := 100 ## Ambrosia por giro
-const STAGE_UNLOCKS := {1: "ares", 2: "medusa", 3: "thor", 4: "ra", 5: "sunwukong"}
+const STAGE_UNLOCKS := {5: "zeus"} ## foco grego: concluir a fase 5 (Olimpo) libera Zeus
 
 var highest_stage_unlocked: int = 1 ## maior fase liberada para jogar
 var meta_essence: int = 0           ## recurso secundário (loja)

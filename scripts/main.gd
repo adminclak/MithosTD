@@ -12,6 +12,9 @@ func _ready() -> void:
 	# Atalho de smoke test: "-- --auto-stage" inicia a fase 1 direto com os
 	# personagens iniciais, exercitando o fluxo Partida -> Resultado sem input.
 	var args := OS.get_cmdline_user_args()
+	if args.has("--shot"):
+		_shot_mode(args)
+		return
 	if args.has("--auto-stage"):
 		var idx := 1
 		for a in args:
@@ -32,6 +35,28 @@ func _ready() -> void:
 		_show_quests()
 	else:
 		_show_title()
+
+
+## Modo de captura: abre uma tela, espera renderizar e salva um PNG, depois sai.
+## Uso: Godot --path . -- --shot <title|worldmap|heroes|collection|gacha|quests>
+func _shot_mode(args: Array) -> void:
+	var which := "title"
+	for a in args:
+		if a in ["title", "worldmap", "heroes", "collection", "gacha", "quests"]:
+			which = a
+	match which:
+		"worldmap": _show_worldmap()
+		"heroes": _show_heroes()
+		"collection": _show_collection()
+		"gacha": _show_gacha()
+		"quests": _show_quests()
+		_: _show_title()
+	for i in 25:
+		await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	var img := get_viewport().get_texture().get_image()
+	img.save_png("c:/projetos/jogoTD/_shot_%s.png" % which)
+	get_tree().quit()
 
 
 func _show_title() -> void:
