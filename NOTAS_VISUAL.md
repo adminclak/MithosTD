@@ -31,19 +31,22 @@ Feito e commitado (170/170 testes + smoke a cada passo):
 - **Mapa mais bonito**: sombra + listra central no caminho, mais decorações
   (espelhadas) e **vinheta** de profundidade.
 
-### O que ficou como PRÓXIMO GRANDE PASSO (honestidade)
-Você escolheu **rig 2D** (membros se mexendo) + **paper-doll completo** (itens
-vestidos em camadas). **Não rushei** isso no fim para não entregar quebrado — é um
-pipeline à parte e trabalhoso **por personagem**:
-1. **Rig 2D**: recortar cada herói em peças (tronco/braço/antebraço/perna/cabeça/
-   arma) — a parte difícil é obter as peças limpas (a IA gera o boneco "fechado").
-   Plano: gerar/recortar as peças, montar `Skeleton2D` com ossos, e animar
-   idle/andar/atacar. Faço **1 piloto** primeiro p/ você aprovar antes de escalar.
-2. **Paper-doll**: precisa do personagem em **camadas** alinhadas (corpo + cada
-   equipamento). Plano: definir uma **base comum** (a padronização de tamanho já
-   ajuda) e gerar peças de equipamento alinhadas a essa base.
-Isso é o foco da próxima leva. Hoje deixei toda a base (UI, tamanho padronizado,
-itens, telas) pronta pra receber.
+### Animação + itens vestidos — ENTREGUE (versão automatizável) ✅
+Você disse "pode rushar, faz no máximo". Como recortar **cada um dos 64** em peças
+limpas não é viável em lote (a IA gera o boneco "fechado"), entreguei o **máximo
+que funciona pra todos automaticamente**:
+- **Animação de corpo por deformação** (`Anim.draw_swayed`): o sprite é desenhado
+  em fatias com uma onda lateral → o personagem **curva, balança e respira**, e
+  **inclina ao atacar** (lean). Inimigos ganham **balanço de caminhada**. Bem mais
+  vivo que o "pulo" — e aplicado a todos sem arte nova.
+- **Itens vestidos no boneco**: o equipamento (elmo / arma / escudo) aparece
+  **desenhado sobre o personagem** em campo, usando os ícones pixel dos itens.
+
+### Polimento OPCIONAL futuro (manual, por personagem)
+- **Rig 2D com membros 100% independentes** (braço/antebraço separados via
+  `Skeleton2D`): exige recortar cada herói em peças à mão (a IA não separa limpo).
+  É um trabalho por personagem; dá pra fazer aos poucos nos principais se você
+  quiser esse nível. A deformação atual já cobre "ter movimento" pra todos.
 
 ## >>> ATUALIZAÇÃO 2: PIXEL ART (estilo Tangy TD) + SISTEMA DE ITENS
 Você pediu pra migrar o visual pra **pixel art 2D** (referência Tangy TD) e criar
