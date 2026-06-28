@@ -26,9 +26,10 @@ var fragments: Dictionary = {}      ## id -> quantidade de fragmentos (evoluem e
 var inventory: Array = []           ## ids de equipamentos possuídos (sem repetição)
 var equipped: Dictionary = {}       ## char_id -> { slot_index: item_id }
 
-# Esquadrão salvo (a "comp" montada pelo jogador) + Poder Supremo escolhido.
-var squad: Array = []               ## ids dos heróis no esquadrão (até SQUAD_MAX)
-var squad_ult: String = ""          ## id do herói cujo Poder Supremo será usado
+# Até 3 equipes salvas. teams[i] = lista de ids; team_ults[i] = id do Poder Supremo.
+var teams: Array = [[], [], []]
+var team_ults: Array = ["", "", ""]
+var active_team: int = 0
 
 # Quests / contadores.
 var stats: Dictionary = {"wins": 0, "gacha": 0, "evolves": 0}
@@ -158,14 +159,49 @@ func _ensure_equip(char_id: String) -> void:
 				equipped[char_id][str(s)] = ""
 
 
-## Salva o esquadrão montado (heróis válidos/desbloqueados) + o Poder Supremo.
+# --- Equipes (até 3) ---
+func current_squad() -> Array:
+	return teams[active_team].duplicate()
+
+
+func current_ult() -> String:
+	return team_ults[active_team]
+
+
+func set_active_team(index: int) -> void:
+	active_team = clampi(index, 0, teams.size() - 1)
+	save_game()
+
+
+## Adiciona/remove um herói da equipe (clicar p/ entrar/sair). Respeita SQUAD_MAX.
+func toggle_in_team(index: int, id: String) -> void:
+	var t: Array = teams[index]
+	if t.has(id):
+		t.erase(id)
+		if team_ults[index] == id:
+			team_ults[index] = t[0] if not t.is_empty() else ""
+	elif is_unlocked(id) and t.size() < SQUAD_MAX:
+		t.append(id)
+		if team_ults[index] == "":
+			team_ults[index] = id
+	teams[index] = t
+	save_game()
+
+
+func set_team_ult(index: int, id: String) -> void:
+	if teams[index].has(id):
+		team_ults[index] = id
+		save_game()
+
+
+## Compat: define a equipe ativa inteira de uma vez (heróis válidos) + ult.
 func set_squad(ids: Array, ult: String) -> void:
 	var clean: Array = []
 	for id in ids:
 		if is_unlocked(id) and not clean.has(id) and clean.size() < SQUAD_MAX:
 			clean.append(id)
-	squad = clean
-	squad_ult = ult if clean.has(ult) else (clean[0] if not clean.is_empty() else "")
+	teams[active_team] = clean
+	team_ults[active_team] = ult if clean.has(ult) else (clean[0] if not clean.is_empty() else "")
 	save_game()
 
 
@@ -465,8 +501,9 @@ func reset() -> void:
 	fragments = {}
 	inventory = []
 	equipped = {}
-	squad = []
-	squad_ult = ""
+	teams = [[], [], []]
+	team_ults = ["", "", ""]
+	active_team = 0
 	stats = {"wins": 0, "gacha": 0, "evolves": 0}
 	daily = {"wins": 0, "gacha": 0}
 	quests_claimed = []
@@ -495,8 +532,9 @@ func save_to(path: String) -> void:
 		"fragments": fragments,
 		"inventory": inventory,
 		"equipped": equipped,
-		"squad": squad,
-		"squad_ult": squad_ult,
+		"teams": teams,
+		"team_ults": team_ults,
+		"active_team": active_team,
 		"stats": stats,
 		"daily": daily,
 		"quests_claimed": quests_claimed,
@@ -551,10 +589,23 @@ func load_from(path: String) -> void:
 		for s in range(EquipmentData.SLOT_NAMES.size()):
 			slots[str(s)] = str(e.get(str(s), ""))
 		equipped[cid] = slots
-	squad = []
-	for sid in data.get("squad", []):
-		squad.append(str(sid))
-	squad_ult = str(data.get("squad_ult", ""))
+	teams = [[], [], []]
+	team_ults = ["", "", ""]
+	var saved_teams: Array = data.get("teams", [])
+	for i in range(min(3, saved_teams.size())):
+		var t: Array = []
+		for sid in saved_teams[i]:
+			t.append(str(sid))
+		teams[i] = t
+	var saved_ults: Array = data.get("team_ults", [])
+	for i in range(min(3, saved_ults.size())):
+		team_ults[i] = str(saved_ults[i])
+	# Migração de saves antigos (campo squad/squad_ult unico).
+	if saved_teams.is_empty() and data.has("squad"):
+		for sid in data.get("squad", []):
+			teams[0].append(str(sid))
+		team_ults[0] = str(data.get("squad_ult", ""))
+	active_team = clampi(int(data.get("active_team", 0)), 0, 2)
 	var sv_stats: Dictionary = data.get("stats", {})
 	stats = {"wins": int(sv_stats.get("wins", 0)), "gacha": int(sv_stats.get("gacha", 0)), "evolves": int(sv_stats.get("evolves", 0))}
 	var sv_daily: Dictionary = data.get("daily", {})

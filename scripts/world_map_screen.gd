@@ -100,19 +100,20 @@ func _ready() -> void:
 
 
 func _update_squad_msg() -> void:
-	if Progression.squad.is_empty():
-		_msg.text = "Esquadrao vazio — monte em HEROIS antes de jogar"
+	var squad := Progression.current_squad()
+	if squad.is_empty():
+		_msg.text = "Equipe %d vazia — monte em HEROIS antes de jogar" % (Progression.active_team + 1)
 		return
 	var names: Array = []
-	for id in Progression.squad:
+	for id in squad:
 		var c := Roster.by_id(id)
 		if c != null:
 			names.append(c.display_name)
-	_msg.text = "Esquadrao: " + ", ".join(names)
+	_msg.text = "Equipe %d: %s" % [Progression.active_team + 1, ", ".join(names)]
 
 
 func _on_node(stage: StageData) -> void:
-	if Progression.squad.is_empty():
+	if Progression.current_squad().is_empty():
 		_update_squad_msg()
 		return
 	stage_chosen.emit(stage)

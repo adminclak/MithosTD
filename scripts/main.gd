@@ -58,7 +58,7 @@ func _show_heroes() -> void:
 
 
 func _start_stage_from_map(stage: StageData) -> void:
-	_on_start_stage(stage, Progression.squad.duplicate(), Progression.squad_ult, false)
+	_on_start_stage(stage, Progression.current_squad(), Progression.current_ult(), false)
 
 
 func _show_collection() -> void:
