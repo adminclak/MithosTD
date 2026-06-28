@@ -27,6 +27,8 @@ var theme: String = "Grega"
 const DECO_SPOTS := [
 	[120, 470, 0.20], [1170, 110, 0.20], [700, 90, 0.17], [470, 250, 0.12],
 	[1150, 470, 0.13], [250, 560, 0.12], [900, 560, 0.12], [560, 110, 0.11],
+	[60, 300, 0.15], [1200, 300, 0.13], [600, 300, 0.11], [180, 95, 0.12],
+	[880, 300, 0.13], [430, 560, 0.12], [1000, 95, 0.12], [330, 560, 0.10],
 ]
 
 # Cor do caminho (borda, miolo) por tema.
@@ -77,17 +79,25 @@ func _ready() -> void:
 		bg.scale = Vector2(1280.0 / grass.get_width(), 720.0 / grass.get_height())
 		add_child(bg)
 
-	# Decorações do tema (atrás do gameplay).
+	# Decorações do tema (atrás do gameplay), com espelhamento alternado.
 	var deco_ids: Array = THEME_DECOS.get(theme, THEME_DECOS["Grega"])
 	for i in DECO_SPOTS.size():
 		var spot: Array = DECO_SPOTS[i]
 		var did: String = deco_ids[i % deco_ids.size()]
-		_add_sprite(Art.map(did), Vector2(spot[0], spot[1]), spot[2], -10)
+		_add_sprite(Art.map(did), Vector2(spot[0], spot[1]), spot[2], -10, i % 3 == 0)
 
-	# Caminho (borda + miolo) na cor do tema.
+	# Caminho: sombra (profundidade) + borda + miolo + listra central clara.
 	var pc := _path_pair()
-	add_child(_path_line(54, pc[0]))
-	add_child(_path_line(40, pc[1]))
+	var border: Color = pc[0]
+	var fill: Color = pc[1]
+	var shadow := Color(0, 0, 0, 0.25)
+	var shadow_line := _path_line(60, shadow)
+	shadow_line.position = Vector2(0, 5)
+	add_child(shadow_line)
+	add_child(_path_line(54, border))
+	add_child(_path_line(42, fill))
+	var stripe := _path_line(8, Color(fill.r * 1.12, fill.g * 1.12, fill.b * 1.12, 0.5))
+	add_child(stripe)
 
 	# Portal de entrada (1º waypoint) e castelo/base (último).
 	_add_sprite(Art.map("portal"), WAYPOINTS[0] + Vector2(30, 0), 0.16, -5)
@@ -95,13 +105,13 @@ func _ready() -> void:
 	queue_redraw()
 
 
-func _add_sprite(tex: Texture2D, pos: Vector2, scl: float, z: int) -> void:
+func _add_sprite(tex: Texture2D, pos: Vector2, scl: float, z: int, flip: bool = false) -> void:
 	if tex == null:
 		return
 	var s := Sprite2D.new()
 	s.texture = tex
 	s.position = pos
-	s.scale = Vector2(scl, scl)
+	s.scale = Vector2(-scl if flip else scl, scl)
 	s.z_index = z
 	add_child(s)
 
@@ -129,3 +139,13 @@ func _draw() -> void:
 		var base_pos: Vector2 = WAYPOINTS[-1]
 		draw_circle(base_pos, 24.0, Color(0.2, 0.7, 0.32))
 		draw_circle(WAYPOINTS[0] + Vector2(20, 0), 9.0, Color(0.7, 0.3, 0.3))
+	# Vinheta: escurece levemente as bordas para dar profundidade (sempre).
+	var bands := 26
+	for i in bands:
+		var a: float = (1.0 - float(i) / float(bands)) * 0.5
+		var col := Color(0, 0, 0, a * 0.05)
+		var o: float = float(i) * 3.0
+		draw_rect(Rect2(0, o, 1280, 3), col)            # topo
+		draw_rect(Rect2(0, 717 - o, 1280, 3), col)      # base
+		draw_rect(Rect2(o, 0, 3, 720), col)             # esquerda
+		draw_rect(Rect2(1277 - o, 0, 3, 720), col)      # direita
