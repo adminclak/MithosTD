@@ -12,7 +12,7 @@ func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
 	if args.has("--auto-stage"):
 		var squad := Progression.unlocked_ids()
-		_on_start_stage(StageList.get_stage(1), squad.slice(0, Progression.SQUAD_MAX))
+		_on_start_stage(StageList.get_stage(1), squad.slice(0, Progression.SQUAD_MAX), true)
 	elif args.has("--collection"):
 		_show_collection()
 	else:
@@ -32,7 +32,7 @@ func _show_collection() -> void:
 	_switch_to(screen)
 
 
-func _on_start_stage(stage: StageData, squad_ids: Array) -> void:
+func _on_start_stage(stage: StageData, squad_ids: Array, auto: bool = false) -> void:
 	var squad_datas: Array = []
 	for id in squad_ids:
 		var ch := Roster.by_id(id)
@@ -44,6 +44,7 @@ func _on_start_stage(stage: StageData, squad_ids: Array) -> void:
 
 	var game := GameScreen.new()
 	game.setup(stage, squad_datas)
+	game.auto_start = auto
 	game.finished.connect(_on_game_finished.bind(stage, squad_ids))
 	_switch_to(game)
 
@@ -65,6 +66,9 @@ func _on_game_finished(victory: bool, stage: StageData, squad_ids: Array) -> voi
 
 
 func _switch_to(screen: Node) -> void:
+	# Seguranca: nenhuma tela deve herdar pause/velocidade de uma partida.
+	get_tree().paused = false
+	Engine.time_scale = 1.0
 	if _current != null and is_instance_valid(_current):
 		_current.queue_free()
 	_current = screen

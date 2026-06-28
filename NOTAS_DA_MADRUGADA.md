@@ -23,8 +23,8 @@ Data de início: 2026-06-28 (madrugada). Base: MVP completo (Camadas 1–6, comm
 
 - [x] **Bloco 1 — Atributos + derivação + crítico** (commit). `AttributeSet` (STR/AGI/VIT/INT/DEX/LUK), `AttributeStats` (deriva todos os stats por classe — **ajuste de balanço centralizado aqui**), crítico (LUK/DEX → chance + multiplicador, projétil laranja no crit), vel. de movimento dos bloqueadores via AGI.
 - [x] **Bloco 2 — 56 personagens em 7 mitologias** (commit). `Archetypes` (8 presets) + `Roster` (Grega, Nórdica, Japonesa, Brasileira, Egípcia, Chinesa, Asteca). Hub reescrito com **filtro por mitologia + scroll**. Todos desbloqueados (livre escolha).
-- [ ] Bloco 3 — Posicionamento livre com zonas
-- [ ] Bloco 4 — Fase de preparação + botões de partida
+- [x] **Bloco 3 — Posicionamento livre com zonas** (commit `6199cf1`). Clica em qualquer lugar; Guerreiro só na faixa do meio (< 48px da rota), ranged só nas laterais. Faixa translúcida mostra a zona; toast avisa posição inválida. Esquadrão (6) é o limite de torres.
+- [x] **Bloco 4 — Fase de prep + botões de partida** (commit). Botões: **Lancar Onda** (inicia a 1ª / antecipa a próxima com bônus de ouro), **Pause**, **x1/x2** (velocidade) e **Abandonar**. Fase de preparação antes da 1ª onda. `MatchHud` (process ALWAYS p/ funcionar em pause), `WaveManager` refatorado.
 - [ ] Bloco 5 — Melhorias visuais
 - [ ] Bloco 6 — Balanceamento
 
