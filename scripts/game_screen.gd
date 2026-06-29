@@ -29,6 +29,7 @@ var _ult: UltimateData = null
 var _ult_charge: float = 1.0 ## começa carregado para a 1ª investida
 var _ult_layer: CanvasLayer = null
 var _aimer: UltAimer = null
+var _champion: Champion = null
 
 
 func setup(stage: StageData, squad_datas: Array, ult_char_id: String = "") -> void:
@@ -56,6 +57,13 @@ func _ready() -> void:
 	_build_manager = BuildManager.new()
 	_build_manager.setup(level.get_waypoints(), _squad, level.get_build_slots())
 	add_child(_build_manager)
+
+	# Campeão: o 1º herói do esquadrão anda pelo mapa (clique no chão p/ mover).
+	if not _squad.is_empty():
+		_champion = Champion.new()
+		_champion.setup(_squad[0])
+		_champion.position = Vector2(620, 400)
+		enemies_root.add_child(_champion)
 
 	var hud := Hud.new()
 	add_child(hud)
@@ -129,6 +137,14 @@ func _process(delta: float) -> void:
 
 
 ## Botão da ult: entra no modo de mira (escolher onde lançar no mapa).
+## Clique no chão (não consumido por slot/UI) = move o campeão até ali.
+func _unhandled_input(event: InputEvent) -> void:
+	if _champion == null or _ended:
+		return
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		_champion.move_to(get_global_mouse_position())
+
+
 func _on_ult() -> void:
 	if _ult == null or _ult_charge < 1.0 or _ended:
 		return
