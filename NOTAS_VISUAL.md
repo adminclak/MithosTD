@@ -5,6 +5,30 @@
 > **testar todos os personagens**. Trabalhei com autonomia, em 2D, commitando por
 > partes. Este doc resume tudo e as decisões.
 
+## >>> MAPAS ESTILO KINGDOM RUSH (29/06)
+Você disse que a 1ª tela "não ficou igual" ao KR (chão de confete colorido).
+Descobri que a arte do Kingdom Rush é **pintada HD lisa, não pixel art**. Mudei
+a estratégia: cada fase agora tem um **mapa de tela cheia pintado em HD**
+(`assets/map/map_<tema>.png`, gerado com `PIXEL=0`), com o bioma casando com o
+nome da fase, sempre em **vista de cima**:
+- **Elis** = clareira de grama com floresta nas bordas
+- **Nemeia** = bosque escuro denso
+- **Pântano** = brejo com riacho e poças de lama
+- **Desfiladeiro** = paredões de rocha vermelha
+- **Olimpo** = montanha nevada (regenerada p/ vista de cima; a 1ª saiu paisagem)
+
+`level.gd`: quando existe `map_<tema>.png`, ele vira o **fundo** e o jogo
+suprime o chão lado-a-lado + a borda de árvores por código + as decorações
+(tudo já embutido na arte). Caminho/slots/castelo/unidades ficam por cima.
+
+Também troquei a **torre do sacerdote**: era um pagode tailandês (destoava da
+Grécia) → agora é um **templo grego (Partenon)** com colunas.
+
+**Questão em aberto:** no `map_elis` o gerador embutiu umas **cercas de madeira
+ovais** no centro que não coincidem com o caminho de terra desenhado (ficam 2
+"trilhas"). Tolerável (parece cerca de pasto), mas se te incomodar eu regenero
+o mapa sem cercas ou alinho o caminho a elas.
+
 ## >>> RESPOSTAS APLICADAS (29/06)
 Você respondeu as 4 perguntas; implementei tudo (184/184 testes):
 1. **1 campeão por partida, escolhível**: na tela de Heróis há **"Definir como
