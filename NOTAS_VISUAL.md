@@ -5,6 +5,48 @@
 > **testar todos os personagens**. Trabalhei com autonomia, em 2D, commitando por
 > partes. Este doc resume tudo e as decisões.
 
+## >>> MADRUGADA: KR puro (slots + campeão) + ANIMAÇÃO
+(você saiu e pediu pra eu trabalhar a madrugada toda sozinho, foco em animação)
+
+### Feito (tudo commitado, 184/184 testes, verificado por PRINTS via `--shot`)
+- **Partida estilo Kingdom Rush (slots)**: pontos estratégicos fixos no mapa → toca
+  → **menu radial** com as 4 torres + custo → constrói com ouro; toca na torre →
+  **Melhorar / Vender**. (`build_manager.gd` + `radial_menu.gd` + slots no `level.gd`.)
+- **Prédios das 4 torres** (arqueira / quartel / guilda de magos / templo) — geradas
+  por IA, no lugar dos "bonecos".
+- **ANIMAÇÃO de ações** (`anim.gd` → `Anim.draw_action`): o sprite é fatiado e cada
+  fatia se move conforme a AÇÃO — **andar** (passada + bob + vira na direção),
+  **atacar** (investida), **aguardar** (respiração), **defender** (agacha). Aplicado
+  aos **inimigos** (andam de verdade, não só pulam).
+- **CAMPEÃO** (`champion.gd`): **1 herói do esquadrão que ANDA no mapa** (clique no
+  chão = mover, estilo KR), vai até os inimigos e luta (melee trava e bate / ranged
+  atira), **cai e revive**. Tem barra de vida, coroa e anel do elemento; usa
+  elemento/atributos/equip do herói.
+- **HUD no layout KR**: HP/ouro/onda no canto, controles no topo, e **2 PODERES nos
+  cantos inferiores** — **Reforços** (esquerda: invoca 3 soldados no ponto) e **Poder
+  Supremo** (direita). Os dois carregam durante a partida e usam a mira no mapa.
+- **Pop-up "ONDA X/Y"** em pergaminho no início de cada onda.
+- Ferramenta: `--shot game` fotografa a PARTIDA (além dos menus) p/ eu iterar.
+
+### ❓ PRECISO QUE VOCÊ RESPONDA AMANHÃ
+1. **Campeão**: hoje o campeão é automaticamente o **1º herói do esquadrão**. Quer
+   **escolher** qual herói é o campeão (na tela de Heróis)? E pode ter **mais de 1**
+   campeão por partida?
+2. **Onde os sistemas se aplicam**: como as torres são genéricas (KR puro),
+   **elemento/equipamento/sets/sinergia** hoje fazem efeito **no campeão**, não nas
+   torres. Tá certo assim, ou você quer esses sistemas valendo também nas torres?
+3. **Animação — nível**: fiz animação **procedural** (corpo fatiado: anda/ataca/
+   defende/aguarda) que vale pra TODOS automaticamente. O nível "estúdio" (ossos/
+   Skeleton2D recortando cada herói em braço/perna) é **manual por personagem** e
+   bem mais lento. Quer que eu faça o rig com ossos pra alguns (campeão + chefes)?
+4. **Reforços/Ult**: os custos/recargas estão bons? (Reforços recarrega ~18s; ult
+   ~28s.)
+
+### Pendente (faço a seguir / amanhã)
+- **Loja temática** (cena com balcão + vendedor, estilo KR) e card **"Novo Inimigo"**.
+- Habilidade de assinatura do **campeão** disparando sozinha.
+- Polir números (economia das torres com ouro, dano elemental visível).
+
 ## >>> ATUALIZAÇÃO 4: FOCO GREGO + sistemas + reskin Kingdom Rush
 (sessão com brainstorm; referência **Kingdom Rush**; pixel mantido com "energia
 Brawlhalla"; tom divertido)
