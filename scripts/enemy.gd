@@ -249,8 +249,10 @@ func _reach_end() -> void:
 
 
 func _draw() -> void:
-	# Sombra (fica fixa no chão).
-	draw_circle(Vector2(0, _radius * 0.6), _radius * 0.95, Color(0, 0, 0, 0.20))
+	# Sombra elíptica (fica fixa no chão).
+	draw_set_transform(Vector2(0, _radius * 0.7), 0.0, Vector2(1.0, 0.4))
+	draw_circle(Vector2.ZERO, _radius * 0.95, Color(0, 0, 0, 0.22))
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	# Balanço vertical da caminhada (o corpo sobe/desce; a sombra não).
 	var off := Vector2(0, sin(_bob) * 2.0)
 	if _sprite != null:

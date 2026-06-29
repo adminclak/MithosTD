@@ -31,6 +31,9 @@ const BUILD_SLOTS := [
 # Mitologia do cenário (definida pela fase). Controla chão, cor do caminho e decos.
 var theme: String = "Grega"
 
+# Escala consistente por tipo de decoração (objetos têm 192px).
+const DECO_SCALE := {"tree": 0.30, "rock": 0.18, "bush": 0.21}
+
 # Posições fixas das decorações (longe do caminho e acima da barra de heróis).
 const DECO_SPOTS := [
 	[120, 470, 0.20], [1170, 110, 0.20], [700, 90, 0.17], [470, 250, 0.12],
@@ -87,12 +90,16 @@ func _ready() -> void:
 		bg.scale = Vector2(1280.0 / grass.get_width(), 720.0 / grass.get_height())
 		add_child(bg)
 
-	# Decorações do tema (atrás do gameplay), com espelhamento alternado.
+	# Decorações do tema (atrás do gameplay), escala CONSISTENTE por tipo + sombra.
 	var deco_ids: Array = THEME_DECOS.get(theme, THEME_DECOS["Grega"])
 	for i in DECO_SPOTS.size():
 		var spot: Array = DECO_SPOTS[i]
 		var did: String = deco_ids[i % deco_ids.size()]
-		_add_sprite(Art.map(did), Vector2(spot[0], spot[1]), spot[2], -10, i % 3 == 0)
+		var scl: float = DECO_SCALE.get(did, 0.22)
+		var pos := Vector2(spot[0], spot[1])
+		var base := pos + Vector2(0, 192.0 * scl * 0.46) # pé do objeto
+		_add_shadow(base, 192.0 * scl * 0.34, 192.0 * scl * 0.13, -11)
+		_add_sprite(Art.map(did), pos, scl, -10, i % 3 == 0)
 
 	# Caminho: sombra (profundidade) + borda + miolo + listra central clara.
 	var pc := _path_pair()
@@ -107,9 +114,13 @@ func _ready() -> void:
 	var stripe := _path_line(8, Color(fill.r * 1.12, fill.g * 1.12, fill.b * 1.12, 0.5))
 	add_child(stripe)
 
-	# Portal de entrada (1º waypoint) e castelo/base (último).
-	_add_sprite(Art.map("portal"), WAYPOINTS[0] + Vector2(30, 0), 0.16, -5)
-	_add_sprite(Art.map("castle"), WAYPOINTS[-1], 0.18, -1)
+	# Portal de entrada (1º waypoint) e castelo/base (último) — grandes, com sombra.
+	var portal_pos: Vector2 = WAYPOINTS[0] + Vector2(40, 0)
+	_add_shadow(portal_pos + Vector2(0, 38), 56, 20, -6)
+	_add_sprite(Art.map("portal"), portal_pos, 0.46, -5)
+	var castle_pos: Vector2 = WAYPOINTS[-1] + Vector2(0, -8)
+	_add_shadow(castle_pos + Vector2(0, 56), 80, 28, -2)
+	_add_sprite(Art.map("castle"), castle_pos, 0.70, -1)
 	queue_redraw()
 
 
@@ -142,6 +153,19 @@ func get_waypoints() -> Array:
 
 func get_build_slots() -> Array:
 	return BUILD_SLOTS.duplicate()
+
+
+## Sombra elíptica (chão) sob um objeto. center = base do objeto.
+func _add_shadow(center: Vector2, rw: float, rh: float, z: int) -> void:
+	var poly := Polygon2D.new()
+	var pts := PackedVector2Array()
+	for i in 18:
+		var a := TAU * float(i) / 18.0
+		pts.append(center + Vector2(cos(a) * rw, sin(a) * rh))
+	poly.polygon = pts
+	poly.color = Color(0, 0, 0, 0.22)
+	poly.z_index = z
+	add_child(poly)
 
 
 func _draw() -> void:

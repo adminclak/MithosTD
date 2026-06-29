@@ -44,8 +44,8 @@ func _ready() -> void:
 		_sprite = Art.hero(data.char_id)
 	if _sprite != null:
 		_rig = RiggedActor.new()
-		_rig.setup(_sprite, 84.0)
-		_rig.position = Vector2(0, 16) # pés no chão (junto da sombra)
+		_rig.setup(_sprite, 54.0) # menor que a torre (~92px)
+		_rig.position = Vector2(0, 12) # pés no chão (junto da sombra)
 		add_child(_rig)
 	_rally = global_position
 	queue_redraw()
@@ -232,21 +232,23 @@ func _go_down() -> void:
 
 
 func _draw() -> void:
-	# Sombra.
-	draw_circle(Vector2(0, 17), 15.0, Color(0, 0, 0, 0.28))
+	# Sombra (elíptica no chão).
+	draw_set_transform(Vector2(0, 13), 0.0, Vector2(1.0, 0.45))
+	draw_circle(Vector2.ZERO, 13.0, Color(0, 0, 0, 0.28))
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	# Anel do elemento (marca o campeão).
 	if data != null:
 		var ec := Elements.color_of(data.element)
-		draw_arc(Vector2(0, 14), 20.0, 0.0, TAU, 24, Color(ec.r, ec.g, ec.b, 0.6), 2.5)
+		draw_arc(Vector2(0, 12), 14.0, 0.0, TAU, 24, Color(ec.r, ec.g, ec.b, 0.6), 2.0)
 	# O corpo é desenhado pelo _rig (RiggedActor, nó filho).
 	# Barra de vida + coroa (acima do rig).
 	if not _down:
-		var w := 42.0
-		var p := Vector2(-21, -84)
-		draw_rect(Rect2(p, Vector2(w, 5)), Color(0.1, 0.1, 0.1))
+		var w := 36.0
+		var p := Vector2(-18, -52)
+		draw_rect(Rect2(p, Vector2(w, 4)), Color(0.1, 0.1, 0.1))
 		var ratio := clampf(float(_hp) / float(_max), 0.0, 1.0)
-		draw_rect(Rect2(p, Vector2(w * ratio, 5)), Color(0.3, 0.85, 0.4))
-		draw_string(ThemeDB.fallback_font, Vector2(-9, -90), "♛", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(1, 0.85, 0.3))
+		draw_rect(Rect2(p, Vector2(w * ratio, 4)), Color(0.3, 0.85, 0.4))
+		draw_string(ThemeDB.fallback_font, Vector2(-7, -56), "♛", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(1, 0.85, 0.3))
 	else:
-		draw_string(ThemeDB.fallback_font, Vector2(-30, -78), "%ds" % int(ceil(_down_t)),
-			HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(1, 0.6, 0.6))
+		draw_string(ThemeDB.fallback_font, Vector2(-26, -44), "%ds" % int(ceil(_down_t)),
+			HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(1, 0.6, 0.6))

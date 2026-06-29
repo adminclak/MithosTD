@@ -463,8 +463,12 @@ func _draw() -> void:
 		motion = -_face * 4.0 * _atk    # recua ao atirar
 	var off := bob + motion
 
-	# Sombra (fixa no chão).
-	draw_circle(Vector2(0, 15), 13.0, Color(0, 0, 0, 0.20))
+	# Sombra elíptica no chão (maior para prédios).
+	var sh_w := 30.0 if _is_building else 14.0
+	var sh_y := 20.0 if _is_building else 15.0
+	draw_set_transform(Vector2(0, sh_y), 0.0, Vector2(1.0, 0.4))
+	draw_circle(Vector2.ZERO, sh_w, Color(0, 0, 0, 0.25))
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	if _down:
 		c = Color(c.r * 0.4, c.g * 0.4, c.b * 0.4, 0.7)
 		dark = Color(dark.r, dark.g, dark.b, 0.7)
