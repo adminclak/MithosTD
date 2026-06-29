@@ -761,8 +761,10 @@ func _test_ability_families() -> void:
 	_check(c1.hp < 100 and c2.hp < 100, "CHAIN (Zeus) fere varios inimigos em cadeia")
 	tz.free(); c1.free(); c2.free()
 
-	# SUMMON (Mictlan): invoca um aliado melee temporario.
-	var tsum = Tower.new(); tsum.setup(Roster.by_id("mictlan").tower_data_for_level(1))
+	# SUMMON: invoca um aliado melee temporario (habilidade montada direto).
+	var dsum = TowerData.warrior()
+	dsum.ability = AbilityData.make("ab_sum", "Invocar", AbilityData.Kind.SUMMON, 30.0, 180.0, 6.0, 8.0)
+	var tsum = Tower.new(); tsum.setup(dsum)
 	root.add_child(tsum); tsum.global_position = Vector2(0, 320)
 	var before_allies = get_nodes_in_group("melee_allies").size()
 	tsum.use_ability()
