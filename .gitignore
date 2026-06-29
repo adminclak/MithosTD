@@ -16,3 +16,10 @@ _shot_*.png
 _shot_*.png.import
 _grid*.png
 _grid*.png.import
+# Diagnóstico do tracepath/checkpath (gerados, não versionar)
+_trace_*.png
+_trace_*.png.import
+_mask_*.png
+_mask_*.png.import
+_check_*.png
+_check_*.png.import

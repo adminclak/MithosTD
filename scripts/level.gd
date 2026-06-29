@@ -7,44 +7,49 @@ extends Node2D
 
 # Caminho (trajeto dos inimigos) POR FASE — cada uma com um traçado próprio, do
 # portal (1º ponto, fora da tela) até o castelo (último ponto, numa borda).
+# Waypoints TRAÇADOS AUTOMATICAMENTE sobre a trilha pintada de cada mapa
+# (tools/tracepath.py: segmenta a cor da trilha -> A* pelo miolo -> simplifica).
+# Assim os inimigos andam exatamente sobre a faixa desenhada na arte.
 const PATHS_BY_THEME := {
-	# Elis: trajeto DECALCADO sobre a trilha de terra pintada no mapa (entra pelo
-	# topo, faz o "U" pela esquerda e segue a faixa de baixo até o canto inf-direito).
+	# Elis: entra pelo topo, desce e segue a faixa bege até o canto inferior-direito.
 	"elis": [
-		Vector2(262, -30), Vector2(258, 96), Vector2(244, 200), Vector2(196, 256),
-		Vector2(156, 352), Vector2(168, 452), Vector2(238, 520), Vector2(356, 544),
-		Vector2(520, 520), Vector2(720, 500), Vector2(900, 500), Vector2(1040, 520),
-		Vector2(1130, 542), Vector2(1210, 512),
+		Vector2(269, 164), Vector2(278, 282), Vector2(305, 310), Vector2(352, 310),
+		Vector2(405, 278), Vector2(570, 258), Vector2(622, 305), Vector2(632, 335),
+		Vector2(680, 368), Vector2(698, 420), Vector2(728, 450), Vector2(772, 452),
+		Vector2(932, 572), Vector2(1025, 598), Vector2(1098, 598), Vector2(1166, 560),
 	],
-	# Nemeia: DECALCADO sobre a trilha bege da floresta (entra pelo topo-direita, desce
-	# até o centro e segue a trilha larga rumo ao canto inferior-direito).
+	# Nemeia: trilha bege quase horizontal, da borda esquerda à direita (ondas suaves).
 	"nemeia": [
-		Vector2(866, -30), Vector2(860, 120), Vector2(818, 252), Vector2(750, 360),
-		Vector2(694, 446), Vector2(770, 512), Vector2(892, 550), Vector2(1014, 580),
-		Vector2(1140, 604), Vector2(1245, 600),
+		Vector2(34, 390), Vector2(225, 362), Vector2(342, 362), Vector2(462, 348),
+		Vector2(612, 368), Vector2(800, 348), Vector2(985, 390), Vector2(1215, 387),
 	],
-	# Pântano: DECALCADO sobre a trilha única de terra batida (entra à esquerda-baixo,
-	# sobe em S até o topo-centro e sai pela direita-cima contornando o lago).
+	# Pântano: trilha única de terra batida, sobe em S da esquerda-baixo ao topo e sai
+	# pela direita contornando o lago.
 	"pantano": [
-		Vector2(-30, 468), Vector2(90, 452), Vector2(195, 438), Vector2(262, 408),
-		Vector2(318, 352), Vector2(375, 305), Vector2(445, 288), Vector2(515, 298),
-		Vector2(595, 293), Vector2(662, 258), Vector2(722, 192), Vector2(778, 128),
-		Vector2(828, 92), Vector2(905, 82), Vector2(978, 110), Vector2(1045, 158),
-		Vector2(1110, 140), Vector2(1190, 118), Vector2(1255, 110),
+		Vector2(-3, 462), Vector2(55, 462), Vector2(145, 550), Vector2(168, 550),
+		Vector2(255, 498), Vector2(288, 492), Vector2(322, 458), Vector2(345, 415),
+		Vector2(455, 312), Vector2(565, 240), Vector2(615, 240), Vector2(700, 220),
+		Vector2(748, 172), Vector2(752, 135), Vector2(802, 92), Vector2(865, 92),
+		Vector2(908, 78), Vector2(1005, 78), Vector2(1038, 95), Vector2(1098, 100),
+		Vector2(1148, 142), Vector2(1222, 142), Vector2(1268, 95),
 	],
-	# Desfiladeiro: DECALCADO sobre a trilha bege em S (entra à esquerda-baixo, sobe em
-	# diagonal pelo centro e desce no canto direito).
+	# Desfiladeiro (garganta vulcânica): entra no topo-esquerda, desce o braço esquerdo,
+	# contorna a rocha central e sobe o braço direito até o topo-direita.
 	"desfiladeiro": [
-		Vector2(-30, 540), Vector2(150, 525), Vector2(310, 552), Vector2(450, 505),
-		Vector2(565, 425), Vector2(680, 350), Vector2(795, 312), Vector2(905, 295),
-		Vector2(968, 360), Vector2(1000, 460), Vector2(1002, 560), Vector2(992, 620),
+		Vector2(242, -23), Vector2(260, 60), Vector2(308, 118), Vector2(308, 192),
+		Vector2(285, 215), Vector2(292, 282), Vector2(430, 392), Vector2(480, 392),
+		Vector2(658, 375), Vector2(748, 292), Vector2(775, 222), Vector2(815, 182),
+		Vector2(848, 115), Vector2(870, 92), Vector2(905, 85), Vector2(955, 35),
+		Vector2(955, -13),
 	],
-	# Olimpo: DECALCADO sobre a trilha inferior (terra com bordas de neve), entra à
-	# esquerda, segue a faixa de baixo e sobe à direita.
+	# Olimpo: entra à esquerda, segue a faixa de pedra dourada e sobe à direita
+	# contornando as ilhas de neve.
 	"olimpo": [
-		Vector2(-30, 500), Vector2(120, 545), Vector2(225, 600), Vector2(365, 595),
-		Vector2(495, 575), Vector2(610, 588), Vector2(700, 596), Vector2(820, 585),
-		Vector2(940, 600), Vector2(1060, 578), Vector2(1165, 528), Vector2(1245, 482),
+		Vector2(82, 460), Vector2(128, 415), Vector2(195, 415), Vector2(222, 442),
+		Vector2(385, 490), Vector2(450, 490), Vector2(512, 510), Vector2(598, 508),
+		Vector2(662, 470), Vector2(725, 450), Vector2(745, 430), Vector2(772, 365),
+		Vector2(785, 265), Vector2(800, 250), Vector2(818, 240), Vector2(955, 235),
+		Vector2(1062, 330), Vector2(1095, 475), Vector2(1120, 500), Vector2(1235, 500),
 	],
 }
 const DEFAULT_PATH := [Vector2(-40, 160), Vector2(360, 160), Vector2(360, 420),
@@ -57,30 +62,9 @@ const PATH_IN_ART := {
 	"elis": true, "nemeia": true, "pantano": true, "desfiladeiro": true, "olimpo": true,
 }
 
-# Pontos de torre fixos (em grama/terreno livre, longe de objetos pintados) para os
-# temas com caminho na arte. Sem entrada aqui = slots gerados ao lado do caminho.
-const SLOTS_BY_THEME := {
-	"elis": [
-		Vector2(360, 300), Vector2(470, 386), Vector2(610, 336), Vector2(720, 410),
-		Vector2(560, 452), Vector2(870, 360), Vector2(1000, 432), Vector2(1086, 352),
-	],
-	"nemeia": [
-		Vector2(300, 250), Vector2(220, 410), Vector2(440, 280), Vector2(600, 290),
-		Vector2(520, 500), Vector2(1010, 330), Vector2(1120, 430), Vector2(900, 250),
-	],
-	"pantano": [
-		Vector2(350, 200), Vector2(500, 130), Vector2(640, 135), Vector2(330, 565),
-		Vector2(200, 480), Vector2(1120, 350), Vector2(1080, 510), Vector2(1150, 240),
-	],
-	"desfiladeiro": [
-		Vector2(470, 250), Vector2(560, 235), Vector2(740, 210), Vector2(560, 555),
-		Vector2(700, 510), Vector2(880, 490), Vector2(350, 380), Vector2(1130, 470),
-	],
-	"olimpo": [
-		Vector2(380, 215), Vector2(500, 250), Vector2(660, 215), Vector2(800, 185),
-		Vector2(700, 360), Vector2(910, 390), Vector2(1085, 300), Vector2(205, 330),
-	],
-}
+# Pontos de torre: gerados automaticamente AO LADO da trilha (perpendicular a cada
+# segmento, alternando os lados) por _slots_for_path, acompanhando o caminho traçado.
+const SLOTS_BY_THEME := {}
 
 const GRASS := Color(0.27, 0.45, 0.22)
 const PATH_BORDER := Color(0.46, 0.36, 0.24)

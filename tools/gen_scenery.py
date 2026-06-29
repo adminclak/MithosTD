@@ -70,14 +70,17 @@ JOBS = {
         "around rocks and trees and never crosses them, framed on all four edges by a dense "
         "ring of round-canopy green trees, warm soft shadows, vibrant hand-painted",
         False, 1024, 576),
-    "map_nemeia": ("top-down 2D painted cartoon deep forest clearing, Kingdom Rush art style, "
-        "a large flat dark green grass meadow, a single LIGHT TAN BEIGE packed dirt trail "
-        "(warm sandy brown earth, NOT grey, NOT stone), medium width, entering from the LEFT "
-        "edge and winding diagonally up and across to the RIGHT edge with two or three gentle "
-        "curves, lots of open grass around it, the trail bends around boulders and trees and "
-        "never crosses them, framed on all four edges by a very dense ring of tall dark green "
-        "pine and oak trees, deep shadowy woods, a few mossy boulders and ferns near the tree "
-        "line, cool soft shadows, vibrant hand-painted", False, 1024, 576),
+    "map_nemeia": ("flat top-down game level map seen straight from directly above, "
+        "orthographic bird eye view, NO sky NO horizon NO perspective NO vanishing point, "
+        "NO standing tree trunks, NO tilted view, 2D painted cartoon Kingdom Rush level map, "
+        "a large flat dark green forest grass GROUND filling the whole frame, ONLY ONE single "
+        "clear path and NO other trails, exactly ONE bright LIGHT TAN BEIGE packed dirt trail "
+        "(warm sandy beige, clearly lighter than the dark grass), medium width, snaking across "
+        "from the LEFT edge to the RIGHT edge in one serpentine S shape with three gentle bends, "
+        "lots of open dark grass all around it, the single trail bends around boulders and never "
+        "crosses them, edges lined with the ROUND CANOPY TOPS of dense dark green pine and oak "
+        "trees seen from straight above (only treetops, no trunks), a few mossy boulders and "
+        "ferns, cool soft shadows, vibrant hand-painted", False, 1024, 576),
     "map_pantano": ("flat top-down game level map seen straight from directly above, "
         "orthographic bird eye view, NO sky NO horizon NO perspective NO vanishing point, "
         "2D painted cartoon Kingdom Rush level map, a large flat murky dark green muddy swamp "
@@ -90,14 +93,17 @@ JOBS = {
         "them, edges lined with clusters of tall green reeds and gnarled bare dead willow trees "
         "seen from above, foggy, cool soft shadows, vibrant hand-painted", False, 1024, 576),
     "map_desfiladeiro": ("flat top-down game level map seen straight from directly above, "
-        "orthographic bird eye view, NO sky NO horizon NO perspective NO vanishing point NO "
-        "distant mountains, 2D painted cartoon Kingdom Rush level map, a large flat dry cracked "
-        "reddish brown dirt GROUND filling the whole frame, a single bright PALE SANDY BEIGE "
-        "light gravel trail (light cream tan, clearly lighter than the red ground), medium "
-        "width, running from the LEFT edge to the RIGHT edge with one big sweeping S bend, lots "
-        "of open ground around it, the trail winds between rocks and never crosses them, edges "
-        "lined with rugged red rock boulders and a few sparse dead bushes seen from above, arid "
-        "canyon pass, warm soft shadows, vibrant hand-painted", False, 1024, 576),
+        "orthographic bird eye view, NO sky NO horizon NO perspective NO vanishing point, "
+        "2D painted cartoon Kingdom Rush level map, a large flat VERY DARK charcoal black "
+        "volcanic basalt rock GROUND filling the whole frame (deep dark near-black stone), "
+        "ONLY ONE single clear path and NO other trails, exactly ONE bright LIGHT TAN BEIGE dry "
+        "packed-sand trail (warm pale beige, glowing bright against the dark black rock, very "
+        "strong contrast), medium width, snaking across from the LEFT edge to the RIGHT edge in "
+        "one serpentine S shape with three gentle bends, lots of open dark black rock ground all "
+        "around it, NO river, NO water, NO lava, the single trail bends around boulders and "
+        "never crosses them, edges lined with clusters of jagged dark basalt rock spires seen "
+        "from above, arid volcanic gorge, warm soft shadows, vibrant hand-painted",
+        False, 1024, 576),
     "map_olimpo": ("flat top-down game level map seen straight from directly above, "
         "orthographic bird eye view, NO sky NO horizon NO perspective NO vanishing point, "
         "2D painted cartoon Kingdom Rush level map, a large flat pale grey marble stone GROUND "
