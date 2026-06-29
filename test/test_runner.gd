@@ -31,6 +31,7 @@ func _initialize() -> void:
 	_test_shop_evolution()
 	_test_bestiary()
 	_test_wave_composition()
+	_test_balance()
 	_test_attributes()
 	_test_combat_stats()
 	_test_ability_families()
@@ -700,7 +701,7 @@ func _test_bestiary() -> void:
 	var lacaio = GreekBestiary.by_id("lacaio")
 	_check(lacaio != null and lacaio.max_hp == 12, "Lacaio tem 12 de vida")
 	var talos = GreekBestiary.by_id("talos")
-	_check(talos != null and talos.max_hp >= 600, "Talos (boss) tem muita vida")
+	_check(talos != null and talos.max_hp >= 450, "Talos (boss) tem muita vida")
 	var hidra = GreekBestiary.by_id("hidra")
 	_check(hidra.special == EnemyData.Special.SPLIT, "Hidra tem comportamento de divisao")
 
@@ -708,8 +709,8 @@ func _test_bestiary() -> void:
 	var e = Enemy.new()
 	e.apply_data(GreekBestiary.by_id("esqueleto"), 2.0)
 	root.add_child(e)
-	_check(e.max_hp == 92, "apply_data aplica hp_mult (46 * 2 = 92)")
-	_check(e.hp == 92, "_ready inicia hp = max_hp")
+	_check(e.max_hp == 88, "apply_data aplica hp_mult (44 * 2 = 88)")
+	_check(e.hp == 88, "_ready inicia hp = max_hp")
 	e.free()
 
 	# Matar uma Hidra gera 2 filhotes que entram no jogo.
@@ -761,6 +762,67 @@ func _test_wave_composition() -> void:
 			has_talos = true
 	_check(has_talos, "onda final da fase 5 inclui o boss Talos")
 
+## Invariantes de BALANCEAMENTO (modelo da seção de economia/combate). Documentam
+## e protegem os "pesos": economia inicial, ritmo de morte, ouro≈esforço, curva de
+## inimigos suave (sem picos absurdos) e escala de fase limitada.
+func _test_balance() -> void:
+	print("\nBalanceamento (economia + curva de inimigos):")
+
+	# Custo da torre mais barata e ouro inicial.
+	var cheapest := 1 << 30
+	for t in TowerData.all_classes():
+		cheapest = min(cheapest, t.cost)
+	var start_gold: int = GameScreen.START_GOLD
+	_check(start_gold >= 3 * cheapest,
+		"ouro inicial (%d) compra >=3 torres baratas (%d cada)" % [start_gold, cheapest])
+
+	# Uma torre inicial (Arqueiro nv1) derruba um inimigo básico em ~2s.
+	var sniper := AttributeStats.build(TowerData.TowerClass.ARCHER,
+		Archetypes.base_attr(Archetypes.Kind.ARCHER_SNIPER))
+	var dps: float = sniper.damage * sniper.fire_rate
+	var lacaio := GreekBestiary.by_id("lacaio")
+	_check(dps >= lacaio.max_hp / 2.0,
+		"arqueiro inicial mata o básico em ~2s (DPS %.0f vs %d vida)" % [dps, lacaio.max_hp])
+
+	# Ouro ~ esforço: cada inimigo paga numa faixa justa de vida/ouro (sem inimigo
+	# que vale ouro de menos nem 'caixa eletrônico').
+	var fair := true
+	var worst := ""
+	for ed in GreekBestiary.all():
+		if ed.gold_reward <= 0:
+			continue
+		var ratio: float = float(ed.max_hp) / float(ed.gold_reward)
+		if ratio < 1.2 or ratio > 6.5:
+			fair = false
+			worst = "%s (%.1f hp/ouro)" % [ed.id, ratio]
+	_check(fair, "ouro proporcional ao esforço em todos os inimigos" + ("" if fair else " — fora: " + worst))
+
+	# Recompensa básica não é mesquinha (financia expansão como nos refs).
+	_check(lacaio.gold_reward >= cheapest / 25.0,
+		"kill básico (%d) financia torres (custo %d)" % [lacaio.gold_reward, cheapest])
+
+	# Curva de inimigos suave: cada degrau <= ~4x o anterior (sem salto 50x).
+	var esq := GreekBestiary.by_id("esqueleto")
+	var cen := GreekBestiary.by_id("centauro")
+	var cic := GreekBestiary.by_id("ciclope")
+	var tal := GreekBestiary.by_id("talos")
+	var smooth := cen.max_hp <= 3 * esq.max_hp and cic.max_hp <= 3 * cen.max_hp and tal.max_hp <= 4 * cic.max_hp
+	_check(smooth, "curva de vida suave (esq->cen->cic->boss sem pico absurdo)")
+
+	# Escala de fase: hp_mult crescente e o boss efetivo na fase 5 é batível (<=1000).
+	var prev := 0.0
+	var rising := true
+	var capped := true
+	for s in StageList.all():
+		if s.enemy_hp_mult <= prev:
+			rising = false
+		prev = s.enemy_hp_mult
+		if s.enemy_hp_mult > 2.0:
+			capped = false
+	var boss_eff: float = tal.max_hp * StageList.get_stage(5).enemy_hp_mult
+	_check(rising and capped, "hp_mult das fases é crescente e <=2.0")
+	_check(boss_eff <= 1000.0, "boss efetivo na fase 5 (%.0f) é batível (<=1000)" % boss_eff)
+
 func _test_attributes() -> void:
 	print("\nAtributos (Ragnarok-like) + critico:")
 	var base = AttributeSet.make(10, 10, 10, 10, 10, 10)
@@ -786,11 +848,14 @@ func _test_attributes() -> void:
 
 func _test_combat_stats() -> void:
 	print("\nDefesa / penetracao / melee (builds):")
-	# Defesa do inimigo reduz dano; penetracao fura.
+	# Defesa do inimigo reduz dano; penetracao fura. Usa um inimigo sintético com
+	# defesa fixa (desacoplado do ajuste fino do bestiário).
+	var armored := EnemyData.new()
+	armored.defense = 5
 	var e = Enemy.new()
 	e.max_hp = 100
 	root.add_child(e)
-	e.data = GreekBestiary.by_id("esqueleto") # defense 5
+	e.data = armored
 	e.take_damage(20, 0)
 	_check(e.hp == 85, "defesa reduz o dano (20 - 5 = 15)")
 	e.take_damage(20, 5)
