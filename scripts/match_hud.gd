@@ -10,6 +10,7 @@ signal pause_pressed
 signal speed_pressed
 signal abandon_pressed
 signal ult_pressed
+signal power2_pressed
 
 var _phase_label: Label
 var _advance_btn: Button
@@ -19,6 +20,8 @@ var _ult_btn: Button
 var _ult_name: String = ""
 var _ult_color: Color = Color(1, 0.85, 0.3)
 var _ult_charge: float = 0.0
+var _power2_btn: Button
+var _power2_charge: float = 0.0
 
 
 func _ready() -> void:
@@ -54,16 +57,26 @@ func _ready() -> void:
 	_phase_label.add_theme_constant_override("shadow_offset_y", 2)
 	add_child(_phase_label)
 
-	# Botão grande do Poder Supremo (canto superior direito).
+	# Poder Supremo (canto inferior DIREITO) — estilo Kingdom Rush.
 	_ult_btn = Button.new()
-	_ult_btn.position = Vector2(1024, 10)
-	_ult_btn.size = Vector2(244, 54)
-	_ult_btn.custom_minimum_size = Vector2(244, 54)
+	_ult_btn.position = Vector2(1034, 596)
+	_ult_btn.size = Vector2(234, 110)
+	_ult_btn.custom_minimum_size = Vector2(234, 110)
 	_ult_btn.add_theme_font_size_override("font_size", 15)
 	_ult_btn.pressed.connect(func(): ult_pressed.emit())
 	_ult_btn.visible = false
 	add_child(_ult_btn)
 	_refresh_ult()
+
+	# Reforços (canto inferior ESQUERDO) — 2º poder do jogador.
+	_power2_btn = Button.new()
+	_power2_btn.position = Vector2(12, 596)
+	_power2_btn.size = Vector2(220, 110)
+	_power2_btn.custom_minimum_size = Vector2(220, 110)
+	_power2_btn.add_theme_font_size_override("font_size", 15)
+	_power2_btn.pressed.connect(func(): power2_pressed.emit())
+	add_child(_power2_btn)
+	_refresh_power2()
 
 
 func _mk(text: String) -> Button:
@@ -127,3 +140,33 @@ func _refresh_ult() -> void:
 	_ult_btn.add_theme_stylebox_override("disabled", sb)
 	_ult_btn.add_theme_color_override("font_color", Color(1, 0.95, 0.8))
 	_ult_btn.add_theme_color_override("font_disabled_color", Color(0.7, 0.7, 0.72))
+
+
+func set_power2_charge(frac: float) -> void:
+	_power2_charge = clampf(frac, 0.0, 1.0)
+	_refresh_power2()
+
+
+func _refresh_power2() -> void:
+	if _power2_btn == null:
+		return
+	var ready := _power2_charge >= 1.0
+	_power2_btn.disabled = not ready
+	if ready:
+		_power2_btn.text = "⚔ REFORCOS ⚔\nPRONTO (clique no mapa)"
+	else:
+		_power2_btn.text = "Reforcos\nCarregando %d%%" % int(_power2_charge * 100.0)
+	var col := Color(0.45, 0.85, 0.5) if ready else Color(0.45, 0.4, 0.3)
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.12, 0.20, 0.12, 0.95) if ready else Color(0.12, 0.12, 0.14, 0.85)
+	sb.set_corner_radius_all(10)
+	sb.set_border_width_all(3)
+	sb.border_color = col
+	if ready:
+		sb.shadow_color = Color(0.3, 0.8, 0.4, 0.6)
+		sb.shadow_size = 8
+	_power2_btn.add_theme_stylebox_override("normal", sb)
+	_power2_btn.add_theme_stylebox_override("hover", sb)
+	_power2_btn.add_theme_stylebox_override("disabled", sb)
+	_power2_btn.add_theme_color_override("font_color", Color(0.95, 1, 0.9))
+	_power2_btn.add_theme_color_override("font_disabled_color", Color(0.7, 0.7, 0.72))

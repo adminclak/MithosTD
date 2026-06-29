@@ -30,6 +30,10 @@ var _ult_charge: float = 1.0 ## começa carregado para a 1ª investida
 var _ult_layer: CanvasLayer = null
 var _aimer: UltAimer = null
 var _champion: Champion = null
+var _enemies_root: Node2D = null
+var _aim_mode: String = ""
+var _power2_charge: float = 1.0 ## Reforços (2º poder), começa pronto
+const POWER2_CHARGE_TIME := 18.0
 
 
 func setup(stage: StageData, squad_datas: Array, ult_char_id: String = "") -> void:
@@ -53,6 +57,7 @@ func _ready() -> void:
 	var enemies_root := Node2D.new()
 	enemies_root.name = "Enemies"
 	add_child(enemies_root)
+	_enemies_root = enemies_root
 
 	_build_manager = BuildManager.new()
 	_build_manager.setup(level.get_waypoints(), _squad, level.get_build_slots())
@@ -68,9 +73,6 @@ func _ready() -> void:
 	var hud := Hud.new()
 	add_child(hud)
 
-	var ability_bar := AbilityBar.new()
-	add_child(ability_bar)
-
 	_match_hud = MatchHud.new()
 	add_child(_match_hud)
 	_match_hud.advance_pressed.connect(_on_advance)
@@ -78,6 +80,7 @@ func _ready() -> void:
 	_match_hud.speed_pressed.connect(_on_speed)
 	_match_hud.abandon_pressed.connect(_confirm_abandon)
 	_match_hud.ult_pressed.connect(_on_ult)
+	_match_hud.power2_pressed.connect(_on_power2)
 	_match_hud.set_phase("Preparacao: %ds — posicione e clique Lancar Onda" % int(PREP_TIME))
 	if _ult != null:
 		_match_hud.set_ult(_ult.display_name, _ult.color)
@@ -99,7 +102,7 @@ func _ready() -> void:
 	_ult_layer.layer = 11
 	add_child(_ult_layer)
 	_aimer = UltAimer.new()
-	_aimer.aimed.connect(_fire_ult_at)
+	_aimer.aimed.connect(_on_aimed)
 	_ult_layer.add_child(_aimer)
 
 	if auto_start:
@@ -133,10 +136,16 @@ func _process(delta: float) -> void:
 		_match_hud.set_ult_charge(_ult_charge)
 		# Smoke/demo: dispara sozinho no centro quando carregado.
 		if auto_start and _ult_charge >= 1.0:
+			_aim_mode = "ult"
 			_fire_ult_at(UltimateEffect.CENTER)
 
+	# Carga dos Reforços (2º poder).
+	if not _ended and _wave_manager != null and not _wave_manager.is_in_prep():
+		if _power2_charge < 1.0:
+			_power2_charge = min(1.0, _power2_charge + delta / POWER2_CHARGE_TIME)
+		_match_hud.set_power2_charge(_power2_charge)
 
-## Botão da ult: entra no modo de mira (escolher onde lançar no mapa).
+
 ## Clique no chão (não consumido por slot/UI) = move o campeão até ali.
 func _unhandled_input(event: InputEvent) -> void:
 	if _champion == null or _ended:
@@ -145,10 +154,51 @@ func _unhandled_input(event: InputEvent) -> void:
 		_champion.move_to(get_global_mouse_position())
 
 
+## Roteia o clique de mira para o poder ativo (ult ou reforços).
+func _on_aimed(pos: Vector2) -> void:
+	if _aim_mode == "ult":
+		_fire_ult_at(pos)
+	elif _aim_mode == "power2":
+		_fire_power2_at(pos)
+	_aim_mode = ""
+
+
 func _on_ult() -> void:
 	if _ult == null or _ult_charge < 1.0 or _ended:
 		return
+	_aim_mode = "ult"
 	_aimer.start(_ult.color)
+
+
+## Reforços: mira e invoca 3 soldados temporários no ponto escolhido.
+func _on_power2() -> void:
+	if _power2_charge < 1.0 or _ended:
+		return
+	_aim_mode = "power2"
+	_aimer.start(Color(0.5, 0.95, 0.5))
+
+
+func _fire_power2_at(pos: Vector2) -> void:
+	if _power2_charge < 1.0:
+		return
+	_power2_charge = 0.0
+	_match_hud.set_power2_charge(0.0)
+	for o in [Vector2(-22, 0), Vector2(22, 0), Vector2(0, 22)]:
+		var d := TowerData.new()
+		d.is_melee = true
+		d.max_hp = 70
+		d.defense = 3
+		d.melee_damage = 11
+		d.melee_attack_rate = 1.1
+		d.block_capacity = 1
+		d.engage_radius = 74.0
+		d.body_color = Color(0.55, 0.7, 0.95)
+		var ally := Tower.new()
+		ally.setup(d)
+		ally.waypoints = _wave_manager.waypoints if _wave_manager != null else []
+		ally.position = pos + o
+		_enemies_root.add_child(ally)
+		get_tree().create_timer(12.0).timeout.connect(func(): if is_instance_valid(ally): ally.queue_free())
 
 
 ## Lança a ult no ponto escolhido (anima na camada de cima + aplica o efeito).
