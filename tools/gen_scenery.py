@@ -22,7 +22,8 @@ PIXEL_PRE = "pixel art, pixel-art style, bold clean outline, vibrant saturated c
 NEG = ("text, words, watermark, signature, ui, interface, blurry, low quality, "
        "lowres, photo, realistic, 3d render, people, humans, characters, "
        "buildings, towers, castle, houses, roads, paths, stone tiles, walls, grid, fences"
-       ", antialiased, smooth, gradient")
+       ", antialiased, smooth, gradient, flowers, colorful dots, confetti, "
+       "many flowers, red flowers, blue flowers, busy, cluttered")
 
 # id -> (prompt, transparente, largura, altura)
 JOBS = {
@@ -57,12 +58,12 @@ JOBS = {
     "tower_priest": ("white marble holy temple shrine with golden roof and columns, divine, "
         "top-down three-quarter view, tower defense building", True, 512, 512),
     # --- Chãos por fase grega (detalhados) ---
-    "ground_elis": ("seamless top-down lush green meadow, vibrant short grass with many "
-        "wildflowers and small olive sprigs, sunny mediterranean field, hand-painted, "
-        "fine detail, empty ground", False, 1024, 576),
-    "ground_nemeia": ("seamless top-down dense forest floor, dark green mossy grass with "
-        "ferns, fallen leaves and roots, shaded woodland, hand-painted, fine detail, "
-        "empty ground", False, 1024, 576),
+    "ground_elis": ("seamless top-down lush green grass field, exactly like Kingdom Rush "
+        "map ground, two shades of green, dense short cartoon grass with subtle texture, a "
+        "few small grass tufts and tiny pebbles, clean and simple, empty, no flowers", False, 1024, 576),
+    "ground_nemeia": ("seamless top-down forest grass ground, like Kingdom Rush, rich green "
+        "grass with subtle moss patches and a few small ferns, clean cartoon, empty, "
+        "no flowers", False, 1024, 576),
     "ground_pantano": ("seamless top-down murky swamp ground, wet dark mud with shallow "
         "green water puddles, moss and small reeds, hand-painted, fine detail, empty",
         False, 1024, 576),

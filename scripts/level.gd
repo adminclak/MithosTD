@@ -31,6 +31,9 @@ const BUILD_SLOTS := [
 # Mitologia do cenário (definida pela fase). Controla chão, cor do caminho e decos.
 var theme: String = "elis"
 
+# Árvore usada na borda de floresta por cena (forma o "muro" de mata do KR).
+const BORDER_BY_THEME := {"elis": "tree", "nemeia": "pine"}
+
 # Escala consistente por tipo de decoração (objetos têm 192px).
 const DECO_SCALE := {
 	"tree": 0.30, "rock": 0.18, "bush": 0.21, "olive_tree": 0.30, "pine": 0.34,
@@ -96,6 +99,11 @@ func _ready() -> void:
 		bg.scale = Vector2(1280.0 / grass.get_width(), 720.0 / grass.get_height())
 		add_child(bg)
 
+	# Borda densa de árvores emoldurando o mapa (estilo Kingdom Rush).
+	var border_id: String = BORDER_BY_THEME.get(theme, "")
+	if border_id != "" and Art.map(border_id) != null:
+		_add_forest_border(border_id)
+
 	# Decorações do tema (atrás do gameplay), escala CONSISTENTE por tipo + sombra.
 	var deco_ids: Array = THEME_DECOS.get(theme, THEME_DECOS["elis"])
 	for i in DECO_SPOTS.size():
@@ -159,6 +167,23 @@ func get_waypoints() -> Array:
 
 func get_build_slots() -> Array:
 	return BUILD_SLOTS.duplicate()
+
+
+## Muro de árvores nas 4 bordas (denso, emoldura o campo de jogo como no KR).
+func _add_forest_border(tree_id: String) -> void:
+	var scl := 0.40
+	var step := 60
+	var rows := [-6, 30] # duas fileiras no topo p/ formar copa densa
+	# Topo (2 fileiras) e base (1 fileira).
+	for ry in rows:
+		for x in range(-10, 1300, step):
+			_add_sprite(Art.map(tree_id), Vector2(x + (ry * 2), ry), scl, -6)
+	for x in range(-10, 1300, step):
+		_add_sprite(Art.map(tree_id), Vector2(x + 26, 712), scl, -6)
+	# Laterais.
+	for y in range(40, 700, step):
+		_add_sprite(Art.map(tree_id), Vector2(-4, y), scl, -6)
+		_add_sprite(Art.map(tree_id), Vector2(1284, y), scl, -6)
 
 
 ## Sombra elíptica (chão) sob um objeto. center = base do objeto.
