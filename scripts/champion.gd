@@ -25,6 +25,7 @@ var _melee_cd: float = 0.0
 var _abil_cd: float = 6.0
 var _engaged: Node2D = null
 var _sprite: Texture2D = null
+var _rig: RiggedActor = null
 
 @onready var _gs: Node = get_node_or_null(^"/root/GameState")
 
@@ -41,6 +42,11 @@ func _ready() -> void:
 	add_to_group("melee_allies")
 	if data != null:
 		_sprite = Art.hero(data.char_id)
+	if _sprite != null:
+		_rig = RiggedActor.new()
+		_rig.setup(_sprite, 84.0)
+		_rig.position = Vector2(0, 16) # pés no chão (junto da sombra)
+		add_child(_rig)
 	_rally = global_position
 	queue_redraw()
 
@@ -102,6 +108,11 @@ func _physics_process(delta: float) -> void:
 		_release_engaged()
 	else:
 		_state = Anim.ATTACK if attacking else Anim.IDLE
+	# Atualiza o rig (direção + ação).
+	if _rig != null:
+		_rig.scale.x = -1.0 if _face_x < 0.0 else 1.0
+		_rig.set_pose(_state, _atk)
+		_rig.modulate = Color(1, 1, 1, 0.5) if _down else Color.WHITE
 	queue_redraw()
 
 
@@ -227,20 +238,15 @@ func _draw() -> void:
 	if data != null:
 		var ec := Elements.color_of(data.element)
 		draw_arc(Vector2(0, 14), 20.0, 0.0, TAU, 24, Color(ec.r, ec.g, ec.b, 0.6), 2.5)
-	if _sprite != null:
-		var sz := Vector2(66, 66)
-		var dest := Rect2(-sz * 0.5 + Vector2(0, -12), sz)
-		var mod := Color(1, 1, 1, 0.55) if _down else Color.WHITE
-		Anim.draw_action(self, _sprite, dest, _face_x, _state, _phase, _atk, mod)
-	# Barra de vida.
+	# O corpo é desenhado pelo _rig (RiggedActor, nó filho).
+	# Barra de vida + coroa (acima do rig).
 	if not _down:
-		var w := 40.0
-		var p := Vector2(-20, -40)
+		var w := 42.0
+		var p := Vector2(-21, -84)
 		draw_rect(Rect2(p, Vector2(w, 5)), Color(0.1, 0.1, 0.1))
 		var ratio := clampf(float(_hp) / float(_max), 0.0, 1.0)
 		draw_rect(Rect2(p, Vector2(w * ratio, 5)), Color(0.3, 0.85, 0.4))
-		# Coroa indicando o campeão.
-		draw_string(ThemeDB.fallback_font, Vector2(-7, -44), "♛", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(1, 0.85, 0.3))
+		draw_string(ThemeDB.fallback_font, Vector2(-9, -90), "♛", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(1, 0.85, 0.3))
 	else:
-		draw_string(ThemeDB.fallback_font, Vector2(-30, -30), "%ds" % int(ceil(_down_t)),
+		draw_string(ThemeDB.fallback_font, Vector2(-30, -78), "%ds" % int(ceil(_down_t)),
 			HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(1, 0.6, 0.6))
