@@ -34,7 +34,7 @@ var _enemies_root: Node2D = null
 var _aim_mode: String = ""
 var _power2_charge: float = 1.0 ## Reforços (2º poder), começa pronto
 const POWER2_CHARGE_TIME := 18.0
-var _joystick: VirtualJoystick = null
+var _joystick: TouchJoystick = null
 
 
 func setup(stage: StageData, squad_datas: Array, ult_char_id: String = "") -> void:
@@ -123,7 +123,7 @@ func _ready() -> void:
 	var joy_layer := CanvasLayer.new()
 	joy_layer.layer = 10
 	add_child(joy_layer)
-	_joystick = VirtualJoystick.new()
+	_joystick = TouchJoystick.new()
 	joy_layer.add_child(_joystick)
 
 	if auto_start:

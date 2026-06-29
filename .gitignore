@@ -14,3 +14,5 @@ Thumbs.db
 .DS_Store
 _shot_*.png
 _shot_*.png.import
+_grid*.png
+_grid*.png.import

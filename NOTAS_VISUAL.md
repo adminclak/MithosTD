@@ -5,6 +5,33 @@
 > **testar todos os personagens**. Trabalhei com autonomia, em 2D, commitando por
 > partes. Este doc resume tudo e as decisões.
 
+## >>> CAMINHO PINTADO NA ARTE — TODAS AS 5 FASES (29/06)
+Você pediu que **o trajeto dos inimigos siga a trilha já pintada no mapa** (não uma
+faixa desenhada por cima que cruzava pedras), que **cada fase tenha um caminho
+diferente** e que **integre de forma bonita** ("o trajeto e a tela são uma coisa só").
+
+Como ficou (pilotei Elis, você aprovou, repliquei nas 5):
+- Regerei `map_<tema>.png` (PIXEL=0) com **uma trilha de terra pintada** na arte, cor
+  contrastando com o bioma e **forma diferente** por fase. Prompts em `gen_scenery.py`.
+- **Decalquei** os waypoints sobre a trilha pintada usando `tools/grid.py` (sobrepõe
+  grade de coordenadas de tela 1280x720 → `_grid_map_<tema>.png`).
+- `level.gd`: `PATH_IN_ART` (5 temas = true) **desliga** a faixa de caminho por código;
+  `PATHS_BY_THEME` traz o trajeto decalcado; `SLOTS_BY_THEME` põe as 8 torres em
+  **terreno livre** (grama/terra/neve), longe da trilha e dos objetos.
+- Portal (1º ponto) e castelo (último) grampeados p/ dentro da tela.
+
+Trilhas por fase: **Elis** S na grama (entra topo-esq, U, sai dir-baixo); **Nemeia**
+diagonal na floresta (topo-dir → centro → dir-baixo); **Pântano** S única contornando
+o lago (esq-baixo → topo → dir-cima); **Desfiladeiro** S na terra vermelha (esq-baixo
+→ centro → dir-baixo); **Olimpo** faixa inferior nevada (esq → baixo → dir).
+Olimpo é o menos "estreito" (a faixa de terra é larga) — dá p/ refinar se quiser.
+
+**PEGADINHA resolvida:** `class_name VirtualJoystick` **colidia com uma classe nativa
+do Godot 4.7** ("hides a native class") → o arquivo não compilava e o joystick nunca
+funcionava (erro só em runtime, fora dos testes). Renomeado p/ **`TouchJoystick`**.
+Também: a captura `--shot` **só salva com janela** (rodar SEM `--headless`; headless
+não renderiza e o PNG não é regravado).
+
 ## >>> MAPAS ESTILO KINGDOM RUSH (29/06)
 Você disse que a 1ª tela "não ficou igual" ao KR (chão de confete colorido).
 Descobri que a arte do Kingdom Rush é **pintada HD lisa, não pixel art**. Mudei

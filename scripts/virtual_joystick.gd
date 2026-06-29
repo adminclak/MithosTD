@@ -1,4 +1,4 @@
-class_name VirtualJoystick
+class_name TouchJoystick
 extends Node2D
 
 ## Joystick virtual flutuante (mobile; também testável no PC arrastando o cursor).

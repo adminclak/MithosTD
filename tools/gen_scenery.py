@@ -21,11 +21,11 @@ PIXEL_PRE = "pixel art, pixel-art style, bold clean outline, vibrant saturated c
 
 NEG = ("text, words, watermark, signature, ui, interface, blurry, low quality, "
        "lowres, photo, realistic, 3d render, people, humans, characters, "
-       "buildings, towers, castle, houses, roads, paths, stone tiles, walls, grid, fences"
-       ", antialiased, gradient, flowers, colorful dots, confetti, "
+       "buildings, towers, castle, houses, walls, grid, "
+       "antialiased, gradient, flowers, colorful dots, confetti, "
        "many flowers, red flowers, blue flowers, busy, cluttered, "
-       "fortress, fort, keep, ruins, walls, fences, hedges, garden, roads, paths, building"
-       ", pagoda, asian temple, chinese, japanese, thai, oriental, curved roof")
+       "fortress, fort, keep, ruins, garden, building, "
+       "pagoda, asian temple, chinese, japanese, thai, oriental, curved roof")
 
 # id -> (prompt, transparente, largura, altura)
 JOBS = {
@@ -62,33 +62,52 @@ JOBS = {
         "view, tower defense building, european classical, not asian, no pagoda", True, 512, 512),
     # --- MAPAS pintados em HD (estilo Kingdom Rush), bioma nas bordas baked ---
     # O centro fica PLANO e VAZIO (o caminho/torres/castelo são desenhados por cima).
-    "map_elis": ("top-down 2D painted cartoon forest clearing, Kingdom Rush art style, a "
-        "large completely empty flat green grass meadow filling the center, framed on all "
-        "four edges by a dense ring of lush round-canopy green trees, only a few small rocks "
-        "and bushes near the tree line, warm soft shadows, vibrant hand-painted, "
-        "nothing in the middle, empty clearing", False, 1024, 576),
-    "map_nemeia": ("top-down 2D painted cartoon deep forest clearing, Kingdom Rush art style, "
-        "a large completely empty flat green grass meadow filling the center, framed on all "
-        "four edges by a very dense ring of tall dark green pine and oak trees, deep shadowy "
-        "woods, a few mossy boulders and ferns near the tree line, cool soft shadows, "
-        "vibrant hand-painted, nothing in the middle, empty clearing", False, 1024, 576),
-    "map_pantano": ("top-down 2D painted cartoon swamp clearing, Kingdom Rush art style, a "
-        "large flat murky dark green wet mud ground with a few shallow water puddles filling "
-        "the center, framed on all four edges by dense swamp vegetation, tall green reeds and "
-        "cattails, gnarled bare dead willow trees and lily pads, foggy, cool soft shadows, "
-        "vibrant hand-painted, nothing in the middle, empty center", False, 1024, 576),
-    "map_desfiladeiro": ("top-down 2D painted cartoon canyon pass clearing, Kingdom Rush art "
-        "style, a large flat dry cracked reddish brown dirt and gravel ground filling the "
-        "center, framed on all four edges by tall rugged red rock cliffs and big boulders, a "
-        "few sparse dead bushes, arid mountain pass, warm soft shadows, vibrant hand-painted, "
-        "nothing in the middle, empty center", False, 1024, 576),
-    "map_olimpo": ("top-down bird eye view 2D painted cartoon snowy mountain plateau, Kingdom "
-        "Rush map ground art, flat terrain seen directly from straight above, a large flat "
-        "pale grey marble stone ground with patches of white snow and thin ice filling the "
-        "center, framed on all four edges by white snow drifts, pale marble boulders and a few "
-        "small frosty pine trees, sacred warm golden light, soft shadows, vibrant hand-painted, "
-        "no sky, no horizon, no clouds, no perspective, nothing in the middle, empty center",
+    "map_elis": ("top-down 2D painted cartoon forest clearing battlefield, Kingdom Rush map "
+        "art style, a large flat green grass meadow, a single PALE SANDY BEIGE light tan dirt "
+        "road (warm light brown earth color, NOT grey, NOT asphalt, NOT stone), medium width, "
+        "crossing the meadow from the LEFT edge to the RIGHT edge in a relaxed horizontal S "
+        "shape with two or three gentle bends, lots of open grass around it, the road bends "
+        "around rocks and trees and never crosses them, framed on all four edges by a dense "
+        "ring of round-canopy green trees, warm soft shadows, vibrant hand-painted",
         False, 1024, 576),
+    "map_nemeia": ("top-down 2D painted cartoon deep forest clearing, Kingdom Rush art style, "
+        "a large flat dark green grass meadow, a single LIGHT TAN BEIGE packed dirt trail "
+        "(warm sandy brown earth, NOT grey, NOT stone), medium width, entering from the LEFT "
+        "edge and winding diagonally up and across to the RIGHT edge with two or three gentle "
+        "curves, lots of open grass around it, the trail bends around boulders and trees and "
+        "never crosses them, framed on all four edges by a very dense ring of tall dark green "
+        "pine and oak trees, deep shadowy woods, a few mossy boulders and ferns near the tree "
+        "line, cool soft shadows, vibrant hand-painted", False, 1024, 576),
+    "map_pantano": ("flat top-down game level map seen straight from directly above, "
+        "orthographic bird eye view, NO sky NO horizon NO perspective NO vanishing point, "
+        "2D painted cartoon Kingdom Rush level map, a large flat murky dark green muddy swamp "
+        "GROUND filling the whole frame, ONLY ONE single clear path and NO other trails, "
+        "exactly ONE bright LIGHT TAN BEIGE dry packed-earth trail (warm sandy beige, clearly "
+        "lighter than the dark mud), medium width, snaking across from the LEFT edge to the "
+        "RIGHT edge in one serpentine S shape with three gentle bends, lots of open dark mud "
+        "ground all around it, NO river, NO water crossing the path, just one small shallow "
+        "pond in a corner, the single trail bends around dead trees and reeds and never crosses "
+        "them, edges lined with clusters of tall green reeds and gnarled bare dead willow trees "
+        "seen from above, foggy, cool soft shadows, vibrant hand-painted", False, 1024, 576),
+    "map_desfiladeiro": ("flat top-down game level map seen straight from directly above, "
+        "orthographic bird eye view, NO sky NO horizon NO perspective NO vanishing point NO "
+        "distant mountains, 2D painted cartoon Kingdom Rush level map, a large flat dry cracked "
+        "reddish brown dirt GROUND filling the whole frame, a single bright PALE SANDY BEIGE "
+        "light gravel trail (light cream tan, clearly lighter than the red ground), medium "
+        "width, running from the LEFT edge to the RIGHT edge with one big sweeping S bend, lots "
+        "of open ground around it, the trail winds between rocks and never crosses them, edges "
+        "lined with rugged red rock boulders and a few sparse dead bushes seen from above, arid "
+        "canyon pass, warm soft shadows, vibrant hand-painted", False, 1024, 576),
+    "map_olimpo": ("flat top-down game level map seen straight from directly above, "
+        "orthographic bird eye view, NO sky NO horizon NO perspective NO vanishing point, "
+        "2D painted cartoon Kingdom Rush level map, a large flat pale grey marble stone GROUND "
+        "with patches of white snow filling the whole frame, a single continuous WARM GOLDEN "
+        "SANDSTONE paved path (cream golden tan stone, clearly warmer than the pale grey and "
+        "white ground), medium width, curving from the LEFT edge to the RIGHT edge in one "
+        "gentle wide S arc, lots of open ground around it, the path bends around boulders and "
+        "never crosses them, edges lined with white snow drifts, pale marble boulders and a few "
+        "small frosty pine trees seen from above, sacred warm golden light, soft shadows, "
+        "vibrant hand-painted", False, 1024, 576),
     # --- Chãos por fase grega (detalhados) ---
     "ground_elis": ("seamless top-down lush green grass field, exactly like Kingdom Rush "
         "map ground, two shades of green, dense short cartoon grass with subtle texture, a "

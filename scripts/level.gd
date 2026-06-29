@@ -8,31 +8,79 @@ extends Node2D
 # Caminho (trajeto dos inimigos) POR FASE — cada uma com um traçado próprio, do
 # portal (1º ponto, fora da tela) até o castelo (último ponto, numa borda).
 const PATHS_BY_THEME := {
+	# Elis: trajeto DECALCADO sobre a trilha de terra pintada no mapa (entra pelo
+	# topo, faz o "U" pela esquerda e segue a faixa de baixo até o canto inf-direito).
 	"elis": [
-		Vector2(-40, 160), Vector2(360, 160), Vector2(360, 420), Vector2(760, 420),
-		Vector2(760, 180), Vector2(1040, 180), Vector2(1040, 520), Vector2(1240, 520),
+		Vector2(262, -30), Vector2(258, 96), Vector2(244, 200), Vector2(196, 256),
+		Vector2(156, 352), Vector2(168, 452), Vector2(238, 520), Vector2(356, 544),
+		Vector2(520, 520), Vector2(720, 500), Vector2(900, 500), Vector2(1040, 520),
+		Vector2(1130, 542), Vector2(1210, 512),
 	],
+	# Nemeia: DECALCADO sobre a trilha bege da floresta (entra pelo topo-direita, desce
+	# até o centro e segue a trilha larga rumo ao canto inferior-direito).
 	"nemeia": [
-		Vector2(-40, 540), Vector2(280, 540), Vector2(280, 230), Vector2(600, 230),
-		Vector2(600, 520), Vector2(940, 520), Vector2(940, 200), Vector2(1240, 200),
+		Vector2(866, -30), Vector2(860, 120), Vector2(818, 252), Vector2(750, 360),
+		Vector2(694, 446), Vector2(770, 512), Vector2(892, 550), Vector2(1014, 580),
+		Vector2(1140, 604), Vector2(1245, 600),
 	],
+	# Pântano: DECALCADO sobre a trilha única de terra batida (entra à esquerda-baixo,
+	# sobe em S até o topo-centro e sai pela direita-cima contornando o lago).
 	"pantano": [
-		Vector2(-40, 330), Vector2(230, 330), Vector2(230, 560), Vector2(520, 560),
-		Vector2(520, 170), Vector2(820, 170), Vector2(820, 470), Vector2(1110, 470),
-		Vector2(1110, 300), Vector2(1240, 300),
+		Vector2(-30, 468), Vector2(90, 452), Vector2(195, 438), Vector2(262, 408),
+		Vector2(318, 352), Vector2(375, 305), Vector2(445, 288), Vector2(515, 298),
+		Vector2(595, 293), Vector2(662, 258), Vector2(722, 192), Vector2(778, 128),
+		Vector2(828, 92), Vector2(905, 82), Vector2(978, 110), Vector2(1045, 158),
+		Vector2(1110, 140), Vector2(1190, 118), Vector2(1255, 110),
 	],
+	# Desfiladeiro: DECALCADO sobre a trilha bege em S (entra à esquerda-baixo, sobe em
+	# diagonal pelo centro e desce no canto direito).
 	"desfiladeiro": [
-		Vector2(-40, 470), Vector2(330, 470), Vector2(330, 200), Vector2(660, 200),
-		Vector2(660, 520), Vector2(980, 520), Vector2(980, 250), Vector2(1240, 250),
+		Vector2(-30, 540), Vector2(150, 525), Vector2(310, 552), Vector2(450, 505),
+		Vector2(565, 425), Vector2(680, 350), Vector2(795, 312), Vector2(905, 295),
+		Vector2(968, 360), Vector2(1000, 460), Vector2(1002, 560), Vector2(992, 620),
 	],
+	# Olimpo: DECALCADO sobre a trilha inferior (terra com bordas de neve), entra à
+	# esquerda, segue a faixa de baixo e sobe à direita.
 	"olimpo": [
-		Vector2(-40, 220), Vector2(250, 220), Vector2(250, 560), Vector2(640, 560),
-		Vector2(1030, 560), Vector2(1030, 240), Vector2(1240, 240),
+		Vector2(-30, 500), Vector2(120, 545), Vector2(225, 600), Vector2(365, 595),
+		Vector2(495, 575), Vector2(610, 588), Vector2(700, 596), Vector2(820, 585),
+		Vector2(940, 600), Vector2(1060, 578), Vector2(1165, 528), Vector2(1245, 482),
 	],
 }
 const DEFAULT_PATH := [Vector2(-40, 160), Vector2(360, 160), Vector2(360, 420),
 	Vector2(760, 420), Vector2(760, 180), Vector2(1040, 180), Vector2(1040, 520),
 	Vector2(1240, 520)]
+
+# Temas cujo CAMINHO já está PINTADO na arte do mapa (estilo Kingdom Rush). Nesses
+# não desenhamos a faixa de caminho por código — o trajeto só segue a trilha da arte.
+const PATH_IN_ART := {
+	"elis": true, "nemeia": true, "pantano": true, "desfiladeiro": true, "olimpo": true,
+}
+
+# Pontos de torre fixos (em grama/terreno livre, longe de objetos pintados) para os
+# temas com caminho na arte. Sem entrada aqui = slots gerados ao lado do caminho.
+const SLOTS_BY_THEME := {
+	"elis": [
+		Vector2(360, 300), Vector2(470, 386), Vector2(610, 336), Vector2(720, 410),
+		Vector2(560, 452), Vector2(870, 360), Vector2(1000, 432), Vector2(1086, 352),
+	],
+	"nemeia": [
+		Vector2(300, 250), Vector2(220, 410), Vector2(440, 280), Vector2(600, 290),
+		Vector2(520, 500), Vector2(1010, 330), Vector2(1120, 430), Vector2(900, 250),
+	],
+	"pantano": [
+		Vector2(350, 200), Vector2(500, 130), Vector2(640, 135), Vector2(330, 565),
+		Vector2(200, 480), Vector2(1120, 350), Vector2(1080, 510), Vector2(1150, 240),
+	],
+	"desfiladeiro": [
+		Vector2(470, 250), Vector2(560, 235), Vector2(740, 210), Vector2(560, 555),
+		Vector2(700, 510), Vector2(880, 490), Vector2(350, 380), Vector2(1130, 470),
+	],
+	"olimpo": [
+		Vector2(380, 215), Vector2(500, 250), Vector2(660, 215), Vector2(800, 185),
+		Vector2(700, 360), Vector2(910, 390), Vector2(1085, 300), Vector2(205, 330),
+	],
+}
 
 const GRASS := Color(0.27, 0.45, 0.22)
 const PATH_BORDER := Color(0.46, 0.36, 0.24)
@@ -150,27 +198,26 @@ func _ready() -> void:
 			_add_shadow(base, 192.0 * scl * 0.34, 192.0 * scl * 0.13, -11)
 			_add_sprite(Art.map(did), pos, scl, -10, i % 3 == 0)
 
-	# Caminho integrado ao terreno: faixa com textura do bioma + transição esfumada
-	# nas margens (sem moldura clara dura), para "ornar" com o mapa pintado.
-	var pc := _path_pair()
-	var fill: Color = pc[1]
-	var border: Color = pc[0]
-	var dark := Color(border.r * 0.5, border.g * 0.5, border.b * 0.4)
-	# Transição esfumada (3 faixas: larga e fraca -> média -> caminho) que funde na
-	# grama, em vez de uma borda clara recortada.
-	add_child(_make_path_line(84, Color(dark.r, dark.g, dark.b, 0.14), null, -10))
-	add_child(_make_path_line(64, Color(dark.r, dark.g, dark.b, 0.30), null, -9))
-	# Faixa principal de terra do bioma + trilha central batida (sutil) p/ dar
-	# profundidade sem a moldura clara dura de antes.
-	add_child(_make_path_line(48, fill, null, -8))
-	add_child(_make_path_line(20, Color(border.r, border.g, border.b, 0.30), null, -7))
+	# Caminho: se o tema tem o caminho PINTADO na arte, não desenha faixa por código
+	# (o trajeto segue só a trilha da arte). Senão, faixa de terra integrada ao chão.
+	if not PATH_IN_ART.get(theme, false):
+		var pc := _path_pair()
+		var fill: Color = pc[1]
+		var border: Color = pc[0]
+		var dark := Color(border.r * 0.5, border.g * 0.5, border.b * 0.4)
+		# Transição esfumada (3 faixas: larga e fraca -> média -> caminho).
+		add_child(_make_path_line(84, Color(dark.r, dark.g, dark.b, 0.14), null, -10))
+		add_child(_make_path_line(64, Color(dark.r, dark.g, dark.b, 0.30), null, -9))
+		add_child(_make_path_line(48, fill, null, -8))
+		add_child(_make_path_line(20, Color(border.r, border.g, border.b, 0.30), null, -7))
 
-	# Portal de entrada (1º ponto) e castelo/base (último) — grandes, com sombra.
+	# Portal de entrada (1º ponto) e castelo/base (último) — grampeados p/ dentro da
+	# tela (o trajeto pode entrar/sair por qualquer borda), grandes, com sombra.
 	var wp := _theme_path()
-	var portal_pos: Vector2 = wp[0] + Vector2(40, 0)
+	var portal_pos := Vector2(clampf(wp[0].x, 36, 1244), clampf(wp[0].y, 30, 690))
 	_add_shadow(portal_pos + Vector2(0, 38), 56, 20, -6)
 	_add_sprite(Art.map("portal"), portal_pos, 0.46, -5)
-	var castle_pos: Vector2 = wp[-1] + Vector2(0, -8)
+	var castle_pos := Vector2(clampf(wp[-1].x, 40, 1240), clampf(wp[-1].y, 40, 680)) + Vector2(0, -8)
 	_add_shadow(castle_pos + Vector2(0, 56), 80, 28, -2)
 	_add_sprite(Art.map("castle"), castle_pos, 0.70, -1)
 	queue_redraw()
@@ -207,6 +254,9 @@ func get_waypoints() -> Array:
 
 
 func get_build_slots() -> Array:
+	# Slots fixos em terreno livre (temas com caminho na arte) ou gerados ao lado.
+	if SLOTS_BY_THEME.has(theme):
+		return (SLOTS_BY_THEME[theme] as Array).duplicate()
 	return _slots_for_path(_theme_path())
 
 
