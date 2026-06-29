@@ -26,6 +26,7 @@ var _abil_cd: float = 6.0
 var _engaged: Node2D = null
 var _sprite: Texture2D = null
 var _rig: RiggedActor = null
+var _manual_dir: Vector2 = Vector2.ZERO ## comando do joystick (0 = automático)
 
 @onready var _gs: Node = get_node_or_null(^"/root/GameState")
 
@@ -52,7 +53,13 @@ func _ready() -> void:
 
 
 func move_to(pos: Vector2) -> void:
+	_manual_dir = Vector2.ZERO
 	_rally = pos
+
+
+## Comando direcional contínuo do joystick (magnitude 0..1; 0 = volta ao automático).
+func set_move_dir(dir: Vector2) -> void:
+	_manual_dir = dir
 
 
 func _process(delta: float) -> void:
@@ -70,6 +77,23 @@ func _process(delta: float) -> void:
 		if _down_t <= 0.0:
 			_down = false
 			_hp = _max
+		queue_redraw()
+		return
+
+	# Controle manual (joystick / botão direito): anda na direção comandada e
+	# ignora a perseguição automática enquanto o jogador estiver comandando.
+	if _manual_dir.length() > 0.2:
+		var step := _manual_dir.limit_length(1.0)
+		if absf(step.x) > 0.01:
+			_face_x = signf(step.x)
+		global_position += step * SPEED * delta
+		_rally = global_position # ao soltar, fica onde parou
+		_state = Anim.WALK
+		_release_engaged()
+		if _rig != null:
+			_rig.scale.x = -1.0 if _face_x < 0.0 else 1.0
+			_rig.set_pose(_state, _atk)
+			_rig.modulate = Color.WHITE
 		queue_redraw()
 		return
 

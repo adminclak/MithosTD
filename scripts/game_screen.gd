@@ -34,6 +34,7 @@ var _enemies_root: Node2D = null
 var _aim_mode: String = ""
 var _power2_charge: float = 1.0 ## Reforços (2º poder), começa pronto
 const POWER2_CHARGE_TIME := 18.0
+var _joystick: VirtualJoystick = null
 
 
 func setup(stage: StageData, squad_datas: Array, ult_char_id: String = "") -> void:
@@ -118,6 +119,13 @@ func _ready() -> void:
 	_aimer.aimed.connect(_on_aimed)
 	_ult_layer.add_child(_aimer)
 
+	# Joystick virtual (mobile / arraste no PC) — camada abaixo do Poder Supremo.
+	var joy_layer := CanvasLayer.new()
+	joy_layer.layer = 10
+	add_child(joy_layer)
+	_joystick = VirtualJoystick.new()
+	joy_layer.add_child(_joystick)
+
 	if auto_start:
 		_auto_place_demo()
 		_wave_manager.player_advance()
@@ -134,6 +142,10 @@ func _auto_place_demo() -> void:
 
 
 func _process(delta: float) -> void:
+	# Joystick comanda o campeão (direção 0 = volta ao comportamento automático).
+	if _champion != null and not _ended:
+		_champion.set_move_dir(_joystick.direction())
+
 	# Contagem regressiva da preparação (só antes da 1ª onda).
 	if _wave_manager != null and _wave_manager.is_in_prep() and not _ended:
 		_prep_timer -= delta
@@ -159,12 +171,32 @@ func _process(delta: float) -> void:
 		_match_hud.set_power2_charge(_power2_charge)
 
 
-## Clique no chão (não consumido por slot/UI) = move o campeão até ali.
+## Controle do campeão (eventos não consumidos por slot/UI):
+## - Desktop: botão DIREITO = vai até o ponto clicado (e aguarda lá).
+## - Mobile/PC: TOQUE/arraste = joystick flutuante (clique sem arraste não move).
 func _unhandled_input(event: InputEvent) -> void:
 	if _champion == null or _ended:
 		return
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+	# Desktop: clique-para-mover no botão direito.
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
 		_champion.move_to(get_global_mouse_position())
+		return
+	# Joystick por toque (mobile).
+	if event is InputEventScreenTouch:
+		if event.pressed:
+			_joystick.start(event.position)
+		else:
+			_joystick.stop()
+	elif event is InputEventScreenDrag:
+		_joystick.update(event.position)
+	# Joystick por arraste do botão esquerdo (permite testar no PC).
+	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if event.pressed:
+			_joystick.start(event.position)
+		else:
+			_joystick.stop()
+	elif event is InputEventMouseMotion and _joystick.active:
+		_joystick.update(event.position)
 
 
 ## Roteia o clique de mira para o poder ativo (ult ou reforços).
