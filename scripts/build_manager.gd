@@ -17,7 +17,6 @@ var squad: Array = []
 var slots: Array = [] ## Vector2 dos pontos estratégicos
 
 var _towers: Array = []
-var _slot_tower: Dictionary = {} ## índice do slot -> Tower
 var _radial: RadialMenu = null
 var _pending_slot: int = -1
 var _mode: String = ""
@@ -49,11 +48,19 @@ func _unhandled_input(event: InputEvent) -> void:
 		var si := _slot_at(pos)
 		if si < 0:
 			return
-		if _slot_tower.has(si) and is_instance_valid(_slot_tower[si]):
+		if _tower_near(slots[si]) != null:
 			_open_manage(si)
 		else:
 			_open_build(si)
 		get_viewport().set_input_as_handled()
+
+
+## Torre construída sobre/perto de um slot (robusto p/ radial e demo).
+func _tower_near(pos: Vector2, r: float = 26.0) -> Tower:
+	for t in _towers:
+		if is_instance_valid(t) and t.global_position.distance_to(pos) < r:
+			return t
+	return null
 
 
 func _slot_at(pos: Vector2) -> int:
@@ -85,7 +92,9 @@ func _open_build(si: int) -> void:
 func _open_manage(si: int) -> void:
 	_pending_slot = si
 	_mode = "manage"
-	var t: Tower = _slot_tower[si]
+	var t: Tower = _tower_near(slots[si])
+	if t == null:
+		return
 	var up_ok := t.can_upgrade() and _gold() >= t.upgrade_cost()
 	var up_text := ("Melhorar\n%d" % t.upgrade_cost()) if t.can_upgrade() else "Maximo"
 	_radial.open_menu(t.global_position, [
@@ -100,17 +109,15 @@ func _on_radial_chosen(index: int) -> void:
 	if _mode == "build":
 		var data: TowerData = TowerData.all_classes()[index]
 		if try_place(slots[_pending_slot], data):
-			_slot_tower[_pending_slot] = _towers[_towers.size() - 1]
 			queue_redraw()
 	elif _mode == "manage":
-		var t: Tower = _slot_tower.get(_pending_slot, null)
-		if t == null or not is_instance_valid(t):
+		var t: Tower = _tower_near(slots[_pending_slot])
+		if t == null:
 			return
 		if index == 0:
 			try_upgrade(t)
 		elif index == 1:
 			sell(t)
-			_slot_tower.erase(_pending_slot)
 			queue_redraw()
 	_pending_slot = -1
 	_mode = ""
@@ -119,7 +126,7 @@ func _on_radial_chosen(index: int) -> void:
 # --- Desenho dos slots vazios ---
 func _draw() -> void:
 	for i in slots.size():
-		if _slot_tower.has(i) and is_instance_valid(_slot_tower[i]):
+		if _tower_near(slots[i]) != null:
 			continue
 		var p: Vector2 = slots[i]
 		draw_circle(p + Vector2(0, 3), 20.0, Color(0, 0, 0, 0.25))
