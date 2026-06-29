@@ -24,7 +24,8 @@ NEG = ("text, words, watermark, signature, ui, interface, blurry, low quality, "
        "buildings, towers, castle, houses, roads, paths, stone tiles, walls, grid, fences"
        ", antialiased, gradient, flowers, colorful dots, confetti, "
        "many flowers, red flowers, blue flowers, busy, cluttered, "
-       "fortress, fort, keep, ruins, walls, fences, hedges, garden, roads, paths, building")
+       "fortress, fort, keep, ruins, walls, fences, hedges, garden, roads, paths, building"
+       ", pagoda, asian temple, chinese, japanese, thai, oriental, curved roof")
 
 # id -> (prompt, transparente, largura, altura)
 JOBS = {
@@ -56,8 +57,9 @@ JOBS = {
         "sturdy, top-down three-quarter view, tower defense building", True, 512, 512),
     "tower_mage": ("blue magic mage guild tower with glowing crystal orb on top and runes, "
         "top-down three-quarter view, tower defense building", True, 512, 512),
-    "tower_priest": ("white marble holy temple shrine with golden roof and columns, divine, "
-        "top-down three-quarter view, tower defense building", True, 512, 512),
+    "tower_priest": ("ancient greek parthenon temple building, white marble with tall doric "
+        "columns and a triangular pediment, golden divine glow inside, top-down three-quarter "
+        "view, tower defense building, european classical, not asian, no pagoda", True, 512, 512),
     # --- MAPAS pintados em HD (estilo Kingdom Rush), bioma nas bordas baked ---
     # O centro fica PLANO e VAZIO (o caminho/torres/castelo são desenhados por cima).
     "map_elis": ("top-down 2D painted cartoon forest clearing, Kingdom Rush art style, a "
