@@ -63,10 +63,16 @@ func _ready() -> void:
 	_build_manager.setup(level.get_waypoints(), _squad, level.get_build_slots())
 	add_child(_build_manager)
 
-	# Campeão: o 1º herói do esquadrão anda pelo mapa (clique no chão p/ mover).
+	# Campeão (1 por partida): o herói escolhido anda pelo mapa (clique no chão = mover).
 	if not _squad.is_empty():
+		var champ_id := Progression.current_champion()
+		var champ_data: TowerData = _squad[0]
+		for d in _squad:
+			if d.char_id == champ_id:
+				champ_data = d
+				break
 		_champion = Champion.new()
-		_champion.setup(_squad[0])
+		_champion.setup(champ_data)
 		_champion.position = Vector2(620, 400)
 		enemies_root.add_child(_champion)
 

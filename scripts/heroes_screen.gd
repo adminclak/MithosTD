@@ -190,6 +190,16 @@ func _build_detail() -> void:
 	ub.pressed.connect(func(): Progression.set_team_ult(_team(), _sel_id); _rebuild())
 	actions.add_child(ub)
 
+	# Campeão (1 por partida): o herói que anda no mapa.
+	var cb := Button.new()
+	cb.custom_minimum_size = Vector2(560, 40)
+	var is_champ: bool = Progression.current_champion() == _sel_id
+	cb.text = "♛ CAMPEAO (anda no mapa)" if is_champ else "Definir como Campeao"
+	cb.disabled = is_champ or not in_team
+	cb.add_theme_color_override("font_color", Color(1, 0.85, 0.3))
+	cb.pressed.connect(func(): Progression.set_team_champion(_team(), _sel_id); _rebuild())
+	v.add_child(cb)
+
 
 func _slot_button(slot: int) -> Button:
 	var b := Button.new()

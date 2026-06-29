@@ -29,6 +29,7 @@ var equipped: Dictionary = {}       ## char_id -> { slot_index: item_id }
 # Até 3 equipes salvas. teams[i] = lista de ids; team_ults[i] = id do Poder Supremo.
 var teams: Array = [[], [], []]
 var team_ults: Array = ["", "", ""]
+var team_champions: Array = ["", "", ""] ## id do CAMPEÃO (1 por partida) por equipe
 var active_team: int = 0
 
 # Quests / contadores.
@@ -168,6 +169,19 @@ func current_ult() -> String:
 	return team_ults[active_team]
 
 
+func current_champion() -> String:
+	var c: String = team_champions[active_team]
+	if c == "" and not teams[active_team].is_empty():
+		c = teams[active_team][0]
+	return c
+
+
+func set_team_champion(index: int, id: String) -> void:
+	if teams[index].has(id):
+		team_champions[index] = id
+		save_game()
+
+
 func set_active_team(index: int) -> void:
 	active_team = clampi(index, 0, teams.size() - 1)
 	save_game()
@@ -180,6 +194,8 @@ func toggle_in_team(index: int, id: String) -> void:
 		t.erase(id)
 		if team_ults[index] == id:
 			team_ults[index] = t[0] if not t.is_empty() else ""
+		if team_champions[index] == id:
+			team_champions[index] = t[0] if not t.is_empty() else ""
 	elif is_unlocked(id) and t.size() < SQUAD_MAX:
 		t.append(id)
 		if team_ults[index] == "":
@@ -503,6 +519,7 @@ func reset() -> void:
 	equipped = {}
 	teams = [[], [], []]
 	team_ults = ["", "", ""]
+	team_champions = ["", "", ""]
 	active_team = 0
 	stats = {"wins": 0, "gacha": 0, "evolves": 0}
 	daily = {"wins": 0, "gacha": 0}
@@ -534,6 +551,7 @@ func save_to(path: String) -> void:
 		"equipped": equipped,
 		"teams": teams,
 		"team_ults": team_ults,
+		"team_champions": team_champions,
 		"active_team": active_team,
 		"stats": stats,
 		"daily": daily,
@@ -600,6 +618,10 @@ func load_from(path: String) -> void:
 	var saved_ults: Array = data.get("team_ults", [])
 	for i in range(min(3, saved_ults.size())):
 		team_ults[i] = str(saved_ults[i])
+	team_champions = ["", "", ""]
+	var saved_champs: Array = data.get("team_champions", [])
+	for i in range(min(3, saved_champs.size())):
+		team_champions[i] = str(saved_champs[i])
 	# Migração de saves antigos (campo squad/squad_ult unico).
 	if saved_teams.is_empty() and data.has("squad"):
 		for sid in data.get("squad", []):
