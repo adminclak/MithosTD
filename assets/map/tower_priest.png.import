@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dkd52qq8i7t4g"
-path="res://.godot/imported/_shot_heroes.png-c604b874c6185334cd7de0c8db8256b5.ctex"
+uid="uid://d0u8as2eqbsm8"
+path="res://.godot/imported/tower_priest.png-ee2f6068f5ceca922872ce10fed2f713.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://_shot_heroes.png"
-dest_files=["res://.godot/imported/_shot_heroes.png-c604b874c6185334cd7de0c8db8256b5.ctex"]
+source_file="res://assets/map/tower_priest.png"
+dest_files=["res://.godot/imported/tower_priest.png-ee2f6068f5ceca922872ce10fed2f713.ctex"]
 
 [params]
 

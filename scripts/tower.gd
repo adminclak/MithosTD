@@ -40,6 +40,7 @@ var _regen_accum: float = 0.0
 var _shield_timer: float = 0.0
 
 var _sprite: Texture2D = null
+var _is_building: bool = false ## torre genérica = prédio (sem balanço, maior)
 
 # Animação (puro código): respiração idle, ataque (recoil/espadada/escudo) e
 # direção do golpe. _atk vai de 1→0 a cada ação.
@@ -64,7 +65,19 @@ func _ready() -> void:
 		if data.is_melee:
 			add_to_group("melee_allies")
 			_hp = data.max_hp
-		_sprite = Art.hero(data.char_id)
+		if data.char_id != "":
+			_sprite = Art.hero(data.char_id)
+		else:
+			# Torre genérica = prédio (Arqueira/Quartel/Guilda/Templo).
+			var bnames := {
+				TowerData.TowerClass.ARCHER: "tower_archer",
+				TowerData.TowerClass.MAGE: "tower_mage",
+				TowerData.TowerClass.WARRIOR: "tower_warrior",
+				TowerData.TowerClass.PRIEST: "tower_priest",
+			}
+			var bname: String = bnames.get(data.tower_class, "")
+			_sprite = Art.map(bname)
+			_is_building = _sprite != null
 	queue_redraw()
 
 
@@ -456,7 +469,11 @@ func _draw() -> void:
 	# Arma/efeito ATRÁS do corpo (ex.: arco) e DEPOIS o corpo por cima.
 	if not _down:
 		_draw_weapon_back(off)
-	if _sprite != null:
+	if _sprite != null and _is_building:
+		# Prédio: estático, ancorado pela base, maior.
+		var bs := Vector2(78, 92)
+		draw_texture_rect(_sprite, Rect2(Vector2(-bs.x * 0.5, -bs.y + 22), bs), false)
+	elif _sprite != null:
 		var sz := Vector2(52, 52)
 		var dest := Rect2(off + (-sz * 0.5) + Vector2(0, -8), sz)
 		var mod := Color(1, 1, 1, 0.7) if _down else Color.WHITE

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cddfpfu5ob5ti"
-path="res://.godot/imported/_shot_worldmap.png-63cd688d5b55a9312ac2b7d2542fbaf9.ctex"
+uid="uid://drh5egews0p7a"
+path="res://.godot/imported/tower_archer.png-47813de50092da1b93436417ec852655.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://_shot_worldmap.png"
-dest_files=["res://.godot/imported/_shot_worldmap.png-63cd688d5b55a9312ac2b7d2542fbaf9.ctex"]
+source_file="res://assets/map/tower_archer.png"
+dest_files=["res://.godot/imported/tower_archer.png-47813de50092da1b93436417ec852655.ctex"]
 
 [params]
 

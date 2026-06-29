@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://whgx2p31eh21"
-path="res://.godot/imported/_shot_title.png-8bfde74a4bfaa4f351d5da859fc373b2.ctex"
+uid="uid://b8q5ey4sda0fi"
+path="res://.godot/imported/tower_warrior.png-daeb551828a2e3ed830bae51ab2ef331.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://_shot_title.png"
-dest_files=["res://.godot/imported/_shot_title.png-8bfde74a4bfaa4f351d5da859fc373b2.ctex"]
+source_file="res://assets/map/tower_warrior.png"
+dest_files=["res://.godot/imported/tower_warrior.png-daeb551828a2e3ed830bae51ab2ef331.ctex"]
 
 [params]
 

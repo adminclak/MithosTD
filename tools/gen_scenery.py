@@ -47,6 +47,15 @@ JOBS = {
         "Kingdom Rush style", True, 512, 512),
     "bush": ("2D cartoon small green bush shrub with little berries, top-down "
         "three-quarter view, Kingdom Rush style", True, 512, 512),
+    # Prédios das 4 torres (estilo Kingdom Rush), transparentes.
+    "tower_archer": ("stone archer watchtower building with wooden top, battlements and "
+        "arrow slits, small flag, top-down three-quarter view, tower defense building", True, 512, 512),
+    "tower_warrior": ("stone barracks fort building with closed wooden gate and a banner, "
+        "sturdy, top-down three-quarter view, tower defense building", True, 512, 512),
+    "tower_mage": ("blue magic mage guild tower with glowing crystal orb on top and runes, "
+        "top-down three-quarter view, tower defense building", True, 512, 512),
+    "tower_priest": ("white marble holy temple shrine with golden roof and columns, divine, "
+        "top-down three-quarter view, tower defense building", True, 512, 512),
     # Chãos temáticos por mitologia (fundos sólidos, vazios).
     "ground_grega": ("seamless top-down mediterranean meadow, green grass with scattered "
         "white marble pebbles and small olive sprigs, sunny, flat empty ground, "
