@@ -42,7 +42,7 @@ func _ready() -> void:
 func _shot_mode(args: Array) -> void:
 	var which := "title"
 	for a in args:
-		if a in ["title", "worldmap", "heroes", "collection", "gacha", "quests"]:
+		if a in ["title", "worldmap", "heroes", "collection", "gacha", "quests", "game"]:
 			which = a
 	match which:
 		"worldmap": _show_worldmap()
@@ -50,8 +50,10 @@ func _shot_mode(args: Array) -> void:
 		"collection": _show_collection()
 		"gacha": _show_gacha()
 		"quests": _show_quests()
+		"game": _on_start_stage(StageList.get_stage(1), \
+			["hercules", "ares", "artemis", "atena", "apolo", "medusa", "hermes"], "ares", true)
 		_: _show_title()
-	for i in 25:
+	for i in 40:
 		await get_tree().process_frame
 	await RenderingServer.frame_post_draw
 	var img := get_viewport().get_texture().get_image()

@@ -20,6 +20,14 @@ const GRASS := Color(0.27, 0.45, 0.22)
 const PATH_BORDER := Color(0.46, 0.36, 0.24)
 const PATH_FILL := Color(0.78, 0.66, 0.45)
 
+# Pontos estratégicos (slots) fixos onde se constrói torre — estilo Kingdom Rush.
+# Posições em áreas de grama, ao lado do caminho.
+const BUILD_SLOTS := [
+	Vector2(250, 250), Vector2(470, 300), Vector2(250, 510),
+	Vector2(560, 330), Vector2(660, 540), Vector2(880, 300),
+	Vector2(900, 110), Vector2(1140, 300), Vector2(1150, 430),
+]
+
 # Mitologia do cenário (definida pela fase). Controla chão, cor do caminho e decos.
 var theme: String = "Grega"
 
@@ -130,6 +138,10 @@ func _path_line(w: float, col: Color) -> Line2D:
 
 func get_waypoints() -> Array:
 	return WAYPOINTS.duplicate()
+
+
+func get_build_slots() -> Array:
+	return BUILD_SLOTS.duplicate()
 
 
 func _draw() -> void:

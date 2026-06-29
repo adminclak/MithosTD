@@ -1,94 +1,136 @@
 class_name BuildManager
 extends Node2D
 
-## Posicionamento estilo Kingdom Rush:
-## - O jogador clica num herói na SquadBar (rodapé) -> entra em modo de colocação.
-## - Um "fantasma" (PlacementGhost) segue o mouse, verde (pode) / vermelho (não).
-## - Clique esquerdo posiciona (valida limites, espaçamento e ouro); direito/ESC cancela.
-## - Clique numa torre já em campo abre a gestão (upar/vender).
-## Sem zonas — qualquer herói em qualquer lugar válido (melee tanka onde for posto).
+## Construção estilo Kingdom Rush (slots): pontos estratégicos fixos no mapa.
+## - Toca num slot vazio -> menu radial com as 4 torres (Arqueiro/Guerreiro/
+##   Sacerdote/Mago) + custo -> constrói com ouro.
+## - Toca numa torre -> radial Melhorar/Vender.
+## A API de economia (try_place/try_upgrade/sell/can_place) é mantida e testável.
 
-const CLICK_RADIUS := 26.0
-const MIN_SPACING := 38.0
-const BOUNDS := Rect2(20, 20, 1240, 600) ## área jogável (acima da SquadBar)
+const CLICK_RADIUS := 30.0
+const MIN_SPACING := 36.0
+const SLOT_PICK_RADIUS := 46.0
+const BOUNDS := Rect2(20, 20, 1240, 600)
 
 var waypoints: Array = []
 var squad: Array = []
+var slots: Array = [] ## Vector2 dos pontos estratégicos
 
 var _towers: Array = []
-var _menu: BuildMenu = null
-var _active_tower: Tower = null
-var _placing: TowerData = null
-var _ghost: PlacementGhost = null
-var _toast: Label = null
+var _slot_tower: Dictionary = {} ## índice do slot -> Tower
+var _radial: RadialMenu = null
+var _pending_slot: int = -1
+var _mode: String = ""
 
 @onready var _state: Node = get_node_or_null(^"/root/GameState")
 
 
-func setup(wpoints: Array, squad_datas: Array = []) -> void:
+func setup(wpoints: Array, squad_datas: Array = [], slot_positions: Array = []) -> void:
 	waypoints = wpoints.duplicate()
 	squad = squad_datas.duplicate()
+	slots = slot_positions.duplicate()
 
 
 func _ready() -> void:
-	_menu = BuildMenu.new()
-	add_child(_menu)
-	_menu.upgrade_requested.connect(_on_upgrade_requested)
-	_menu.sell_requested.connect(_on_sell_requested)
-	_menu.closed.connect(_on_menu_closed)
-	_ghost = PlacementGhost.new()
-	add_child(_ghost)
+	_radial = RadialMenu.new()
+	add_child(_radial)
+	_radial.chosen.connect(_on_radial_chosen)
+	queue_redraw()
 
 
-func _process(_delta: float) -> void:
-	if _placing != null:
-		var pos := get_global_mouse_position()
-		_ghost.position = pos
-		_ghost.valid = can_place(_placing.tower_class, pos) and _gold() >= _placing.cost
-		_ghost.queue_redraw()
-
-
+# --- Entrada: tocar slot (construir) ou torre (gerir) ---
 func _unhandled_input(event: InputEvent) -> void:
 	if _state != null and _state.is_over():
 		return
-	if event is InputEventMouseButton and event.pressed:
-		if _placing != null:
-			if event.button_index == MOUSE_BUTTON_LEFT:
-				var pos := get_global_mouse_position()
-				if can_place(_placing.tower_class, pos) and _gold() >= _placing.cost:
-					try_place(pos, _placing)
-					_stop_placing()
-				else:
-					var why := _place_reason(_placing.tower_class, pos)
-					_show_toast(pos, why if why != "" else "sem ouro")
-				get_viewport().set_input_as_handled()
-			elif event.button_index == MOUSE_BUTTON_RIGHT:
-				_stop_placing()
-				get_viewport().set_input_as_handled()
-		elif event.button_index == MOUSE_BUTTON_LEFT:
-			var t := _tower_at(get_global_mouse_position())
-			if t != null:
-				_active_tower = t
-				_menu.open_manage(t.global_position, t, _gold())
-	elif event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
-		if _placing != null:
-			_stop_placing()
-			get_viewport().set_input_as_handled()
+	if _radial != null and _radial.is_open():
+		return
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		var pos := get_global_mouse_position()
+		var si := _slot_at(pos)
+		if si < 0:
+			return
+		if _slot_tower.has(si) and is_instance_valid(_slot_tower[si]):
+			_open_manage(si)
+		else:
+			_open_build(si)
+		get_viewport().set_input_as_handled()
 
 
-# --- Modo de colocação (chamado pela SquadBar) ---
-func start_placing(data: TowerData) -> void:
-	_placing = data
-	_close_menu()
-	_ghost.show_for(data)
+func _slot_at(pos: Vector2) -> int:
+	var best := -1
+	var best_d := SLOT_PICK_RADIUS
+	for i in slots.size():
+		var d: float = slots[i].distance_to(pos)
+		if d <= best_d:
+			best_d = d
+			best = i
+	return best
 
 
-func _stop_placing() -> void:
-	_placing = null
-	_ghost.clear()
+func _options_classes() -> Array:
+	# Ordem: Arqueiro, Guerreiro, Sacerdote, Mago (TowerData.all_classes()).
+	var out: Array = []
+	for d in TowerData.all_classes():
+		out.append({"text": "%s\n%d" % [d.display_name.left(8), d.cost],
+			"color": d.body_color, "enabled": _gold() >= d.cost})
+	return out
 
 
-# --- Validação ---
+func _open_build(si: int) -> void:
+	_pending_slot = si
+	_mode = "build"
+	_radial.open_menu(slots[si], _options_classes())
+
+
+func _open_manage(si: int) -> void:
+	_pending_slot = si
+	_mode = "manage"
+	var t: Tower = _slot_tower[si]
+	var up_ok := t.can_upgrade() and _gold() >= t.upgrade_cost()
+	var up_text := ("Melhorar\n%d" % t.upgrade_cost()) if t.can_upgrade() else "Maximo"
+	_radial.open_menu(t.global_position, [
+		{"text": up_text, "color": Color(0.6, 1, 0.6), "enabled": up_ok},
+		{"text": "Vender\n+%d" % t.sell_value(), "color": Color(1, 0.85, 0.4), "enabled": true},
+	])
+
+
+func _on_radial_chosen(index: int) -> void:
+	if _pending_slot < 0:
+		return
+	if _mode == "build":
+		var data: TowerData = TowerData.all_classes()[index]
+		if try_place(slots[_pending_slot], data):
+			_slot_tower[_pending_slot] = _towers[_towers.size() - 1]
+			queue_redraw()
+	elif _mode == "manage":
+		var t: Tower = _slot_tower.get(_pending_slot, null)
+		if t == null or not is_instance_valid(t):
+			return
+		if index == 0:
+			try_upgrade(t)
+		elif index == 1:
+			sell(t)
+			_slot_tower.erase(_pending_slot)
+			queue_redraw()
+	_pending_slot = -1
+	_mode = ""
+
+
+# --- Desenho dos slots vazios ---
+func _draw() -> void:
+	for i in slots.size():
+		if _slot_tower.has(i) and is_instance_valid(_slot_tower[i]):
+			continue
+		var p: Vector2 = slots[i]
+		draw_circle(p + Vector2(0, 3), 20.0, Color(0, 0, 0, 0.25))
+		draw_circle(p, 18.0, Color(0.52, 0.40, 0.24, 0.85))
+		draw_arc(p, 18.0, 0.0, TAU, 24, Color(0.30, 0.22, 0.12), 3.0)
+		# "+" indicando ponto de construção.
+		draw_line(p + Vector2(-7, 0), p + Vector2(7, 0), Color(1, 0.95, 0.7, 0.9), 3.0)
+		draw_line(p + Vector2(0, -7), p + Vector2(0, 7), Color(1, 0.95, 0.7, 0.9), 3.0)
+
+
+# --- Validação / economia (testável, sem UI) ---
 func can_place(_tower_class: int, pos: Vector2) -> bool:
 	if not BOUNDS.has_point(pos):
 		return false
@@ -96,15 +138,6 @@ func can_place(_tower_class: int, pos: Vector2) -> bool:
 		if is_instance_valid(t) and t.global_position.distance_to(pos) < MIN_SPACING:
 			return false
 	return true
-
-
-func _place_reason(_tower_class: int, pos: Vector2) -> String:
-	if not BOUNDS.has_point(pos):
-		return "fora do mapa"
-	for t in _towers:
-		if is_instance_valid(t) and t.global_position.distance_to(pos) < MIN_SPACING:
-			return "perto demais"
-	return ""
 
 
 func _available_squad() -> Array:
@@ -138,7 +171,6 @@ func _gold() -> int:
 	return _state.gold if _state != null else 0
 
 
-# --- Economia (sem UI — testável) ---
 func try_place(pos: Vector2, data: TowerData) -> bool:
 	if not can_place(data.tower_class, pos):
 		return false
@@ -170,43 +202,3 @@ func sell(tower: Tower) -> bool:
 	_towers.erase(tower)
 	tower.queue_free()
 	return true
-
-
-# --- Sinais do BuildMenu (gestão) ---
-func _on_upgrade_requested() -> void:
-	if _active_tower != null:
-		try_upgrade(_active_tower)
-	if _active_tower != null and is_instance_valid(_active_tower):
-		_menu.open_manage(_active_tower.global_position, _active_tower, _gold())
-	else:
-		_close_menu()
-
-
-func _on_sell_requested() -> void:
-	if _active_tower != null:
-		sell(_active_tower)
-	_close_menu()
-
-
-func _on_menu_closed() -> void:
-	_active_tower = null
-
-
-func _close_menu() -> void:
-	if _menu != null:
-		_menu.close()
-
-
-func _show_toast(pos: Vector2, msg: String) -> void:
-	if msg == "":
-		return
-	if _toast == null:
-		_toast = Label.new()
-		_toast.add_theme_font_size_override("font_size", 20)
-		_toast.add_theme_color_override("font_color", Color(1.0, 0.5, 0.4))
-		add_child(_toast)
-	_toast.text = "Nao da pra posicionar (%s)" % msg
-	_toast.position = pos + Vector2(-80, -36)
-	_toast.visible = true
-	_toast.z_index = 120
-	get_tree().create_timer(1.2).timeout.connect(func(): if is_instance_valid(_toast): _toast.visible = false)

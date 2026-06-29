@@ -54,14 +54,8 @@ func _ready() -> void:
 	add_child(enemies_root)
 
 	_build_manager = BuildManager.new()
-	_build_manager.setup(level.get_waypoints(), _squad)
+	_build_manager.setup(level.get_waypoints(), _squad, level.get_build_slots())
 	add_child(_build_manager)
-
-	# Barra de heróis no rodapé -> clique entra no modo de colocação (fantasma).
-	var squad_bar := SquadBar.new()
-	squad_bar.setup(_build_manager)
-	squad_bar.char_selected.connect(_build_manager.start_placing)
-	add_child(squad_bar)
 
 	var hud := Hud.new()
 	add_child(hud)
@@ -105,23 +99,14 @@ func _ready() -> void:
 		_wave_manager.player_advance()
 
 
-## Demo automática (smoke / auto-stage): posiciona o esquadrão sozinho, em zonas
-## válidas, para exercitar o combate e o desenho das torres sem input.
+## Demo automática (smoke / auto-stage): constrói as 4 torres genéricas nos slots,
+## para exercitar o combate sem input.
 func _auto_place_demo() -> void:
 	GameState.add_gold(1500) # ouro extra apenas para a demo
-	var ranged := [Vector2(200, 280), Vector2(560, 300), Vector2(900, 280), Vector2(1130, 300)]
-	var melee := [Vector2(360, 290), Vector2(760, 300), Vector2(1040, 360)]
-	var ri := 0
-	var mi := 0
-	for data in _squad:
-		var pos: Vector2
-		if data.tower_class == TowerData.TowerClass.WARRIOR:
-			pos = melee[mi % melee.size()]
-			mi += 1
-		else:
-			pos = ranged[ri % ranged.size()]
-			ri += 1
-		_build_manager.try_place(pos, data)
+	var classes := TowerData.all_classes()
+	var sl: Array = _build_manager.slots
+	for i in sl.size():
+		_build_manager.try_place(sl[i], classes[i % classes.size()])
 
 
 func _process(delta: float) -> void:
