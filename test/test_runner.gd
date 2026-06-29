@@ -17,6 +17,7 @@ func _initialize() -> void:
 	_test_game_state()
 	_test_tower_data()
 	_test_projectile_aoe()
+	_test_combat_polish()
 	_test_blocking()
 	_test_priest_aura()
 	_test_economy()
@@ -234,6 +235,87 @@ func _test_projectile_aoe() -> void:
 	_check(e3.hp == 100, "AoE nao atinge inimigo fora do raio")
 
 	e1.free(); e2.free(); e3.free()
+
+## As 3 "joias" trazidas dos TDs de referência: slow-on-hit (torre de gelo/água),
+## projétil em arco (artilharia) e feedback de impacto (número de dano flutuante).
+func _test_combat_polish() -> void:
+	print("\nPolimento de combate (slow / arco / numero de dano):")
+
+	# 1) Slow-on-hit: projétil de água atrasa o inimigo atingido.
+	var e = Enemy.new(); e.max_hp = 100
+	root.add_child(e)
+	e.global_position = Vector2(100, 100)
+	var pj = Projectile.new()
+	root.add_child(pj)
+	pj.global_position = Vector2(100, 100)
+	pj.setup(e, 10, 0.0, Color.WHITE, 0, -1, 0.55, 1.3) # slow_mult 0.55, dur 1.3
+	pj._impact()
+	_check(e.is_slowed(), "projetil de gelo aplica lentidao no acerto")
+	_check(e.hp == 90, "projetil de gelo tambem causa dano")
+	e.free()
+
+	# 2) Projétil em arco (lob) chega ao destino e causa dano em área.
+	var a1 = Enemy.new(); a1.max_hp = 100
+	root.add_child(a1)
+	a1.global_position = Vector2(300, 300)
+	var lob = Projectile.new()
+	root.add_child(lob)
+	lob.global_position = Vector2(120, 300)
+	lob.speed = 400.0
+	lob.setup(a1, 15, 72.0, Color.WHITE)
+	lob.set_arc(48.0, a1)
+	_check(lob._arc, "set_arc liga o modo balistico")
+	for _i in 240: # avança o voo até o impacto (queue_free no fim)
+		if not is_instance_valid(lob):
+			break
+		lob._process(0.016)
+	_check(a1.hp < 100, "projetil em arco causa dano ao cair no alvo")
+	a1.free()
+
+	# 3) Feedback: take_damage cria um número de dano flutuante no pai.
+	var before := _count_popups()
+	var e2 = Enemy.new(); e2.max_hp = 100
+	root.add_child(e2)
+	e2.global_position = Vector2(500, 500)
+	e2.take_damage(7)
+	_check(_count_popups() == before + 1, "take_damage cria 1 numero de dano flutuante")
+	_check(e2.hp == 93, "take_damage aplica o dano (-7)")
+	# DoT não deve encher de números (popup=false por tick).
+	var mid := _count_popups()
+	e2.take_damage(3, 999, -1, false)
+	_check(_count_popups() == mid, "dano por tick (DoT) nao cria numero flutuante")
+	e2.free()
+
+	# 4) Data-driven: Mago arremessa em arco; personagem de água tem slow.
+	_check(TowerData.mage().proj_arc == true, "Mago (area) usa projetil em arco")
+	var water_ok := true
+	var water_found := false
+	for d in Roster.defs():
+		var id: String = d[0]
+		if Elements.of_character(id) == Elements.E.AGUA:
+			var td = Roster.by_id(id).tower_data_for_level(1, 1)
+			if not td.is_melee and td.damage > 0:
+				water_found = true
+				if not (td.slow_duration > 0.0 and td.slow_mult < 1.0):
+					water_ok = false
+	_check(not water_found or water_ok, "personagens de agua (ranged) atrasam no acerto")
+
+	_clear_popups()
+
+
+func _count_popups() -> int:
+	var n := 0
+	for c in root.get_children():
+		if c is DamagePopup:
+			n += 1
+	return n
+
+
+func _clear_popups() -> void:
+	for c in root.get_children():
+		if c is DamagePopup:
+			c.free()
+
 
 func _test_blocking() -> void:
 	print("\nCombate melee (personagem tanka na rota):")

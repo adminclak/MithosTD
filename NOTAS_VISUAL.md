@@ -5,6 +5,29 @@
 > **testar todos os personagens**. Trabalhei com autonomia, em 2D, commitando por
 > partes. Este doc resume tudo e as decisões.
 
+## >>> JOIAS DOS TDs DE REFERÊNCIA (29/06)
+Você mandou 3 repos de Tower Defense (Godot 4) p/ estudarmos e replicarmos
+sistemas. Baixei em `~/Downloads/td-refs/`, analisei e registrei em
+`ANALISE_REFERENCIAS_TD.md`. Conclusão: **o Mithos já era mais completo** que os 3
+(já tínhamos upgrade/venda de torre + radial, flash de dano, economia, boss,
+hidra que divide, ults). Você escolheu trazer 3 melhorias concretas:
+
+1. **Feedback de impacto rico** (do ape-td): ao levar dano o inimigo agora dá um
+   **recuo**, pisca **branco→laranja** e sobe um **número de dano flutuante**
+   (`damage_popup.gd`; laranja/maior quando o golpe é forte por elemento). DoT não
+   spamma número (param `popup=false`).
+2. **Slow-on-hit / torre de gelo** (do quiver-td `hit.gd`): ataques de elemento
+   **Água** atrasam o inimigo atingido (0.55× por 1.3s). Derivado automaticamente
+   em `character_data` p/ todo personagem de água ranged — usa o `apply_slow` que
+   já existia no `enemy`.
+3. **Arco/lob de projétil** (do quiver `missile.gd`): o **Mago de área** arremessa
+   a bola num **arco balístico** (sobe, cai no alvo, com sombra no chão) em vez de
+   linha reta — `Projectile.set_arc()`. (Se preferir a bola reta, é só tirar o
+   `proj_arc` do Mago.)
+
+Tudo data-driven via `TowerData` (`slow_mult`/`slow_duration`/`proj_arc`). +9 testes
+(193/193 verdes).
+
 ## >>> CAMINHO PINTADO NA ARTE — TODAS AS 5 FASES (29/06)
 Você pediu que **o trajeto dos inimigos siga a trilha já pintada no mapa** (não uma
 faixa desenhada por cima que cruzava pedras), que **cada fase tenha um caminho

@@ -43,6 +43,13 @@ func tower_data_for_level(level: int, stars: int = 1) -> TowerData:
 	d.display_name = display_name
 	d.ability = ability
 	d.element = Elements.of_character(id)
+	# Água/gelo atrasa quem é atingido (slow-on-hit, estilo torre de gelo do KR).
+	if d.element == Elements.E.AGUA and not d.is_melee and d.damage > 0:
+		d.slow_mult = 0.55
+		d.slow_duration = 1.3
+	# Magos de área arremessam o projétil em arco (artilharia/catapulta).
+	if d.tower_class == TowerData.TowerClass.MAGE and d.splash_radius > 0.0:
+		d.proj_arc = true
 	return d
 
 

@@ -205,7 +205,7 @@ func _shoot(target: Node2D) -> void:
 	if randf() < data.crit_chance:
 		dmg = int(round(dmg * data.crit_mult))
 		col = Color(1.0, 0.55, 0.2)
-	p.setup(target, dmg, data.splash_radius, col, data.penetration, data.element)
+	p.setup(target, dmg, data.splash_radius, col, data.penetration, data.element, data.slow_mult, data.slow_duration)
 	p.speed = data.proj_speed
 	# Tipo de projétil pela classe: Mago = bola de fogo; Sacerdote = raio dourado;
 	# Arqueiro = flecha.
@@ -215,6 +215,9 @@ func _shoot(target: Node2D) -> void:
 		p.set_kind(Projectile.Kind.BOLT)
 	else:
 		p.set_kind(Projectile.Kind.ARROW)
+	# Artilharia: projétil arremessado em arco balístico (lob) em vez de linha reta.
+	if data.proj_arc:
+		p.set_arc(data.arc_height, target)
 	# Dispara a animação de ataque (recuo + arco/flash) virada para o alvo.
 	_atk = 1.0
 	_face = (target.global_position - global_position).normalized()

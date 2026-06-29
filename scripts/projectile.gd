@@ -17,17 +17,43 @@ var _damage: int = 0
 var _splash: float = 0.0
 var _pen: int = 0
 var _element: int = -1
+var _slow_mult: float = 1.0
+var _slow_dur: float = 0.0
 var _life: float = 0.0
 var _trail: Array = [] ## últimas posições (rastro)
 
+# Modo arco (lob balístico): voa do ponto de origem ao destino numa parábola.
+var _arc: bool = false
+var _arc_from: Vector2 = Vector2.ZERO
+var _arc_to: Vector2 = Vector2.ZERO
+var _arc_t: float = 0.0
+var _arc_dur: float = 0.5
+var _arc_h: float = 48.0
+var _ground: Vector2 = Vector2.ZERO ## posição no chão (p/ sombra), em global
 
-func setup(target: Node2D, dmg: int, splash: float = 0.0, col: Color = Color(1, 1, 0.4), pen: int = 0, element: int = -1) -> void:
+
+func setup(target: Node2D, dmg: int, splash: float = 0.0, col: Color = Color(1, 1, 0.4), pen: int = 0, element: int = -1, slow_mult: float = 1.0, slow_dur: float = 0.0) -> void:
 	_target = target
 	_damage = dmg
 	_splash = splash
 	color = col
 	_pen = pen
 	_element = element
+	_slow_mult = slow_mult
+	_slow_dur = slow_dur
+
+
+## Converte o projétil em arco balístico: mira na posição atual do alvo e cai lá
+## (artilharia/catapulta). A duração do voo vem da distância e da velocidade.
+func set_arc(height: float, target: Node2D) -> void:
+	_arc = true
+	_arc_h = height
+	_arc_from = global_position
+	_arc_to = target.global_position if is_instance_valid(target) else global_position
+	var dist: float = _arc_from.distance_to(_arc_to)
+	_arc_dur = clampf(dist / max(120.0, speed), 0.28, 1.1)
+	_arc_t = 0.0
+	_ground = _arc_from
 
 
 func set_kind(k: int) -> void:
@@ -37,13 +63,17 @@ func set_kind(k: int) -> void:
 
 func _process(delta: float) -> void:
 	# Movimento no frame de render (fluidez em telas 120/144Hz; ver enemy.gd).
+	_life += delta
+	if _arc:
+		_process_arc(delta)
+		return
+	# Homing: persegue o alvo. Some se o alvo deixou de existir.
 	if _target == null or not is_instance_valid(_target):
 		queue_free()
 		return
 	var to: Vector2 = _target.global_position - global_position
 	var dist: float = to.length()
 	rotation = to.angle()
-	_life += delta
 	# Rastro (em coordenadas globais; convertido na hora de desenhar).
 	_trail.push_front(global_position)
 	if _trail.size() > 6:
@@ -55,19 +85,47 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
+## Voo balístico: interpola o ponto no chão e soma uma altura parabólica (sobe e
+## cai). O impacto acontece no destino fixado no lançamento (mira na hora do tiro).
+func _process_arc(delta: float) -> void:
+	_arc_t += delta / _arc_dur
+	var t: float = clampf(_arc_t, 0.0, 1.0)
+	_ground = _arc_from.lerp(_arc_to, t)
+	var h: float = _arc_h * 4.0 * t * (1.0 - t)
+	var prev := global_position
+	global_position = _ground - Vector2(0.0, h)
+	if global_position != prev:
+		rotation = (global_position - prev).angle()
+	_trail.push_front(global_position)
+	if _trail.size() > 6:
+		_trail.pop_back()
+	if _arc_t >= 1.0:
+		global_position = _arc_to
+		_impact()
+		return
+	queue_redraw()
+
+
 func _impact() -> void:
 	if _splash > 0.0:
 		for e in get_tree().get_nodes_in_group("enemies"):
 			if not is_instance_valid(e):
 				continue
 			if global_position.distance_to(e.global_position) <= _splash:
-				if e.has_method("take_damage"):
-					e.take_damage(_damage, _pen, _element)
+				_hit(e)
 	else:
-		if is_instance_valid(_target) and _target.has_method("take_damage"):
-			_target.take_damage(_damage, _pen, _element)
+		if is_instance_valid(_target):
+			_hit(_target)
 	_spawn_impact()
 	queue_free()
+
+
+## Aplica dano e, se for projétil de gelo/água, a lentidão (slow-on-hit).
+func _hit(e: Node2D) -> void:
+	if e.has_method("take_damage"):
+		e.take_damage(_damage, _pen, _element)
+	if _slow_dur > 0.0 and _slow_mult < 1.0 and e.has_method("apply_slow"):
+		e.apply_slow(_slow_mult, _slow_dur)
 
 
 func _spawn_impact() -> void:
@@ -84,6 +142,14 @@ func _spawn_impact() -> void:
 
 
 func _draw() -> void:
+	# Arco: sombra no chão sob o projétil (cresce conforme ele desce = vai chegando).
+	if _arc:
+		var gl: Vector2 = to_local(_ground)
+		var t: float = clampf(_arc_t, 0.0, 1.0)
+		var near: float = 1.0 - abs(0.5 - t) * 2.0 # 0 nas pontas, 1 no auge
+		draw_set_transform(gl, 0.0, Vector2(1.0, 0.4))
+		draw_circle(Vector2.ZERO, 5.0 + near * 3.0, Color(0, 0, 0, 0.22))
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	# Rastro: pontos esmaecendo (desenhados em espaço local, "atrás" do projétil).
 	for i in _trail.size():
 		var local: Vector2 = to_local(_trail[i])

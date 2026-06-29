@@ -30,6 +30,7 @@ var _dot_accum: float = 0.0
 # Animação: ciclo de caminhada (Anim), direção do rosto e flash ao levar dano.
 var _bob: float = 0.0
 var _flash: float = 0.0
+var _hit_kick: Vector2 = Vector2.ZERO ## recuo visual ao levar dano (decai)
 var _face_x: float = -1.0
 var _anim_state: int = Anim.WALK
 
@@ -194,6 +195,9 @@ func _process_status(delta: float) -> void:
 	if _flash > 0.0:
 		_flash -= delta
 		queue_redraw()
+	if _hit_kick != Vector2.ZERO:
+		_hit_kick = _hit_kick.move_toward(Vector2.ZERO, 60.0 * delta)
+		queue_redraw()
 	if _slow_timer > 0.0:
 		_slow_timer -= delta
 	if _dot_timer > 0.0:
@@ -202,23 +206,46 @@ func _process_status(delta: float) -> void:
 		var whole := int(_dot_accum)
 		if whole > 0:
 			_dot_accum -= whole
-			take_damage(whole, 999) # veneno/fogo ignora defesa
+			take_damage(whole, 999, -1, false) # veneno/fogo ignora defesa; sem popup por tick
 			queue_redraw()
 
 
 ## pen (penetração) fura a defesa do inimigo. element (Elements.E) aplica vantagem/
 ## desvantagem elemental do atacante contra este inimigo. Dano mínimo de 1.
-func take_damage(amount: int, pen: int = 0, element: int = -1) -> void:
+## popup=false (usado pelo DoT) evita encher a tela de números a cada tick.
+func take_damage(amount: int, pen: int = 0, element: int = -1, popup: bool = true) -> void:
 	var dealt := amount
+	var strong := false
 	if element >= 0 and data != null:
-		dealt = int(round(dealt * Elements.mult(element, data.element)))
+		var em := Elements.mult(element, data.element)
+		dealt = int(round(dealt * em))
+		strong = em > 1.0
 	if data != null and data.defense > 0:
 		dealt = max(1, dealt - max(0, data.defense - pen))
 	hp -= dealt
-	_flash = 0.12
+	# Feedback de impacto: flash + recuo + número flutuante (estilo KR/ape-td).
+	_flash = 0.18
+	var dir := Vector2(-_face_x, 0.0)
+	if not _waypoints.is_empty() and _index < _waypoints.size():
+		dir = (global_position - _waypoints[_index]).normalized()
+	_hit_kick = dir * 5.0
+	if popup:
+		_spawn_damage_popup(dealt, strong)
 	queue_redraw()
 	if hp <= 0:
 		_die()
+
+
+## Número de dano flutuante acima do inimigo (laranja/maior quando é golpe forte).
+func _spawn_damage_popup(amount: int, strong: bool) -> void:
+	var parent := get_parent()
+	if parent == null:
+		return
+	var pop := DamagePopup.new()
+	parent.add_child(pop)
+	pop.global_position = global_position + Vector2(0, -_radius - 8.0)
+	var col := Color(1.0, 0.55, 0.2) if strong else Color(1.0, 0.95, 0.6)
+	pop.setup(amount, col, strong)
 
 
 func _die() -> void:
@@ -255,8 +282,8 @@ func _draw() -> void:
 	draw_set_transform(Vector2(0, _radius * 0.7), 0.0, Vector2(1.0, 0.4))
 	draw_circle(Vector2.ZERO, _radius * 0.95, Color(0, 0, 0, 0.22))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	# Balanço vertical da caminhada (o corpo sobe/desce; a sombra não).
-	var off := Vector2(0, sin(_bob) * 2.0)
+	# Balanço vertical da caminhada (o corpo sobe/desce; a sombra não) + recuo do hit.
+	var off := Vector2(0, sin(_bob) * 2.0) + _hit_kick
 	if _sprite != null:
 		var s := _radius * 2.5
 		var dest := Rect2(Vector2(-s * 0.5, -s * 0.6), Vector2(s, s))
@@ -271,9 +298,11 @@ func _draw() -> void:
 		draw_circle(off + Vector2(_radius * 0.35, -_radius * 0.15), eye, Color(1, 1, 1))
 		draw_circle(off + Vector2(-_radius * 0.35, -_radius * 0.15), eye * 0.5, Color(0.8, 0.1, 0.1))
 		draw_circle(off + Vector2(_radius * 0.35, -_radius * 0.15), eye * 0.5, Color(0.8, 0.1, 0.1))
-	# Flash branco ao levar dano.
+	# Flash quente (branco->laranja) ao levar dano, mais forte no instante do golpe.
 	if _flash > 0.0:
-		draw_circle(off, _radius, Color(1, 1, 1, clampf(_flash / 0.12, 0.0, 1.0) * 0.55))
+		var ft: float = clampf(_flash / 0.18, 0.0, 1.0)
+		var fcol := Color(1.0, 0.75 + 0.25 * ft, 0.55 + 0.45 * ft, ft * 0.6)
+		draw_circle(off, _radius * (1.0 + (1.0 - ft) * 0.12), fcol)
 	# Barra de vida acima do corpo (largura proporcional ao tamanho).
 	var bar_width: float = _radius * 2.0
 	var bar_height: float = 4.0

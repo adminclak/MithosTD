@@ -24,6 +24,12 @@ enum TowerClass { ARCHER, MAGE, WARRIOR, PRIEST }
 @export var projectile_color: Color = Color(1, 1, 0.4)
 @export var splash_radius: float = 0.0 ## > 0 = dano em área (Mago)
 
+## Lentidão no acerto (torre de gelo/água) e projétil em arco (artilharia).
+@export var slow_mult: float = 1.0      ## < 1 = ataque atrasa o inimigo atingido
+@export var slow_duration: float = 0.0  ## segundos de lentidão por acerto (0 = sem)
+@export var proj_arc: bool = false      ## projétil em arco balístico (lob), não em linha reta
+@export var arc_height: float = 48.0    ## altura visual do arco
+
 ## Stats secundários derivados dos atributos (ver AttributeStats).
 @export var crit_chance: float = 0.0
 @export var crit_mult: float = 1.5
@@ -76,6 +82,7 @@ static func mage() -> TowerData:
 	d.fire_rate = 0.9
 	d.projectile_color = Color(0.75, 0.45, 1.0)
 	d.splash_radius = 72.0
+	d.proj_arc = true ## o Mago arremessa a bola em arco (artilharia)
 	return d
 
 
