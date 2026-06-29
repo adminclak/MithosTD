@@ -33,11 +33,18 @@ func _process(delta: float) -> void:
 
 
 # --- Efeito de jogo ---
+const HIT_RADIUS := 250.0 ## raio de efeito ao redor do ponto mirado (direcionado)
+
+
 func _apply() -> void:
 	if _ult == null:
 		return
 	var p: int = int(round(_ult.power))
-	var enemies := get_tree().get_nodes_in_group("enemies")
+	# Só atinge inimigos perto do ponto mirado (não a tela toda).
+	var enemies: Array = []
+	for e in get_tree().get_nodes_in_group("enemies"):
+		if is_instance_valid(e) and e.global_position.distance_to(_center) <= HIT_RADIUS:
+			enemies.append(e)
 	match _ult.style:
 		UltimateData.Style.METEOR:
 			for e in enemies:

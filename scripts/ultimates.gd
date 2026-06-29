@@ -40,16 +40,16 @@ static func for_character(cid: String) -> UltimateData:
 	var ov := _overrides()
 	if ov.has(cid):
 		var e: Array = ov[cid]
-		return UltimateData.make("ult_" + cid, e[1], e[0], 130.0, e[2])
+		return UltimateData.make("ult_" + cid, e[1], e[0], 70.0, e[2])
 	# Fallback por classe.
 	var cls := ch.tower_class if ch != null else TowerData.TowerClass.ARCHER
 	match cls:
 		TowerData.TowerClass.ARCHER:
-			return UltimateData.make("ult_" + cid, "Chuva de Flechas de " + name, S.METEOR, 110.0, Color(0.9, 1.0, 0.6))
+			return UltimateData.make("ult_" + cid, "Chuva de Flechas de " + name, S.METEOR, 62.0, Color(0.9, 1.0, 0.6))
 		TowerData.TowerClass.MAGE:
-			return UltimateData.make("ult_" + cid, "Cataclismo de " + name, S.INFERNO, 120.0, Color(1.0, 0.6, 0.2))
+			return UltimateData.make("ult_" + cid, "Cataclismo de " + name, S.INFERNO, 68.0, Color(1.0, 0.6, 0.2))
 		TowerData.TowerClass.WARRIOR:
-			return UltimateData.make("ult_" + cid, "Furia de " + name, S.QUAKE, 120.0, Color(1.0, 0.7, 0.3))
+			return UltimateData.make("ult_" + cid, "Furia de " + name, S.QUAKE, 68.0, Color(1.0, 0.7, 0.3))
 		TowerData.TowerClass.PRIEST:
-			return UltimateData.make("ult_" + cid, "Bencao de " + name, S.DIVINE, 90.0, Color(1.0, 0.95, 0.6))
-	return UltimateData.make("ult_" + cid, "Poder de " + name, S.METEOR, 110.0, Color(1, 0.8, 0.3))
+			return UltimateData.make("ult_" + cid, "Bencao de " + name, S.DIVINE, 52.0, Color(1.0, 0.95, 0.6))
+	return UltimateData.make("ult_" + cid, "Poder de " + name, S.METEOR, 62.0, Color(1, 0.8, 0.3))

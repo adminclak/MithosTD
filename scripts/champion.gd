@@ -32,8 +32,8 @@ var _rig: RiggedActor = null
 
 func setup(d: TowerData) -> void:
 	data = d
-	_max = d.max_hp if d.is_melee and d.max_hp > 0 else 90 + d.damage * 6
-	_max = int(round(_max * 1.6)) # campeão é mais robusto que torres
+	_max = d.max_hp if d.is_melee and d.max_hp > 0 else 70 + d.damage * 4
+	_max = int(round(_max * 1.1)) # campeão um pouco mais robusto que torres
 	_hp = _max
 
 
