@@ -30,24 +30,27 @@ static func draw_action(ci: CanvasItem, tex: Texture2D, dest: Rect2, face_x: flo
 	var sway_f := 1.0    # frequência do balanço
 	var lunge := 0.0     # avanço (ataque) na direção do rosto
 	var legs := 0.0      # passada das pernas (fatias de baixo)
+	var squash := 0.0    # oscilação vertical (estica no ar, achata no apoio)
 	match state:
 		IDLE:
-			sway = 1.0; sway_f = 1.2
-			bob = sin(phase * 1.2) * 1.0
+			sway = 1.2; sway_f = 1.2
+			bob = sin(phase * 1.2) * 1.2
+			squash = sin(phase * 1.2) * 0.035
 		WALK:
-			sway = 3.0; sway_f = 2.0
-			bob = -absf(sin(phase * 2.0)) * 3.0
-			legs = 3.0
+			sway = 3.5; sway_f = 2.0
+			bob = -absf(sin(phase * 2.0)) * 4.5
+			legs = 5.0
+			squash = sin(phase * 2.0) * 0.06
 		ATTACK:
-			lunge = sin(clampf(atk, 0.0, 1.0) * PI) * 11.0
-			bob = -sin(clampf(atk, 0.0, 1.0) * PI) * 2.0
+			lunge = sin(clampf(atk, 0.0, 1.0) * PI) * 13.0
+			bob = -sin(clampf(atk, 0.0, 1.0) * PI) * 3.0
+			squash = sin(clampf(atk, 0.0, 1.0) * PI) * 0.05
 		DEFEND:
 			crouch = 0.85; lunge = -5.0
 			bob = sin(phase * 1.5) * 0.6
 
 	var dir := -1.0 if flip else 1.0
-	var breathe := 1.0 + sin(phase * 0.9) * (0.03 if state == IDLE else 0.015)
-	var h := dest.size.y * crouch * breathe
+	var h := dest.size.y * crouch * (1.0 + squash)
 	var base_y := dest.position.y + dest.size.y - h
 	for i in strips:
 		var f0 := float(i) / float(strips)

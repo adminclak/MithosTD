@@ -74,7 +74,9 @@ func _ready() -> void:
 	queue_redraw()
 
 
-func _physics_process(delta: float) -> void:
+func _process(delta: float) -> void:
+	# Movimento no frame de render (não na física a 60Hz) p/ ficar fluido em telas
+	# de 120/144Hz — sem o "judder" de atualizar a posição menos vezes que a tela.
 	if _state != null and _state.is_over():
 		return
 

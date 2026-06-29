@@ -35,7 +35,8 @@ func set_kind(k: int) -> void:
 	z_index = 20
 
 
-func _physics_process(delta: float) -> void:
+func _process(delta: float) -> void:
+	# Movimento no frame de render (fluidez em telas 120/144Hz; ver enemy.gd).
 	if _target == null or not is_instance_valid(_target):
 		queue_free()
 		return

@@ -55,7 +55,8 @@ func move_to(pos: Vector2) -> void:
 	_rally = pos
 
 
-func _physics_process(delta: float) -> void:
+func _process(delta: float) -> void:
+	# Movimento no frame de render (fluidez em telas 120/144Hz; ver enemy.gd).
 	if _gs != null and _gs.is_over():
 		return
 	_phase += delta * 9.0

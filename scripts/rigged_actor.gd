@@ -39,7 +39,7 @@ func set_pose(s: int, a: float) -> void:
 
 
 func _process(delta: float) -> void:
-	var spd := 11.0 if state == Anim.WALK else (6.0 if state == Anim.ATTACK else 3.0)
+	var spd := 12.0 if state == Anim.WALK else (7.0 if state == Anim.ATTACK else 3.0)
 	phase += delta * spd
 	queue_redraw()
 
@@ -47,29 +47,38 @@ func _process(delta: float) -> void:
 func _angle(limb: String) -> float:
 	match state:
 		Anim.WALK:
-			var sw := sin(phase) * 0.55
+			# Passada ampla; braços contrabalançam a perna oposta; tronco gingado.
+			var sw := sin(phase) * 0.85
+			var gg := sin(phase + PI * 0.5) * 0.10
 			match limb:
 				"legB": return sw
 				"legF": return -sw
-				"armB": return -sw * 0.8
-				"armF": return sw * 0.8
+				"armB": return -sw * 0.7
+				"armF": return sw * 0.7
+				"torso": return 0.07 + gg
+				"head": return -0.05 - gg * 0.5
 		Anim.ATTACK:
-			# atk vai de 1 (impacto) -> 0; faz recuar e golpear com o braço da frente.
-			var e := 1.0 - clampf(atk, 0.0, 1.0)
+			# atk 1 (impacto) -> 0. Antecipa (recua o braço), golpeia e retorna.
+			var e := 1.0 - clampf(atk, 0.0, 1.0)        # 0 no impacto -> 1 no fim
+			var swing := sin(clampf(atk, 0.0, 1.0) * PI) # 0..1..0
 			match limb:
-				"armF": return lerp(-1.5, 0.9, e)
-				"armB": return 0.3
-				"torso": return lerp(-0.2, 0.15, e)
+				"armF": return lerp(-1.8, 1.05, e)
+				"armB": return 0.3 + swing * 0.25
+				"torso": return lerp(-0.3, 0.22, e)
+				"head": return lerp(-0.12, 0.08, e)
+				"legF": return swing * 0.18              # passinho à frente
 		Anim.DEFEND:
 			match limb:
-				"armF": return -1.1
-				"armB": return -0.5
-				"head": return 0.15
+				"armF": return -1.25
+				"armB": return -0.6
+				"head": return 0.18
+				"torso": return 0.1
 		_: # IDLE
-			var b := sin(phase) * 0.09
+			var b := sin(phase) * 0.12
 			match limb:
 				"armF": return -b
 				"armB": return b
+				"head": return sin(phase * 0.9) * 0.05
 	return 0.0
 
 
@@ -80,22 +89,29 @@ func _draw() -> void:
 	if ts.y <= 0.0:
 		return
 	var s := height / ts.y
-	# Respiração/agacho global e bob de caminhada (deslocam a base das partes).
+	# Bob (sobe/desce) + squash & stretch vertical (vscale) p/ dar peso ao corpo.
 	var bob := 0.0
-	var crouch := 1.0
+	var vscale := 1.0
 	match state:
-		Anim.WALK: bob = -absf(sin(phase)) * 2.0
-		Anim.DEFEND: crouch = 0.86
-		Anim.IDLE: bob = sin(phase * 0.9) * 0.8
+		Anim.WALK:
+			bob = -absf(sin(phase)) * 4.0               # quadril pula a cada apoio
+			vscale = 1.0 + sin(phase * 2.0) * 0.045     # estica no ar, achata no chão
+		Anim.ATTACK:
+			bob = -sin(clampf(atk, 0.0, 1.0) * PI) * 3.0
+		Anim.DEFEND:
+			vscale = 0.84                               # agacha p/ defender
+		Anim.IDLE:
+			bob = sin(phase * 0.9) * 1.2                # respiração
+			vscale = 1.0 + sin(phase * 0.9) * 0.03
 	for part in PARTS:
 		var r: Array = part["region"]
 		var pv: Array = part["pivot"]
 		var src := Rect2(r[0] * ts.x, r[1] * ts.y, r[2] * ts.x, r[3] * ts.y)
 		# Junta em coords locais (pés na origem, para cima = -y).
-		var piv := Vector2((pv[0] - 0.5) * ts.x * s, (pv[1] - 1.0) * ts.y * s * crouch + bob)
+		var piv := Vector2((pv[0] - 0.5) * ts.x * s, (pv[1] - 1.0) * ts.y * s * vscale + bob)
 		# Canto sup-esq da região relativo à junta (já escalado).
-		var rel := Vector2((r[0] - pv[0]) * ts.x * s, (r[1] - pv[1]) * ts.y * s * crouch)
-		var size := Vector2(r[2] * ts.x * s, r[3] * ts.y * s * crouch)
+		var rel := Vector2((r[0] - pv[0]) * ts.x * s, (r[1] - pv[1]) * ts.y * s * vscale)
+		var size := Vector2(r[2] * ts.x * s, r[3] * ts.y * s * vscale)
 		draw_set_transform(piv, _angle(part["limb"]), Vector2.ONE)
 		draw_texture_rect_region(tex, Rect2(rel, size), src, modulate_c)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
