@@ -22,6 +22,7 @@ var _down: bool = false
 var _down_t: float = 0.0
 var _cd: float = 0.0
 var _melee_cd: float = 0.0
+var _abil_cd: float = 6.0
 var _engaged: Node2D = null
 var _sprite: Texture2D = null
 
@@ -54,6 +55,8 @@ func _physics_process(delta: float) -> void:
 	_phase += delta * 9.0
 	if _atk > 0.0:
 		_atk = maxf(0.0, _atk - delta * 3.0)
+	if _abil_cd > 0.0:
+		_abil_cd -= delta
 
 	if _down:
 		_down_t -= delta
@@ -64,6 +67,10 @@ func _physics_process(delta: float) -> void:
 		return
 
 	var e := _nearest_enemy()
+	# Habilidade de assinatura: lança sozinha quando há inimigos por perto.
+	if data.ability != null and _abil_cd <= 0.0 and e != null \
+			and global_position.distance_to(e.global_position) < 200.0:
+		_cast_ability()
 	var move_target := _rally
 	var attacking := false
 	if e != null:
@@ -143,6 +150,39 @@ func _ranged_fight(delta: float, e: Node2D) -> void:
 			p.set_kind(Projectile.Kind.ARROW if data.tower_class == TowerData.TowerClass.ARCHER else Projectile.Kind.BOLT)
 		p.speed = data.proj_speed
 		_cd = 1.0 / maxf(0.4, data.fire_rate if data.fire_rate > 0 else 1.0)
+
+
+## Lança a habilidade do herói: dano em área ao redor + efeito conforme o tipo.
+func _cast_ability() -> void:
+	var ab: AbilityData = data.ability
+	_abil_cd = maxf(6.0, ab.cooldown * 0.5)
+	_atk = 1.0
+	var r: float = ab.radius if ab.radius > 0.0 else 150.0
+	var pw: int = int(ab.power) if ab.power > 0.0 else int(data.damage * 2.0)
+	for en in get_tree().get_nodes_in_group("enemies"):
+		if not is_instance_valid(en):
+			continue
+		if global_position.distance_to(en.global_position) > r:
+			continue
+		match ab.kind:
+			AbilityData.Kind.STUN_AOE:
+				en.take_damage(pw, data.penetration, data.element)
+				if en.has_method("apply_stun"): en.apply_stun(ab.duration)
+			AbilityData.Kind.SLOW_AOE:
+				en.take_damage(pw, data.penetration, data.element)
+				if en.has_method("apply_slow"): en.apply_slow(0.45, ab.duration)
+			AbilityData.Kind.DOT_AOE:
+				if en.has_method("apply_dot"): en.apply_dot(ab.power, ab.duration)
+			AbilityData.Kind.KNOCKBACK:
+				en.take_damage(pw, data.penetration, data.element)
+				if en.has_method("knockback"): en.knockback(60.0)
+			_:
+				en.take_damage(pw, data.penetration, data.element)
+	# Efeito visual no campeão (cor do elemento).
+	var fx := HitEffect.new()
+	get_parent().add_child(fx)
+	fx.global_position = global_position
+	fx.setup(r, Elements.color_of(data.element), true, 0.4, 8)
 
 
 func _release_engaged() -> void:
