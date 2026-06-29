@@ -772,7 +772,7 @@ func _test_balance() -> void:
 	var cheapest := 1 << 30
 	for t in TowerData.all_classes():
 		cheapest = min(cheapest, t.cost)
-	var start_gold: int = GameScreen.START_GOLD
+	var start_gold: int = Balance.START_GOLD
 	_check(start_gold >= 3 * cheapest,
 		"ouro inicial (%d) compra >=3 torres baratas (%d cada)" % [start_gold, cheapest])
 

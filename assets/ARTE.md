@@ -58,6 +58,9 @@ poucos steps e CFG baixo (senão a imagem "queima"):
 - `medusa.png` — Medusa, gorgon woman whose hair is made of many live writhing snakes (very prominent snake hair), glowing petrifying green eyes, scaled skin, holding a magic staff, green and teal tones, mage
 - `zeus.png` — Zeus, king of the greek gods, muscular bearded man, crackling lightning bolt, white toga, golden aura, mage
 
+### NPCs (loja)
+- `merchant.png` — friendly cheerful greek market merchant shopkeeper, plump bearded man, simple cream tunic with a brown leather apron, olive wreath, holding up a clay amphora and a coin pouch, welcoming open-hand gesture, warm inviting smile, NOT a warrior, no weapon
+
 ### Nórdica
 - `heimdall.png` — Heimdall, norse guardian of the rainbow bridge, golden horn Gjallarhorn, watchful eyes, ornate armor, archer
 - `ullr.png` — Ullr, norse god of archery and winter, fur cloak, bow, snow and ice theme, skis, archer

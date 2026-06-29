@@ -8,8 +8,8 @@ extends Node2D
 
 signal finished(victory: bool)
 
-const START_HP := 20
-const START_GOLD := 320 ## ~3 torres iniciais (estilo KR); kills + bônus financiam o resto
+const START_HP := Balance.START_HP
+const START_GOLD := Balance.START_GOLD ## ~3 torres iniciais; kills + bônus financiam o resto
 const PREP_TIME := 10.0 ## segundos de preparação antes da 1ª onda
 const ULT_CHARGE_TIME := 28.0 ## segundos de onda para encher o Poder Supremo
 

@@ -12,8 +12,8 @@ signal new_enemy_type(data: EnemyData) ## 1ª vez que um tipo aparece na partida
 @export var stage_index: int = 1
 @export var spawn_interval: float = 0.6
 @export var wave_pause: float = 8.0   ## intervalo entre ondas (antecipável)
-@export var wave_bonus: int = 25      ## ouro por concluir a onda
-@export var early_bonus: int = 15     ## ouro extra por antecipar a próxima
+@export var wave_bonus: int = Balance.WAVE_BONUS  ## ouro por concluir a onda
+@export var early_bonus: int = Balance.EARLY_BONUS ## ouro extra por antecipar a próxima
 @export var enemy_hp_mult: float = 1.0
 @export var enemy_count_mult: float = 1.0
 
