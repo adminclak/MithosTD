@@ -27,9 +27,11 @@ var _dot_timer: float = 0.0           ## dano ao longo do tempo (veneno/fogo)
 var _dot_dps: float = 0.0
 var _dot_accum: float = 0.0
 
-# Animação leve (puro código): balanço ao andar + flash branco ao levar dano.
+# Animação: ciclo de caminhada (Anim), direção do rosto e flash ao levar dano.
 var _bob: float = 0.0
 var _flash: float = 0.0
+var _face_x: float = -1.0
+var _anim_state: int = Anim.WALK
 
 # Estado global resolvido pelo nó autoload (/root/GameState). Acessar por nó em
 # vez do identificador global deixa a entidade compilável fora do jogo (testes
@@ -83,6 +85,7 @@ func _physics_process(delta: float) -> void:
 	# Atordoado: não move, não luta.
 	if _stun_timer > 0.0:
 		_stun_timer -= delta
+		_anim_state = Anim.IDLE
 		queue_redraw()
 		return
 
@@ -91,15 +94,22 @@ func _physics_process(delta: float) -> void:
 		if not is_instance_valid(_blocked_by):
 			_blocked_by = null
 		else:
+			_anim_state = Anim.ATTACK
+			_bob += delta * 6.0
 			_fight(delta)
+			queue_redraw()
 			return
 
 	if _waypoints.is_empty() or _index >= _waypoints.size():
 		return
 	var target: Vector2 = _waypoints[_index]
 	var spd: float = speed * _aura_speed_mult() * _slow_factor()
+	var mv := target - global_position
+	if absf(mv.x) > 0.5:
+		_face_x = signf(mv.x)
+	_anim_state = Anim.WALK
 	global_position = global_position.move_toward(target, spd * delta)
-	_bob += delta * 10.0 # balanço de caminhada
+	_bob += delta * 9.0 # ciclo de caminhada
 	queue_redraw()
 	if global_position.distance_to(target) < 4.0:
 		_index += 1
@@ -244,9 +254,10 @@ func _draw() -> void:
 	# Balanço vertical da caminhada (o corpo sobe/desce; a sombra não).
 	var off := Vector2(0, sin(_bob) * 2.0)
 	if _sprite != null:
-		var s := _radius * 2.4
-		var dest := Rect2(off + Vector2(-s * 0.5, -s * 0.55), Vector2(s, s))
-		Anim.draw_swayed(self, _sprite, dest, _bob, 2.6, 0.0, 0.04)
+		var s := _radius * 2.5
+		var dest := Rect2(Vector2(-s * 0.5, -s * 0.6), Vector2(s, s))
+		var atkp: float = 0.5 + 0.5 * sin(_bob * 2.0) if _anim_state == Anim.ATTACK else 0.0
+		Anim.draw_action(self, _sprite, dest, _face_x, _anim_state, _bob, atkp)
 	else:
 		# "Monstrinho" placeholder: corpo + olhos (vivos/aterrorizantes).
 		draw_circle(off, _radius, body_color)
