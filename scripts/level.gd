@@ -75,6 +75,13 @@ const THEME_DECOS := {
 }
 
 
+## Mapa pintado HD de tela cheia (estilo Kingdom Rush), embute grama + borda de
+## floresta + pedras na própria arte. Quando existe, dispensa o chão lado a lado,
+## a borda de árvores por código e as decorações por código.
+func _painted_map() -> Texture2D:
+	return Art.map("map_" + theme.to_lower())
+
+
 func _ground_texture() -> Texture2D:
 	# ground_<tema> (ex.: ground_nordica); fallback para o map_grass original.
 	var g := Art.map("ground_" + theme.to_lower())
@@ -88,32 +95,45 @@ func _path_pair() -> Array:
 
 
 func _ready() -> void:
-	# Chão do tema (sprite cobrindo a tela), ou cor sólida de fallback.
-	var grass := _ground_texture()
-	if grass != null:
+	# Preferência: mapa pintado HD de tela cheia (estilo Kingdom Rush). Se existir,
+	# ele já traz grama + borda de floresta + pedras, então pulamos chão lado a
+	# lado, borda de árvores por código e decorações por código.
+	var painted := _painted_map()
+	if painted != null:
 		var bg := Sprite2D.new()
-		bg.texture = grass
+		bg.texture = painted
 		bg.centered = true
 		bg.position = Vector2(640, 360)
 		bg.z_index = -20
-		bg.scale = Vector2(1280.0 / grass.get_width(), 720.0 / grass.get_height())
+		bg.scale = Vector2(1280.0 / painted.get_width(), 720.0 / painted.get_height())
 		add_child(bg)
+	else:
+		# Fallback: chão do tema (sprite lado a lado) + borda + decorações por código.
+		var grass := _ground_texture()
+		if grass != null:
+			var bg := Sprite2D.new()
+			bg.texture = grass
+			bg.centered = true
+			bg.position = Vector2(640, 360)
+			bg.z_index = -20
+			bg.scale = Vector2(1280.0 / grass.get_width(), 720.0 / grass.get_height())
+			add_child(bg)
 
-	# Borda densa de árvores emoldurando o mapa (estilo Kingdom Rush).
-	var border_id: String = BORDER_BY_THEME.get(theme, "")
-	if border_id != "" and Art.map(border_id) != null:
-		_add_forest_border(border_id)
+		# Borda densa de árvores emoldurando o mapa (estilo Kingdom Rush).
+		var border_id: String = BORDER_BY_THEME.get(theme, "")
+		if border_id != "" and Art.map(border_id) != null:
+			_add_forest_border(border_id)
 
-	# Decorações do tema (atrás do gameplay), escala CONSISTENTE por tipo + sombra.
-	var deco_ids: Array = THEME_DECOS.get(theme, THEME_DECOS["elis"])
-	for i in DECO_SPOTS.size():
-		var spot: Array = DECO_SPOTS[i]
-		var did: String = deco_ids[i % deco_ids.size()]
-		var scl: float = DECO_SCALE.get(did, 0.22)
-		var pos := Vector2(spot[0], spot[1])
-		var base := pos + Vector2(0, 192.0 * scl * 0.46) # pé do objeto
-		_add_shadow(base, 192.0 * scl * 0.34, 192.0 * scl * 0.13, -11)
-		_add_sprite(Art.map(did), pos, scl, -10, i % 3 == 0)
+		# Decorações do tema (atrás do gameplay), escala CONSISTENTE por tipo + sombra.
+		var deco_ids: Array = THEME_DECOS.get(theme, THEME_DECOS["elis"])
+		for i in DECO_SPOTS.size():
+			var spot: Array = DECO_SPOTS[i]
+			var did: String = deco_ids[i % deco_ids.size()]
+			var scl: float = DECO_SCALE.get(did, 0.22)
+			var pos := Vector2(spot[0], spot[1])
+			var base := pos + Vector2(0, 192.0 * scl * 0.46) # pé do objeto
+			_add_shadow(base, 192.0 * scl * 0.34, 192.0 * scl * 0.13, -11)
+			_add_sprite(Art.map(did), pos, scl, -10, i % 3 == 0)
 
 	# Caminho: sombra (profundidade) + borda + miolo + listra central clara.
 	var pc := _path_pair()

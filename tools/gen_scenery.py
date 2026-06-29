@@ -22,8 +22,9 @@ PIXEL_PRE = "pixel art, pixel-art style, bold clean outline, vibrant saturated c
 NEG = ("text, words, watermark, signature, ui, interface, blurry, low quality, "
        "lowres, photo, realistic, 3d render, people, humans, characters, "
        "buildings, towers, castle, houses, roads, paths, stone tiles, walls, grid, fences"
-       ", antialiased, smooth, gradient, flowers, colorful dots, confetti, "
-       "many flowers, red flowers, blue flowers, busy, cluttered")
+       ", antialiased, gradient, flowers, colorful dots, confetti, "
+       "many flowers, red flowers, blue flowers, busy, cluttered, "
+       "fortress, fort, keep, ruins, walls, fences, hedges, garden, roads, paths, building")
 
 # id -> (prompt, transparente, largura, altura)
 JOBS = {
@@ -57,6 +58,35 @@ JOBS = {
         "top-down three-quarter view, tower defense building", True, 512, 512),
     "tower_priest": ("white marble holy temple shrine with golden roof and columns, divine, "
         "top-down three-quarter view, tower defense building", True, 512, 512),
+    # --- MAPAS pintados em HD (estilo Kingdom Rush), bioma nas bordas baked ---
+    # O centro fica PLANO e VAZIO (o caminho/torres/castelo são desenhados por cima).
+    "map_elis": ("top-down 2D painted cartoon forest clearing, Kingdom Rush art style, a "
+        "large completely empty flat green grass meadow filling the center, framed on all "
+        "four edges by a dense ring of lush round-canopy green trees, only a few small rocks "
+        "and bushes near the tree line, warm soft shadows, vibrant hand-painted, "
+        "nothing in the middle, empty clearing", False, 1024, 576),
+    "map_nemeia": ("top-down 2D painted cartoon deep forest clearing, Kingdom Rush art style, "
+        "a large completely empty flat green grass meadow filling the center, framed on all "
+        "four edges by a very dense ring of tall dark green pine and oak trees, deep shadowy "
+        "woods, a few mossy boulders and ferns near the tree line, cool soft shadows, "
+        "vibrant hand-painted, nothing in the middle, empty clearing", False, 1024, 576),
+    "map_pantano": ("top-down 2D painted cartoon swamp clearing, Kingdom Rush art style, a "
+        "large flat murky dark green wet mud ground with a few shallow water puddles filling "
+        "the center, framed on all four edges by dense swamp vegetation, tall green reeds and "
+        "cattails, gnarled bare dead willow trees and lily pads, foggy, cool soft shadows, "
+        "vibrant hand-painted, nothing in the middle, empty center", False, 1024, 576),
+    "map_desfiladeiro": ("top-down 2D painted cartoon canyon pass clearing, Kingdom Rush art "
+        "style, a large flat dry cracked reddish brown dirt and gravel ground filling the "
+        "center, framed on all four edges by tall rugged red rock cliffs and big boulders, a "
+        "few sparse dead bushes, arid mountain pass, warm soft shadows, vibrant hand-painted, "
+        "nothing in the middle, empty center", False, 1024, 576),
+    "map_olimpo": ("top-down bird eye view 2D painted cartoon snowy mountain plateau, Kingdom "
+        "Rush map ground art, flat terrain seen directly from straight above, a large flat "
+        "pale grey marble stone ground with patches of white snow and thin ice filling the "
+        "center, framed on all four edges by white snow drifts, pale marble boulders and a few "
+        "small frosty pine trees, sacred warm golden light, soft shadows, vibrant hand-painted, "
+        "no sky, no horizon, no clouds, no perspective, nothing in the middle, empty center",
+        False, 1024, 576),
     # --- Chãos por fase grega (detalhados) ---
     "ground_elis": ("seamless top-down lush green grass field, exactly like Kingdom Rush "
         "map ground, two shades of green, dense short cartoon grass with subtle texture, a "
