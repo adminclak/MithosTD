@@ -6,6 +6,7 @@ extends Node
 ## jogador pode ANTECIPAR (também via player_advance), ganhando um bônus de ouro.
 
 signal phase_changed(text: String)
+signal new_enemy_type(data: EnemyData) ## 1ª vez que um tipo aparece na partida
 
 @export var total_waves: int = 5
 @export var stage_index: int = 1
@@ -22,6 +23,7 @@ var enemies_root: Node2D
 var _begun: bool = false
 var _skip: bool = false
 var _in_interval: bool = false
+var _seen: Dictionary = {} ## ids de inimigo já apresentados nesta partida
 
 
 ## Chamado pelo botão do jogador: inicia a 1ª onda (sai da prep) ou antecipa a
@@ -87,6 +89,10 @@ func _spawn(enemy_id: String) -> void:
 	var d := GreekBestiary.by_id(enemy_id)
 	if d == null:
 		return
+	# Card "Novo Inimigo" (estilo KR) na primeira vez que este tipo aparece.
+	if not _seen.has(enemy_id):
+		_seen[enemy_id] = true
+		new_enemy_type.emit(d)
 	var e := Enemy.new()
 	e.apply_data(d, enemy_hp_mult)
 	e.setup(waypoints)

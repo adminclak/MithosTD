@@ -109,6 +109,11 @@ func _ready() -> void:
 	_wave_manager.phase_changed.connect(_on_phase_changed)
 	add_child(_wave_manager)
 
+	# Card "Novo Inimigo" (estilo KR): apresenta cada tipo na 1ª aparição.
+	var enemy_card := EnemyCard.new()
+	add_child(enemy_card)
+	_wave_manager.new_enemy_type.connect(enemy_card.show_enemy)
+
 	GameState.game_over.connect(_on_game_over)
 
 	# Camada do Poder Supremo (acima de tudo) + sobreposição de mira.
