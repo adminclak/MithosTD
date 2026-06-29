@@ -5,6 +5,21 @@
 > **testar todos os personagens**. Trabalhei com autonomia, em 2D, commitando por
 > partes. Este doc resume tudo e as decisões.
 
+## >>> RESPOSTAS APLICADAS (29/06)
+Você respondeu as 4 perguntas; implementei tudo (184/184 testes):
+1. **1 campeão por partida, escolhível**: na tela de Heróis há **"Definir como
+   Campeão"** (1 por equipe); a partida usa o escolhido.
+2. **Sistemas valem nas torres**: a torre de cada slot herda o **herói do esquadrão**
+   daquela classe (elemento/equipamento/sets/sinergia), mantendo o **prédio** KR.
+3. **Rig com ossos (cutout)**: o campeão agora é um **corpo articulado** (`rigged_actor.gd`)
+   — cabeça/tronco/2 braços/2 pernas recortados do sprite, rotacionando nas juntas
+   ao **andar / atacar / defender / aguardar**. (Ajustável; dá pra estender p/ chefes.)
+4. **Ult 28s**: mantido.
+
+Obs.: o rig usa regiões padrão do sprite; alguns heróis podem precisar de ajuste fino
+das regiões — quando você vir mexendo, eu calibro. Pendente: **loja temática** + card
+"novo inimigo".
+
 ## >>> MADRUGADA: KR puro (slots + campeão) + ANIMAÇÃO
 (você saiu e pediu pra eu trabalhar a madrugada toda sozinho, foco em animação)
 
