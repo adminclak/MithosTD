@@ -73,6 +73,13 @@ func _ready() -> void:
 	var hud := Hud.new()
 	add_child(hud)
 
+	# Anúncio de onda em pergaminho (estilo KR).
+	var popup := ScrollPopup.new()
+	add_child(popup)
+	GameState.wave_changed.connect(func(cur, total):
+		if cur >= 1:
+			popup.announce("ONDA %d / %d" % [cur, total]))
+
 	_match_hud = MatchHud.new()
 	add_child(_match_hud)
 	_match_hud.advance_pressed.connect(_on_advance)
