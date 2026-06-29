@@ -5,28 +5,38 @@ extends Node2D
 ## e decorações. Usa as artes de assets/map/ quando existem; senão cai num visual
 ## desenhado por código.
 
-const WAYPOINTS: Array = [
-	Vector2(-40, 160),
-	Vector2(360, 160),
-	Vector2(360, 420),
-	Vector2(760, 420),
-	Vector2(760, 180),
-	Vector2(1040, 180),
-	Vector2(1040, 520),
-	Vector2(1240, 520),
-]
+# Caminho (trajeto dos inimigos) POR FASE — cada uma com um traçado próprio, do
+# portal (1º ponto, fora da tela) até o castelo (último ponto, numa borda).
+const PATHS_BY_THEME := {
+	"elis": [
+		Vector2(-40, 160), Vector2(360, 160), Vector2(360, 420), Vector2(760, 420),
+		Vector2(760, 180), Vector2(1040, 180), Vector2(1040, 520), Vector2(1240, 520),
+	],
+	"nemeia": [
+		Vector2(-40, 540), Vector2(280, 540), Vector2(280, 230), Vector2(600, 230),
+		Vector2(600, 520), Vector2(940, 520), Vector2(940, 200), Vector2(1240, 200),
+	],
+	"pantano": [
+		Vector2(-40, 330), Vector2(230, 330), Vector2(230, 560), Vector2(520, 560),
+		Vector2(520, 170), Vector2(820, 170), Vector2(820, 470), Vector2(1110, 470),
+		Vector2(1110, 300), Vector2(1240, 300),
+	],
+	"desfiladeiro": [
+		Vector2(-40, 470), Vector2(330, 470), Vector2(330, 200), Vector2(660, 200),
+		Vector2(660, 520), Vector2(980, 520), Vector2(980, 250), Vector2(1240, 250),
+	],
+	"olimpo": [
+		Vector2(-40, 220), Vector2(250, 220), Vector2(250, 560), Vector2(640, 560),
+		Vector2(1030, 560), Vector2(1030, 240), Vector2(1240, 240),
+	],
+}
+const DEFAULT_PATH := [Vector2(-40, 160), Vector2(360, 160), Vector2(360, 420),
+	Vector2(760, 420), Vector2(760, 180), Vector2(1040, 180), Vector2(1040, 520),
+	Vector2(1240, 520)]
 
 const GRASS := Color(0.27, 0.45, 0.22)
 const PATH_BORDER := Color(0.46, 0.36, 0.24)
 const PATH_FILL := Color(0.78, 0.66, 0.45)
-
-# Pontos estratégicos (slots) fixos onde se constrói torre — estilo Kingdom Rush.
-# Posições em áreas de grama, ao lado do caminho.
-const BUILD_SLOTS := [
-	Vector2(250, 250), Vector2(470, 300), Vector2(250, 510),
-	Vector2(560, 330), Vector2(660, 540), Vector2(880, 300),
-	Vector2(900, 110), Vector2(1140, 300), Vector2(1150, 430),
-]
 
 # Mitologia do cenário (definida pela fase). Controla chão, cor do caminho e decos.
 var theme: String = "elis"
@@ -82,6 +92,11 @@ func _painted_map() -> Texture2D:
 	return Art.map("map_" + theme.to_lower())
 
 
+## Traçado do caminho desta fase (cai no padrão se o tema não tiver um próprio).
+func _theme_path() -> Array:
+	return PATHS_BY_THEME.get(theme, DEFAULT_PATH)
+
+
 func _ground_texture() -> Texture2D:
 	# ground_<tema> (ex.: ground_nordica); fallback para o map_grass original.
 	var g := Art.map("ground_" + theme.to_lower())
@@ -135,24 +150,27 @@ func _ready() -> void:
 			_add_shadow(base, 192.0 * scl * 0.34, 192.0 * scl * 0.13, -11)
 			_add_sprite(Art.map(did), pos, scl, -10, i % 3 == 0)
 
-	# Caminho: sombra (profundidade) + borda + miolo + listra central clara.
+	# Caminho integrado ao terreno: faixa com textura do bioma + transição esfumada
+	# nas margens (sem moldura clara dura), para "ornar" com o mapa pintado.
 	var pc := _path_pair()
-	var border: Color = pc[0]
 	var fill: Color = pc[1]
-	var shadow := Color(0, 0, 0, 0.25)
-	var shadow_line := _path_line(60, shadow)
-	shadow_line.position = Vector2(0, 5)
-	add_child(shadow_line)
-	add_child(_path_line(54, border))
-	add_child(_path_line(42, fill))
-	var stripe := _path_line(8, Color(fill.r * 1.12, fill.g * 1.12, fill.b * 1.12, 0.5))
-	add_child(stripe)
+	var border: Color = pc[0]
+	var dark := Color(border.r * 0.5, border.g * 0.5, border.b * 0.4)
+	# Transição esfumada (3 faixas: larga e fraca -> média -> caminho) que funde na
+	# grama, em vez de uma borda clara recortada.
+	add_child(_make_path_line(84, Color(dark.r, dark.g, dark.b, 0.14), null, -10))
+	add_child(_make_path_line(64, Color(dark.r, dark.g, dark.b, 0.30), null, -9))
+	# Faixa principal de terra do bioma + trilha central batida (sutil) p/ dar
+	# profundidade sem a moldura clara dura de antes.
+	add_child(_make_path_line(48, fill, null, -8))
+	add_child(_make_path_line(20, Color(border.r, border.g, border.b, 0.30), null, -7))
 
-	# Portal de entrada (1º waypoint) e castelo/base (último) — grandes, com sombra.
-	var portal_pos: Vector2 = WAYPOINTS[0] + Vector2(40, 0)
+	# Portal de entrada (1º ponto) e castelo/base (último) — grandes, com sombra.
+	var wp := _theme_path()
+	var portal_pos: Vector2 = wp[0] + Vector2(40, 0)
 	_add_shadow(portal_pos + Vector2(0, 38), 56, 20, -6)
 	_add_sprite(Art.map("portal"), portal_pos, 0.46, -5)
-	var castle_pos: Vector2 = WAYPOINTS[-1] + Vector2(0, -8)
+	var castle_pos: Vector2 = wp[-1] + Vector2(0, -8)
 	_add_shadow(castle_pos + Vector2(0, 56), 80, 28, -2)
 	_add_sprite(Art.map("castle"), castle_pos, 0.70, -1)
 	queue_redraw()
@@ -169,24 +187,70 @@ func _add_sprite(tex: Texture2D, pos: Vector2, scl: float, z: int, flip: bool = 
 	add_child(s)
 
 
-func _path_line(w: float, col: Color) -> Line2D:
+func _make_path_line(w: float, col: Color, tex: Texture2D, z: int) -> Line2D:
 	var l := Line2D.new()
-	l.points = PackedVector2Array(WAYPOINTS)
+	l.points = PackedVector2Array(_theme_path())
 	l.width = w
 	l.default_color = col
 	l.joint_mode = Line2D.LINE_JOINT_ROUND
 	l.begin_cap_mode = Line2D.LINE_CAP_ROUND
 	l.end_cap_mode = Line2D.LINE_CAP_ROUND
-	l.z_index = -8
+	l.z_index = z
+	if tex != null:
+		l.texture = tex
+		l.texture_mode = Line2D.LINE_TEXTURE_TILE
 	return l
 
 
 func get_waypoints() -> Array:
-	return WAYPOINTS.duplicate()
+	return _theme_path().duplicate()
 
 
 func get_build_slots() -> Array:
-	return BUILD_SLOTS.duplicate()
+	return _slots_for_path(_theme_path())
+
+
+## Gera os pontos de construção AO LADO do caminho desta fase: ao longo de cada
+## segmento, posiciona slots na perpendicular (alternando os lados), descartando os
+## que caem fora da área jogável, sobre a UI ou perto demais de outro slot.
+func _slots_for_path(path: Array) -> Array:
+	var out: Array = []
+	var side := 1.0
+	var off := 76.0
+	for i in range(path.size() - 1):
+		var a: Vector2 = path[i]
+		var b: Vector2 = path[i + 1]
+		var seg: Vector2 = b - a
+		var seg_len: float = seg.length()
+		if seg_len < 70.0:
+			continue
+		var dir: Vector2 = seg / seg_len
+		var nrm := Vector2(-dir.y, dir.x)
+		var n: int = 1 if seg_len < 260.0 else 2
+		for k in n:
+			var t: float = float(k + 1) / float(n + 1)
+			var base: Vector2 = a + seg * t
+			var cand: Vector2 = base + nrm * off * side
+			if not _slot_ok(cand, out):
+				cand = base - nrm * off * side
+			if _slot_ok(cand, out):
+				out.append(cand)
+			side = -side
+	return out
+
+
+## Slot válido: dentro da área jogável, fora dos cantos de UI e longe de outros.
+func _slot_ok(p: Vector2, existing: Array) -> bool:
+	if p.x < 70.0 or p.x > 1210.0 or p.y < 95.0 or p.y > 600.0:
+		return false
+	if p.y < 155.0 and p.x < 275.0:                      # HUD (canto sup-esq)
+		return false
+	if p.y > 565.0 and (p.x < 250.0 or p.x > 1035.0):    # botões (cantos inf)
+		return false
+	for s in existing:
+		if p.distance_to(s) < 98.0:
+			return false
+	return true
 
 
 ## Muro de árvores nas 4 bordas (denso, emoldura o campo de jogo como no KR).
@@ -221,11 +285,11 @@ func _add_shadow(center: Vector2, rw: float, rh: float, z: int) -> void:
 
 func _draw() -> void:
 	# Fallback: se não houver sprite de chão, pinta o fundo + base/entrada simples.
-	if _ground_texture() == null:
+	if _painted_map() == null and _ground_texture() == null:
+		var wp := _theme_path()
 		draw_rect(Rect2(0, 0, 1280, 720), GRASS)
-		var base_pos: Vector2 = WAYPOINTS[-1]
-		draw_circle(base_pos, 24.0, Color(0.2, 0.7, 0.32))
-		draw_circle(WAYPOINTS[0] + Vector2(20, 0), 9.0, Color(0.7, 0.3, 0.3))
+		draw_circle(wp[-1], 24.0, Color(0.2, 0.7, 0.32))
+		draw_circle(wp[0] + Vector2(20, 0), 9.0, Color(0.7, 0.3, 0.3))
 	# Vinheta: escurece levemente as bordas para dar profundidade (sempre).
 	var bands := 26
 	for i in bands:
