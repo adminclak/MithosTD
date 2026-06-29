@@ -56,6 +56,36 @@ JOBS = {
         "top-down three-quarter view, tower defense building", True, 512, 512),
     "tower_priest": ("white marble holy temple shrine with golden roof and columns, divine, "
         "top-down three-quarter view, tower defense building", True, 512, 512),
+    # --- Chãos por fase grega (detalhados) ---
+    "ground_elis": ("seamless top-down lush green meadow, vibrant short grass with many "
+        "wildflowers and small olive sprigs, sunny mediterranean field, hand-painted, "
+        "fine detail, empty ground", False, 1024, 576),
+    "ground_nemeia": ("seamless top-down dense forest floor, dark green mossy grass with "
+        "ferns, fallen leaves and roots, shaded woodland, hand-painted, fine detail, "
+        "empty ground", False, 1024, 576),
+    "ground_pantano": ("seamless top-down murky swamp ground, wet dark mud with shallow "
+        "green water puddles, moss and small reeds, hand-painted, fine detail, empty",
+        False, 1024, 576),
+    "ground_desfiladeiro": ("seamless top-down dry rocky canyon ground, cracked reddish "
+        "brown earth, gravel and small stones, arid, hand-painted, fine detail, empty",
+        False, 1024, 576),
+    "ground_olimpo": ("seamless top-down high mountain ground, pale grey stone with marble "
+        "tiles and patches of snow, sacred, hand-painted, fine detail, empty", False, 1024, 576),
+    # --- Novos elementos temáticos (transparentes) ---
+    "olive_tree": ("2D cartoon olive tree, silver-green leaves and gnarled trunk, top-down "
+        "three-quarter view, soft shadow, Kingdom Rush style", True, 512, 512),
+    "pine": ("2D cartoon tall dark green pine tree, top-down three-quarter view, Kingdom Rush style", True, 512, 512),
+    "reeds": ("2D cartoon cluster of swamp reeds and cattails, green, top-down three-quarter "
+        "view, Kingdom Rush style", True, 512, 512),
+    "lily": ("2D cartoon lily pad with a pink flower on water, top-down view, Kingdom Rush style", True, 512, 512),
+    "cliff_rock": ("2D cartoon tall reddish rocky boulder cliff chunk, top-down three-quarter "
+        "view, Kingdom Rush style", True, 512, 512),
+    "dead_tree": ("2D cartoon bare dead leafless tree, twisted branches, top-down three-quarter "
+        "view, Kingdom Rush style", True, 512, 512),
+    "column": ("2D cartoon broken greek marble column ruin, top-down three-quarter view, "
+        "Kingdom Rush style", True, 512, 512),
+    "statue": ("2D cartoon greek marble warrior statue on a pedestal, top-down three-quarter "
+        "view, Kingdom Rush style", True, 512, 512),
     # Chãos temáticos por mitologia (fundos sólidos, vazios).
     "ground_grega": ("seamless top-down mediterranean meadow, green grass with scattered "
         "white marble pebbles and small olive sprigs, sunny, flat empty ground, "
@@ -120,7 +150,7 @@ def build_workflow(prompt, seed, prefix, transparent, w, h):
         save_src = ["11", 0]
     # Downscale (nearest) p/ pixels nitidos, preservando proporcao.
     if PIXEL:
-        tw = 320 if not transparent else 192
+        tw = 512 if not transparent else 192  # chao em 512 = pixels menores/mais detalhe
         th = int(round(h * tw / float(w)))
         wf["13"] = {"class_type": "ImageScale", "inputs": {"image": save_src,
                     "upscale_method": "nearest-exact", "width": tw, "height": th, "crop": "disabled"}}

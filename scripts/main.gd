@@ -50,8 +50,13 @@ func _shot_mode(args: Array) -> void:
 		"collection": _show_collection()
 		"gacha": _show_gacha()
 		"quests": _show_quests()
-		"game": _on_start_stage(StageList.get_stage(1), \
-			["hercules", "ares", "artemis", "atena", "apolo", "medusa", "hermes"], "ares", true)
+		"game":
+			var gidx := 1
+			for a in args:
+				if a.is_valid_int():
+					gidx = clampi(int(a), 1, StageList.count())
+			_on_start_stage(StageList.get_stage(gidx), \
+				["hercules", "ares", "artemis", "atena", "apolo", "medusa", "hermes"], "ares", true)
 		_: _show_title()
 	var waits := 150 if which == "game" else 30
 	for i in waits:

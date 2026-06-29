@@ -6,11 +6,11 @@ extends RefCounted
 
 static func all() -> Array:
 	return [
-		_stage(1, "Campos de Elis", 5, 5, 1.0, 1.0, 50, "Grega"),
-		_stage(2, "Bosque de Nemeia", 6, 6, 1.15, 1.1, 62, "Grega"),
-		_stage(3, "Pantano da Hidra", 6, 7, 1.3, 1.2, 78, "Grega"),
-		_stage(4, "Desfiladeiro dos Centauros", 7, 8, 1.6, 1.3, 98, "Grega"),
-		_stage(5, "Encosta do Olimpo", 8, 8, 2.1, 1.45, 122, "Grega"),
+		_stage(1, "Campos de Elis", 5, 5, 1.0, 1.0, 50, "elis"),
+		_stage(2, "Bosque de Nemeia", 6, 6, 1.15, 1.1, 62, "nemeia"),
+		_stage(3, "Pantano da Hidra", 6, 7, 1.3, 1.2, 78, "pantano"),
+		_stage(4, "Desfiladeiro dos Centauros", 7, 8, 1.6, 1.3, 98, "desfiladeiro"),
+		_stage(5, "Encosta do Olimpo", 8, 8, 2.1, 1.45, 122, "olimpo"),
 	]
 
 

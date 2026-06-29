@@ -29,10 +29,14 @@ const BUILD_SLOTS := [
 ]
 
 # Mitologia do cenário (definida pela fase). Controla chão, cor do caminho e decos.
-var theme: String = "Grega"
+var theme: String = "elis"
 
 # Escala consistente por tipo de decoração (objetos têm 192px).
-const DECO_SCALE := {"tree": 0.30, "rock": 0.18, "bush": 0.21}
+const DECO_SCALE := {
+	"tree": 0.30, "rock": 0.18, "bush": 0.21, "olive_tree": 0.30, "pine": 0.34,
+	"reeds": 0.24, "lily": 0.20, "cliff_rock": 0.32, "dead_tree": 0.30,
+	"column": 0.30, "statue": 0.34,
+}
 
 # Posições fixas das decorações (longe do caminho e acima da barra de heróis).
 const DECO_SPOTS := [
@@ -42,27 +46,29 @@ const DECO_SPOTS := [
 	[880, 300, 0.13], [430, 560, 0.12], [1000, 95, 0.12], [330, 560, 0.10],
 ]
 
-# Cor do caminho (borda, miolo) por tema.
+# Cor do caminho (borda, miolo) por cena.
 const PATH_COLORS := {
-	"Grega": [Color(0.46, 0.36, 0.24), Color(0.80, 0.68, 0.46)],
-	"Nordica": [Color(0.55, 0.62, 0.70), Color(0.86, 0.90, 0.96)],
-	"Egipcia": [Color(0.62, 0.45, 0.22), Color(0.90, 0.76, 0.45)],
-	"Brasileira": [Color(0.38, 0.28, 0.16), Color(0.62, 0.48, 0.30)],
-	"Chinesa": [Color(0.45, 0.40, 0.30), Color(0.78, 0.70, 0.52)],
-	"Japonesa": [Color(0.50, 0.38, 0.34), Color(0.82, 0.70, 0.62)],
-	"Asteca": [Color(0.34, 0.26, 0.20), Color(0.58, 0.46, 0.34)],
+	"elis": [Color(0.46, 0.36, 0.24), Color(0.82, 0.70, 0.47)],
+	"nemeia": [Color(0.34, 0.26, 0.15), Color(0.60, 0.48, 0.30)],
+	"pantano": [Color(0.30, 0.30, 0.22), Color(0.55, 0.54, 0.38)],
+	"desfiladeiro": [Color(0.50, 0.30, 0.20), Color(0.80, 0.56, 0.40)],
+	"olimpo": [Color(0.55, 0.55, 0.60), Color(0.88, 0.86, 0.84)],
 }
 
 # Conjunto de decorações por tema (ids de assets/map). Verdes usam árvore/arbusto;
 # deserto/neve usam só pedras (e árvore na neve).
+# Decorações por cena (combinam com o nome da fase). Repetem em mais pontos.
 const THEME_DECOS := {
-	"Grega": ["tree", "tree", "bush", "rock", "rock", "bush", "bush", "tree"],
-	"Nordica": ["tree", "tree", "rock", "rock", "rock", "rock", "tree", "rock"],
-	"Egipcia": ["rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock"],
-	"Brasileira": ["tree", "tree", "bush", "bush", "tree", "bush", "tree", "bush"],
-	"Chinesa": ["tree", "bush", "tree", "rock", "bush", "tree", "bush", "rock"],
-	"Japonesa": ["tree", "tree", "bush", "rock", "bush", "tree", "bush", "tree"],
-	"Asteca": ["tree", "rock", "bush", "rock", "tree", "bush", "rock", "tree"],
+	"elis": ["olive_tree", "bush", "statue", "olive_tree", "rock", "bush", "olive_tree", "column",
+		"bush", "olive_tree", "rock", "bush", "olive_tree", "bush", "rock", "olive_tree"],
+	"nemeia": ["pine", "tree", "pine", "rock", "tree", "pine", "bush", "rock",
+		"pine", "tree", "pine", "bush", "tree", "pine", "rock", "tree"],
+	"pantano": ["reeds", "lily", "reeds", "rock", "dead_tree", "reeds", "lily", "bush",
+		"reeds", "lily", "reeds", "dead_tree", "reeds", "lily", "rock", "reeds"],
+	"desfiladeiro": ["cliff_rock", "dead_tree", "rock", "cliff_rock", "rock", "cliff_rock", "dead_tree", "rock",
+		"cliff_rock", "rock", "dead_tree", "cliff_rock", "rock", "cliff_rock", "rock", "dead_tree"],
+	"olimpo": ["column", "statue", "rock", "column", "cliff_rock", "column", "statue", "rock",
+		"column", "rock", "statue", "column", "cliff_rock", "column", "rock", "statue"],
 }
 
 
@@ -91,7 +97,7 @@ func _ready() -> void:
 		add_child(bg)
 
 	# Decorações do tema (atrás do gameplay), escala CONSISTENTE por tipo + sombra.
-	var deco_ids: Array = THEME_DECOS.get(theme, THEME_DECOS["Grega"])
+	var deco_ids: Array = THEME_DECOS.get(theme, THEME_DECOS["elis"])
 	for i in DECO_SPOTS.size():
 		var spot: Array = DECO_SPOTS[i]
 		var did: String = deco_ids[i % deco_ids.size()]
