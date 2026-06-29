@@ -201,6 +201,7 @@ func _fire_power2_at(pos: Vector2) -> void:
 		d.engage_radius = 74.0
 		d.body_color = Color(0.55, 0.7, 0.95)
 		var ally := Tower.new()
+		ally.force_building = false ## reforço é um soldadinho, não prédio
 		ally.setup(d)
 		ally.waypoints = _wave_manager.waypoints if _wave_manager != null else []
 		ally.position = pos + o

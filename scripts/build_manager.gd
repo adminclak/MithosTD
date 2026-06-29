@@ -74,11 +74,28 @@ func _slot_at(pos: Vector2) -> int:
 	return best
 
 
+## Dados da torre por classe: usa o HERÓI do esquadrão daquela classe (com elemento/
+## equip/sets/sinergia já aplicados em main); senão, a torre genérica da classe.
+func _class_data(tcls: int) -> TowerData:
+	for d in squad:
+		if d.tower_class == tcls:
+			return d
+	for g in TowerData.all_classes():
+		if g.tower_class == tcls:
+			return g
+	return TowerData.archer()
+
+
+func _class_order() -> Array:
+	return TowerData.all_classes() # Arqueiro, Guerreiro, Sacerdote, Mago
+
+
 func _options_classes() -> Array:
-	# Ordem: Arqueiro, Guerreiro, Sacerdote, Mago (TowerData.all_classes()).
 	var out: Array = []
-	for d in TowerData.all_classes():
-		out.append({"text": "%s\n%d" % [d.display_name.left(8), d.cost],
+	for g in _class_order():
+		var d := _class_data(g.tower_class)
+		var nm: String = d.display_name if d.char_id != "" else g.display_name
+		out.append({"text": "%s\n%d" % [nm.left(9), d.cost],
 			"color": d.body_color, "enabled": _gold() >= d.cost})
 	return out
 
@@ -107,7 +124,8 @@ func _on_radial_chosen(index: int) -> void:
 	if _pending_slot < 0:
 		return
 	if _mode == "build":
-		var data: TowerData = TowerData.all_classes()[index]
+		var tcls: int = _class_order()[index].tower_class
+		var data: TowerData = _class_data(tcls)
 		if try_place(slots[_pending_slot], data):
 			queue_redraw()
 	elif _mode == "manage":

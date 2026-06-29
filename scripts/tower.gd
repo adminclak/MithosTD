@@ -40,7 +40,8 @@ var _regen_accum: float = 0.0
 var _shield_timer: float = 0.0
 
 var _sprite: Texture2D = null
-var _is_building: bool = false ## torre genérica = prédio (sem balanço, maior)
+var _is_building: bool = false ## desenha como prédio (sem balanço, maior)
+var force_building: bool = true ## torre de slot = prédio da classe (mesmo com herói)
 
 # Animação (puro código): respiração idle, ataque (recoil/espadada/escudo) e
 # direção do golpe. _atk vai de 1→0 a cada ação.
@@ -65,10 +66,9 @@ func _ready() -> void:
 		if data.is_melee:
 			add_to_group("melee_allies")
 			_hp = data.max_hp
-		if data.char_id != "":
-			_sprite = Art.hero(data.char_id)
-		else:
-			# Torre genérica = prédio (Arqueira/Quartel/Guilda/Templo).
+		if force_building:
+			# Torre de slot = prédio da classe (Arqueira/Quartel/Guilda/Templo),
+			# mesmo usando os stats/elemento/equip do herói do esquadrão.
 			var bnames := {
 				TowerData.TowerClass.ARCHER: "tower_archer",
 				TowerData.TowerClass.MAGE: "tower_mage",
@@ -78,6 +78,8 @@ func _ready() -> void:
 			var bname: String = bnames.get(data.tower_class, "")
 			_sprite = Art.map(bname)
 			_is_building = _sprite != null
+		elif data.char_id != "":
+			_sprite = Art.hero(data.char_id)
 	queue_redraw()
 
 
@@ -413,6 +415,7 @@ func _summon_ally(ab: AbilityData) -> void:
 	d.engage_radius = 80.0
 	d.body_color = Color(0.7, 0.75, 0.95)
 	var ally := Tower.new()
+	ally.force_building = false ## invocação é um aliado, não prédio
 	ally.setup(d)
 	get_parent().add_child(ally)
 	ally.global_position = global_position + Vector2(randf_range(-30, 30), 30)
