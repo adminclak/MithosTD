@@ -13,42 +13,29 @@ extends Node2D
 const PATHS_BY_THEME := {
 	# Elis: entra pelo topo, desce e segue a faixa bege até o canto inferior-direito.
 	"elis": [
-		Vector2(262, -30), Vector2(258, 140), Vector2(272, 205), Vector2(430, 190),
-		Vector2(620, 182), Vector2(800, 186), Vector2(945, 205), Vector2(1040, 290),
-		Vector2(1075, 420), Vector2(1095, 520), Vector2(1185, 560),
+		Vector2(-40, 215), Vector2(210, 245), Vector2(420, 320), Vector2(600, 380),
+		Vector2(780, 325), Vector2(945, 250), Vector2(1055, 360), Vector2(1115, 500),
+		Vector2(1150, 590), Vector2(1330, 615),
 	],
-	# Nemeia: trilha bege quase horizontal, da borda esquerda à direita (ondas suaves).
+	# Nemeia: caminho horizontal ondulado, da borda esquerda à direita (centro aberto).
 	"nemeia": [
-		Vector2(34, 390), Vector2(225, 362), Vector2(342, 362), Vector2(462, 348),
-		Vector2(612, 368), Vector2(800, 348), Vector2(985, 390), Vector2(1215, 387),
+		Vector2(-40, 320), Vector2(230, 290), Vector2(450, 380), Vector2(660, 320),
+		Vector2(880, 390), Vector2(1080, 330), Vector2(1330, 360),
 	],
-	# Pântano: trilha única de terra batida, sobe em S da esquerda-baixo ao topo e sai
-	# pela direita contornando o lago.
+	# Pântano: sobe em S da esquerda-baixo até a direita (centro aberto).
 	"pantano": [
-		Vector2(-3, 462), Vector2(55, 462), Vector2(145, 550), Vector2(168, 550),
-		Vector2(255, 498), Vector2(288, 492), Vector2(322, 458), Vector2(345, 415),
-		Vector2(455, 312), Vector2(565, 240), Vector2(615, 240), Vector2(700, 220),
-		Vector2(748, 172), Vector2(752, 135), Vector2(802, 92), Vector2(865, 92),
-		Vector2(908, 78), Vector2(1005, 78), Vector2(1038, 95), Vector2(1098, 100),
-		Vector2(1148, 142), Vector2(1222, 142), Vector2(1268, 95),
+		Vector2(-40, 610), Vector2(210, 560), Vector2(400, 450), Vector2(580, 500),
+		Vector2(770, 380), Vector2(980, 330), Vector2(1330, 310),
 	],
-	# Desfiladeiro (garganta vulcânica): entra no topo-esquerda, desce o braço esquerdo,
-	# contorna a rocha central e sobe o braço direito até o topo-direita.
+	# Desfiladeiro (garganta vulcânica): entra no topo e desce curvando até a direita.
 	"desfiladeiro": [
-		Vector2(242, -23), Vector2(260, 60), Vector2(308, 118), Vector2(308, 192),
-		Vector2(285, 215), Vector2(292, 282), Vector2(430, 392), Vector2(480, 392),
-		Vector2(658, 375), Vector2(748, 292), Vector2(775, 222), Vector2(815, 182),
-		Vector2(848, 115), Vector2(870, 92), Vector2(905, 85), Vector2(955, 35),
-		Vector2(955, -13),
+		Vector2(300, -40), Vector2(330, 180), Vector2(470, 330), Vector2(680, 290),
+		Vector2(860, 380), Vector2(1040, 320), Vector2(1330, 350),
 	],
-	# Olimpo: entra à esquerda, segue a faixa de pedra dourada e sobe à direita
-	# contornando as ilhas de neve.
+	# Olimpo: entra à esquerda e sobe até o canto superior-direito (centro aberto).
 	"olimpo": [
-		Vector2(82, 460), Vector2(128, 415), Vector2(195, 415), Vector2(222, 442),
-		Vector2(385, 490), Vector2(450, 490), Vector2(512, 510), Vector2(598, 508),
-		Vector2(662, 470), Vector2(725, 450), Vector2(745, 430), Vector2(772, 365),
-		Vector2(785, 265), Vector2(800, 250), Vector2(818, 240), Vector2(955, 235),
-		Vector2(1062, 330), Vector2(1095, 475), Vector2(1120, 500), Vector2(1235, 500),
+		Vector2(-40, 470), Vector2(230, 450), Vector2(450, 370), Vector2(670, 410),
+		Vector2(880, 290), Vector2(1080, 220), Vector2(1330, 190),
 	],
 }
 const DEFAULT_PATH := [Vector2(-40, 160), Vector2(360, 160), Vector2(360, 420),

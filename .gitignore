@@ -8,6 +8,11 @@ Godot-Claude-Skills/
 # Config local do Claude Code (permissões privadas desta máquina)
 .claude/settings.local.json
 
+# Segredos / chaves de API (NUNCA versionar). O .env.example fica versionado.
+.env
+*.env
+!.env.example
+
 # Sistema / temporários
 *.tmp
 Thumbs.db

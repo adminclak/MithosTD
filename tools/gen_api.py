@@ -76,29 +76,28 @@ DIRS = {
 # Mapas de fase (16:9, top-down) com a ESTRADA integrada na arte (estilo Kingdom
 # Rush): a estrada é clara, bonita e com curvas — depois traçamos os waypoints em
 # cima dela. Decoracoes ficam SO ao lado da estrada.
-MAP_STYLE = ("top-down bird's eye aerial view, 2D cartoon tower-defense game battlefield map, "
-             "Kingdom Rush mobile game art style, hand-painted, vibrant saturated colors, clean "
-             "bold shapes, high detail, the road is wide clear smooth and continuous, decorations "
-             "only on the grass beside the road never on top of it, no characters, no people, "
-             "no units, no text, no words, no UI, no labels")
+MAP_STYLE = ("top-down flat bird's eye aerial view, 2D cartoon tower-defense game terrain "
+             "background, Kingdom Rush mobile game art style, hand-painted, vibrant saturated "
+             "colors, clean bold shapes, high detail. IMPORTANT: absolutely NO road, NO path, "
+             "NO trail, NO dirt track anywhere; the whole CENTER is wide open empty flat ground; "
+             "all trees rocks bushes and decorations are clustered ONLY along the four outer "
+             "edges and corners as a frame, never in the central area; no characters, no people, "
+             "no units, no text, no words, no UI, no labels, no grid, no lines")
 MAP_PROMPTS = {
-    "elis": ("a lush bright green grassy meadow, ONE clear wide light tan dirt road that winds in "
-             "smooth gentle S curves across the whole map, entering from the top edge and exiting "
-             "at the bottom-right corner, scattered round trees bushes rocks and small flowers on "
-             "the grass beside the road"),
-    "nemeia": ("a dark dense green forest floor clearing, ONE clear brown dirt trail that winds "
-               "horizontally across the map with smooth curves from the left edge to the right "
-               "edge, tall round pine trees and mossy boulders framing the top and bottom edges"),
-    "pantano": ("a murky green swamp with patches of dark still water and mud, ONE raised dirt and "
-                "wooden-plank path snaking in a smooth S shape from the bottom-left corner up to "
-                "the right edge, reeds lily pads and twisted dead trees beside the path"),
-    "desfiladeiro": ("a dark volcanic basalt rocky gorge with black stone ground, ONE clear light "
-                     "beige sandy path winding between the black rocks from the top edge down and "
-                     "curving to the right edge, glowing orange lava cracks on the rocks beside "
-                     "the path"),
-    "olimpo": ("a snowy white mountain slope with greek marble ruins, ONE clear pale stone path "
-               "winding upward from the left edge to the upper-right, white greek columns and "
-               "snow-covered rocks beside the path"),
+    "elis": ("a lush bright green flat open grassy meadow, completely open empty grass field in "
+             "the center, round trees bushes gray rocks and small orange flowers only clustered "
+             "along the outer edges framing the map"),
+    "nemeia": ("a flat green forest-floor grass clearing, open empty grass in the center, tall "
+               "round pine trees and mossy gray boulders only framing the outer edges"),
+    "pantano": ("a flat muddy green swamp clearing, open empty muddy ground in the center, "
+                "patches of dark water, green reeds, lily pads and twisted dead trees only along "
+                "the outer edges"),
+    "desfiladeiro": ("a flat dark grey volcanic basalt rock clearing, open empty stone ground in "
+                     "the center, jagged black rocks with glowing orange lava cracks only framing "
+                     "the outer edges"),
+    "olimpo": ("a flat snowy white mountain plateau, open empty snow-and-stone ground in the "
+               "center, white greek marble columns ruins and snow-covered gray rocks only along "
+               "the outer edges"),
 }
 
 FAL_KEY = os.environ.get("FAL_KEY", "")

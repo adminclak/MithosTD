@@ -94,9 +94,14 @@ func _shot_mode(args: Array) -> void:
 	var waits := 150 if which == "game" else 30
 	for i in waits:
 		await get_tree().process_frame
-	await RenderingServer.frame_post_draw
+	# Garante que o último frame foi efetivamente desenhado antes de capturar.
+	# (Não dependemos de RenderingServer.frame_post_draw porque no renderer "dummy"
+	#  do modo --headless esse sinal nunca é emitido e o await travaria pra sempre.)
+	await get_tree().process_frame
+	await get_tree().process_frame
 	var img := get_viewport().get_texture().get_image()
-	img.save_png("c:/projetos/jogoTD/_shot_%s.png" % which)
+	if img != null:
+		img.save_png("c:/projetos/jogoTD/_shot_%s.png" % which)
 	get_tree().quit()
 
 
