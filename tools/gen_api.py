@@ -71,6 +71,22 @@ DIRS = {
     "enemies": os.path.join(PROJ, "assets", "enemies"),
     "items": os.path.join(PROJ, "assets", "items"),
     "maps": os.path.join(PROJ, "assets", "map"),
+    "scenery": os.path.join(PROJ, "assets", "map"),  # props do mapa (portal/castelo), fundo transparente
+}
+
+# Props do mapa (portal de entrada, castelo/base). Objeto unico, fundo transparente,
+# 192px (mesmo tamanho dos antigos, drop-in). Estilo grego premium, coeso com tudo.
+SCENERY_STYLE = ("Kingdom Rush style 2D cartoon tower-defense map structure, single object "
+                 "centered, hand-painted, vibrant saturated colors, bold clean outlines, soft "
+                 "cel shading, 3/4 top-down view, ancient Greek mythology theme, plain flat light "
+                 "gray background, crisp, sharp, high quality, no characters, no people, no text")
+SCENERY_PROMPTS = {
+    "portal": ("an ominous ancient Greek monster gateway portal, a tall archway of cracked dark "
+               "marble and weathered bronze, glowing swirling magenta and red magical energy "
+               "vortex in the center, faint glowing runes, menacing, the gate where enemies emerge"),
+    "castle": ("a small heroic Greek fortress keep, a round defensive tower of white marble and "
+               "golden bronze with columns, battlements and a bright red banner flag on top, "
+               "stately and bright, a stronghold to defend"),
 }
 
 # Mapas de fase (16:9, top-down) com a ESTRADA integrada na arte (estilo Kingdom
@@ -189,6 +205,11 @@ def save(png_bytes, category, cid):
         # Mapa = fundo cheio (sem recorte), 1280x720, arquivo map_<id>.png.
         im = im.resize((1280, 720), Image.LANCZOS)
         out = os.path.join(DIRS[category], "map_" + cid + ".png")
+    elif category == "scenery":
+        # Prop do mapa: recorta o fundo e salva 192px (drop-in dos antigos).
+        im = remove_bg(im)
+        im = im.resize((192, 192), Image.LANCZOS)
+        out = os.path.join(DIRS[category], cid + ".png")
     else:
         im = remove_bg(im)
         im = im.resize((OUT_SIZE, OUT_SIZE), Image.LANCZOS)
@@ -207,9 +228,15 @@ def main():
         return
     category = args[0]
     is_maps = category == "maps"
-    jobs = MAP_PROMPTS if is_maps else parse_arte()
+    is_scenery = category == "scenery"
+    if is_maps:
+        jobs = MAP_PROMPTS
+    elif is_scenery:
+        jobs = SCENERY_PROMPTS
+    else:
+        jobs = parse_arte()
     ids = list(jobs.keys()) if args[1] == "all" else args[1:]
-    style = "" if is_maps else STYLE[category]
+    style = "" if is_maps else (SCENERY_STYLE if is_scenery else STYLE[category])
     print("Modelo:", MODEL, "| categoria:", category, "| itens:", len(ids))
     for cid in ids:
         desc = jobs.get(cid)
