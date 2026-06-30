@@ -49,10 +49,14 @@ func _ready() -> void:
 func _shot_mode(args: Array) -> void:
 	var which := "title"
 	for a in args:
-		if a in ["title", "worldmap", "heroes", "collection", "gacha", "quests", "game", "blessings"]:
+		if a in ["title", "worldmap", "heroes", "collection", "gacha", "quests", "game", "blessings", "picker"]:
 			which = a
 	match which:
 		"worldmap": _show_worldmap()
+		"picker":
+			_show_worldmap()
+			await get_tree().process_frame
+			(_current as WorldMapScreen)._on_node(StageList.get_stage(1))
 		"heroes": _show_heroes()
 		"collection": _show_collection()
 		"gacha": _show_gacha()
@@ -105,8 +109,8 @@ func _show_heroes() -> void:
 	_switch_to(h)
 
 
-func _start_stage_from_map(stage: StageData) -> void:
-	_on_start_stage(stage, Progression.current_squad(), Progression.current_ult(), false)
+func _start_stage_from_map(stage: StageData, diff: int = 0) -> void:
+	_on_start_stage(stage, Progression.current_squad(), Progression.current_ult(), false, diff)
 
 
 func _show_collection() -> void:
@@ -127,7 +131,7 @@ func _show_quests() -> void:
 	_switch_to(screen)
 
 
-func _on_start_stage(stage: StageData, squad_ids: Array, ult_id: String = "", auto: bool = false) -> void:
+func _on_start_stage(stage: StageData, squad_ids: Array, ult_id: String = "", auto: bool = false, diff: int = 0) -> void:
 	var squad_datas: Array = []
 	for id in squad_ids:
 		var ch := Roster.by_id(id)
@@ -152,24 +156,28 @@ func _on_start_stage(stage: StageData, squad_ids: Array, ult_id: String = "", au
 			d.melee_damage = int(round(d.melee_damage * dmg_mult))
 
 	var game := GameScreen.new()
-	game.setup(stage, squad_datas, ult_id)
+	game.setup(stage, squad_datas, ult_id, diff)
 	game.auto_start = auto
-	game.finished.connect(_on_game_finished.bind(stage, squad_ids))
+	game.finished.connect(_on_game_finished.bind(stage, squad_ids, diff))
 	_switch_to(game)
 
 
-func _on_game_finished(victory: bool, stars: int, stage: StageData, squad_ids: Array) -> void:
-	print("Fim da fase %d - vitoria: %s (%d estrelas)" % [stage.index, victory, stars])
+func _on_game_finished(victory: bool, stars: int, stage: StageData, squad_ids: Array, diff: int = 0) -> void:
+	print("Fim da fase %d [%s] - vitoria: %s (%d estrelas)" % [stage.index, Difficulty.name_of(diff), victory, stars])
 	if victory:
 		Progression.record_win()
-	var xp: int = stage.xp_reward if victory else int(round(stage.xp_reward * 0.3))
+	var reward_mult := Difficulty.reward_mult(diff)
+	var base_xp: int = stage.xp_reward if victory else int(round(stage.xp_reward * 0.3))
+	var xp: int = int(round(base_xp * reward_mult))
 	var summary := Progression.grant_squad_xp(squad_ids, xp)
-	var rewards := Progression.grant_rewards(stage.index, victory)
+	var rewards := Progression.grant_rewards(stage.index, victory, diff)
 	var newly: Array = []
 	var star_info := {}
+	var diff_unlocked := false
 	if victory:
 		newly = Progression.mark_stage_cleared(stage.index)
 		star_info = Progression.record_stars(stage.index, stars)
+		diff_unlocked = Progression.record_stage_diff(stage.index, diff)
 		# Bônus de Essência por NOVAS estrelas (incentivo a refazer melhor).
 		var gained: int = star_info.get("gained", 0)
 		if gained > 0:
@@ -179,6 +187,7 @@ func _on_game_finished(victory: bool, stars: int, stage: StageData, squad_ids: A
 
 	var result := ResultScreen.new()
 	result.setup(victory, xp, summary, newly, rewards, stars, star_info)
+	result.set_difficulty(diff, diff_unlocked and diff + 1 < Difficulty.count())
 	result.continue_pressed.connect(_show_title)
 	_switch_to(result)
 

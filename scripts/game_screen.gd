@@ -19,6 +19,7 @@ var _prep_timer: float = PREP_TIME
 var _start_hp: int = Balance.START_HP ## vida inicial real (com bênção) p/ cálculo de estrelas
 
 var _stage: StageData
+var _diff: int = 0 ## dificuldade da partida (Normal/Heroico/Lendário)
 var _squad: Array = []
 var _wave_manager: WaveManager
 var _build_manager: BuildManager
@@ -40,8 +41,9 @@ var _joystick: TouchJoystick = null
 var _popup: ScrollPopup = null
 
 
-func setup(stage: StageData, squad_datas: Array, ult_char_id: String = "") -> void:
+func setup(stage: StageData, squad_datas: Array, ult_char_id: String = "", diff: int = 0) -> void:
 	_stage = stage
+	_diff = diff
 	_squad = squad_datas
 	var cid := ult_char_id
 	if cid == "" and not squad_datas.is_empty():
@@ -110,8 +112,8 @@ func _ready() -> void:
 	_wave_manager.enemies_root = enemies_root
 	_wave_manager.total_waves = _stage.waves
 	_wave_manager.stage_index = _stage.index
-	_wave_manager.enemy_hp_mult = _stage.enemy_hp_mult
-	_wave_manager.enemy_count_mult = _stage.enemy_count_mult
+	_wave_manager.enemy_hp_mult = _stage.enemy_hp_mult * Difficulty.hp_mult(_diff)
+	_wave_manager.enemy_count_mult = _stage.enemy_count_mult * Difficulty.count_mult(_diff)
 	_wave_manager.wave_bonus = int(round(Balance.WAVE_BONUS * Progression.bless_wave_bonus_mult()))
 	_wave_manager.phase_changed.connect(_on_phase_changed)
 	add_child(_wave_manager)

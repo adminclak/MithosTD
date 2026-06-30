@@ -5,7 +5,7 @@ extends CanvasLayer
 ## bloqueado = escuro; próximo = brilhando. Clicar inicia a fase com o esquadrão
 ## salvo. Emite stage_chosen(stage) e back.
 
-signal stage_chosen(stage: StageData)
+signal stage_chosen(stage: StageData, diff: int)
 signal back
 
 # Posições dos nós no mapa (5 fases), numa jornada diagonal.
@@ -128,4 +128,60 @@ func _on_node(stage: StageData) -> void:
 	if Progression.current_squad().is_empty():
 		_update_squad_msg()
 		return
-	stage_chosen.emit(stage)
+	_open_difficulty_picker(stage)
+
+
+## Janela de escolha de dificuldade ao clicar numa fase. Heroico/Lendário ficam
+## travados até vencer a dificuldade anterior naquela fase; mostram o loot extra.
+func _open_difficulty_picker(stage: StageData) -> void:
+	var veil := ColorRect.new()
+	veil.name = "DiffPicker"
+	veil.color = Color(0, 0, 0, 0.55)
+	veil.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(veil)
+
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", UiTheme.panel_box(0.98))
+	panel.custom_minimum_size = Vector2(440, 0)
+	panel.position = Vector2(420, 200)
+	veil.add_child(panel)
+	var m := MarginContainer.new()
+	for s in ["left", "right", "top", "bottom"]:
+		m.add_theme_constant_override("margin_" + s, 18)
+	panel.add_child(m)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 10)
+	m.add_child(col)
+
+	var hdr := Label.new()
+	hdr.text = stage.display_name
+	hdr.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hdr.add_theme_font_size_override("font_size", 24)
+	hdr.add_theme_color_override("font_color", Color(1.0, 0.88, 0.45))
+	col.add_child(hdr)
+	var sub := Label.new()
+	sub.text = "Escolha a dificuldade"
+	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	sub.add_theme_color_override("font_color", Color(0.85, 0.82, 0.74))
+	col.add_child(sub)
+
+	for i in Difficulty.count():
+		var unlocked: bool = Progression.diff_unlocked(stage.index, i)
+		var b := Button.new()
+		b.custom_minimum_size = Vector2(0, 52)
+		b.add_theme_font_size_override("font_size", 20)
+		var loot := "x%.1f loot" % Difficulty.reward_mult(i)
+		if unlocked:
+			b.text = "%s   (%s)" % [Difficulty.name_of(i), loot]
+			b.add_theme_color_override("font_color", Difficulty.color_of(i))
+			b.pressed.connect(func(): stage_chosen.emit(stage, i))
+		else:
+			b.text = "%s   🔒 vença a anterior" % Difficulty.name_of(i)
+			b.disabled = true
+		col.add_child(b)
+
+	var cancel := Button.new()
+	cancel.text = "Cancelar"
+	cancel.custom_minimum_size = Vector2(0, 40)
+	cancel.pressed.connect(func(): veil.queue_free())
+	col.add_child(cancel)

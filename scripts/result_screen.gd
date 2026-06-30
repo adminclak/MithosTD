@@ -13,6 +13,13 @@ var _newly: Array = []
 var _rewards: Dictionary = {}
 var _stars: int = 0
 var _star_info: Dictionary = {}
+var _diff: int = 0
+var _unlocked_next_diff: bool = false
+
+
+func set_difficulty(diff: int, unlocked_next: bool) -> void:
+	_diff = diff
+	_unlocked_next_diff = unlocked_next
 
 
 func setup(victory: bool, xp: int, summary: Dictionary, newly: Array, rewards: Dictionary = {}, stars: int = 0, star_info: Dictionary = {}) -> void:
@@ -43,9 +50,22 @@ func _ready() -> void:
 	title.add_theme_color_override("font_color", Color(0.4, 0.9, 0.4) if _victory else Color(0.9, 0.4, 0.4))
 	box.add_child(title)
 
+	# Selo de dificuldade (Heroico/Lendário ganham destaque colorido).
+	var dlbl := Label.new()
+	dlbl.text = "Dificuldade: %s" % Difficulty.name_of(_diff)
+	dlbl.add_theme_font_size_override("font_size", 18)
+	dlbl.add_theme_color_override("font_color", Difficulty.color_of(_diff))
+	box.add_child(dlbl)
+
 	# Estrelas conquistadas (3 = sem perder vidas). Mostradas só na vitória.
 	if _victory:
 		box.add_child(_stars_row())
+		if _unlocked_next_diff:
+			var unl := Label.new()
+			unl.text = "Dificuldade %s liberada nesta fase!" % Difficulty.name_of(_diff + 1)
+			unl.add_theme_font_size_override("font_size", 18)
+			unl.add_theme_color_override("font_color", Difficulty.color_of(_diff + 1))
+			box.add_child(unl)
 		if _star_info.get("improved", false):
 			var rec := Label.new()
 			rec.text = "Novo recorde de estrelas!  (+%d essencia)" % (int(_star_info.get("gained", 0)) * 3)

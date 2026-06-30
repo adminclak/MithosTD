@@ -29,6 +29,7 @@ var inventory: Array = []           ## ids de equipamentos possuídos (sem repet
 var equipped: Dictionary = {}       ## char_id -> { slot_index: item_id }
 var blessings: Dictionary = {}      ## Bênçãos do Olimpo: id -> nível (gasta Essência)
 var stage_stars: Dictionary = {}    ## estrelas por fase: str(index) -> melhor (0..3)
+var stage_max_diff: Dictionary = {} ## maior dificuldade VENCIDA por fase: str(index) -> tier (-1 = nenhuma)
 
 # Até 3 equipes salvas. teams[i] = lista de ids; team_ults[i] = id do Poder Supremo.
 var teams: Array = [[], [], []]
@@ -581,14 +582,50 @@ func record_stars(index: int, stars: int) -> Dictionary:
 	return {"best": best, "improved": improved, "gained": maxi(0, best - prev)}
 
 
+# --- Dificuldades por fase (Normal/Heroico/Lendário) ---
+## Maior dificuldade já vencida nesta fase (-1 = nenhuma ainda).
+func cleared_diff(index: int) -> int:
+	return int(stage_max_diff.get(str(index), -1))
+
+
+## Uma dificuldade está liberada se for o Normal ou se a anterior já foi vencida.
+func diff_unlocked(index: int, diff: int) -> bool:
+	if diff <= 0:
+		return true
+	return cleared_diff(index) >= diff - 1
+
+
+## Maior dificuldade liberada para escolher nesta fase (0 = só Normal).
+func max_diff_unlocked(index: int) -> int:
+	var d := 0
+	for i in range(1, Difficulty.count()):
+		if diff_unlocked(index, i):
+			d = i
+		else:
+			break
+	return d
+
+
+## Registra a vitória numa dificuldade (guarda só a mais alta). Retorna true se
+## destravou uma dificuldade nova (subiu o recorde).
+func record_stage_diff(index: int, diff: int) -> bool:
+	var prev := cleared_diff(index)
+	if diff > prev:
+		stage_max_diff[str(index)] = diff
+		emit_signal("progress_changed")
+		return true
+	return false
+
+
 # --- Recompensas de fim de fase ---
-func grant_rewards(stage_index: int, victory: bool) -> Dictionary:
+func grant_rewards(stage_index: int, victory: bool, diff: int = 0) -> Dictionary:
 	_ensure_defaults()
+	var mult := Difficulty.reward_mult(diff)
 	var r := {"gold": 0, "essence": 0, "ambrosia": 0, "item_id": ""}
 	if victory:
-		r["gold"] = 30 + stage_index * 15
-		r["essence"] = 2 + stage_index
-		r["ambrosia"] = 25 + stage_index * 10
+		r["gold"] = int(round((30 + stage_index * 15) * mult))
+		r["essence"] = int(round((2 + stage_index) * mult))
+		r["ambrosia"] = int(round((25 + stage_index * 10) * mult))
 		if randf() < 0.6:
 			var id := EquipmentList.random_drop_id(stage_index)
 			if owns_item(id):
@@ -630,6 +667,7 @@ func reset() -> void:
 	equipped = {}
 	blessings = {}
 	stage_stars = {}
+	stage_max_diff = {}
 	teams = [[], [], []]
 	team_ults = ["", "", ""]
 	team_champions = ["", "", ""]
@@ -664,6 +702,7 @@ func save_to(path: String) -> void:
 		"equipped": equipped,
 		"blessings": blessings,
 		"stage_stars": stage_stars,
+		"stage_max_diff": stage_max_diff,
 		"teams": teams,
 		"team_ults": team_ults,
 		"team_champions": team_champions,
@@ -722,6 +761,10 @@ func load_from(path: String) -> void:
 	var saved_stars: Dictionary = data.get("stage_stars", {})
 	for sid in saved_stars.keys():
 		stage_stars[str(sid)] = int(saved_stars[sid])
+	stage_max_diff = {}
+	var saved_diff: Dictionary = data.get("stage_max_diff", {})
+	for sid in saved_diff.keys():
+		stage_max_diff[str(sid)] = int(saved_diff[sid])
 	equipped = {}
 	var saved_eq: Dictionary = data.get("equipped", {})
 	for cid in saved_eq.keys():

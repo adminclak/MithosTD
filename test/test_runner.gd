@@ -25,6 +25,7 @@ func _initialize() -> void:
 	_test_progression()
 	_test_blessings()
 	_test_stars()
+	_test_difficulty()
 	_test_gacha()
 	_test_quests()
 	_test_squad_uniqueness()
@@ -548,6 +549,45 @@ func _test_stars() -> void:
 	_check(pr.stars_for_stage(1) == 0, "reset zera as estrelas")
 	pr.load_from(tmp)
 	_check(pr.stars_for_stage(1) == 3 and pr.stars_for_stage(2) == 3, "load restaura as estrelas")
+	if FileAccess.file_exists(tmp):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(tmp))
+
+
+func _test_difficulty() -> void:
+	print("\nDificuldades (Normal/Heroico/Lendario):")
+	_check(Difficulty.count() == 3, "3 dificuldades")
+	_check(Difficulty.reward_mult(0) < Difficulty.reward_mult(1), "Heroico da mais loot que Normal")
+	_check(Difficulty.reward_mult(1) < Difficulty.reward_mult(2), "Lendario da mais loot que Heroico")
+	_check(Difficulty.hp_mult(2) > Difficulty.hp_mult(0), "Lendario tem inimigos mais fortes")
+
+	var pr = root.get_node_or_null(^"/root/Progression")
+	if pr == null:
+		_check(false, "Progression acessivel"); return
+	pr.reset()
+	_check(pr.cleared_diff(1) == -1, "fase sem vitoria = nenhuma dificuldade")
+	_check(pr.diff_unlocked(1, 0), "Normal sempre liberado")
+	_check(not pr.diff_unlocked(1, 1), "Heroico travado antes de vencer o Normal")
+	_check(pr.max_diff_unlocked(1) == 0, "so o Normal liberado no inicio")
+
+	_check(pr.record_stage_diff(1, 0), "vencer o Normal sobe o recorde")
+	_check(pr.diff_unlocked(1, 1), "Heroico libera apos vencer o Normal")
+	_check(pr.max_diff_unlocked(1) == 1, "agora Heroico tambem liberado")
+	_check(not pr.record_stage_diff(1, 0), "repetir o Normal nao sobe o recorde")
+	_check(pr.record_stage_diff(1, 1), "vencer o Heroico sobe o recorde")
+	_check(pr.diff_unlocked(1, 2), "Lendario libera apos o Heroico")
+
+	# Loot escala com a dificuldade (mesma fase).
+	var rn = pr.grant_rewards(3, true, 0)
+	var rl = pr.grant_rewards(3, true, 2)
+	_check(rl["gold"] > rn["gold"], "loot do Lendario > Normal na mesma fase")
+
+	# Save/load preserva a dificuldade vencida.
+	var tmp = "user://test_diff_%d.json" % Time.get_ticks_usec()
+	pr.save_to(tmp)
+	pr.reset()
+	_check(pr.cleared_diff(1) == -1, "reset zera as dificuldades")
+	pr.load_from(tmp)
+	_check(pr.cleared_diff(1) == 1, "load restaura a dificuldade vencida")
 	if FileAccess.file_exists(tmp):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(tmp))
 
