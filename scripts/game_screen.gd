@@ -12,6 +12,7 @@ const START_HP := Balance.START_HP
 const START_GOLD := Balance.START_GOLD ## ~3 torres iniciais; kills + bônus financiam o resto
 const PREP_TIME := 10.0 ## segundos de preparação antes da 1ª onda
 const ULT_CHARGE_TIME := 28.0 ## segundos de onda para encher o Poder Supremo
+var _ult_charge_time: float = ULT_CHARGE_TIME ## ajustado pela bênção Trovão de Zeus
 
 var auto_start: bool = false ## smoke test: começa as ondas sozinho
 var _prep_timer: float = PREP_TIME
@@ -49,7 +50,10 @@ func setup(stage: StageData, squad_datas: Array, ult_char_id: String = "") -> vo
 
 
 func _ready() -> void:
-	GameState.reset_run(START_HP, START_GOLD)
+	# Bênçãos do Olimpo (permanentes): +vida da base e +ouro inicial.
+	GameState.reset_run(START_HP + Progression.bless_base_hp_bonus(),
+		START_GOLD + Progression.bless_start_gold_bonus())
+	_ult_charge_time = ULT_CHARGE_TIME * Progression.bless_ult_charge_mult()
 
 	var level := Level.new()
 	if _stage != null:
@@ -62,7 +66,7 @@ func _ready() -> void:
 	_enemies_root = enemies_root
 
 	_build_manager = BuildManager.new()
-	_build_manager.setup(level.get_waypoints(), _squad, level.get_build_slots())
+	_build_manager.setup(level.get_waypoints(), _squad, level.get_build_slots(), Progression.bless_damage_mult())
 	add_child(_build_manager)
 
 	# Campeão (1 por partida): o herói escolhido anda pelo mapa (clique no chão = mover).
@@ -107,6 +111,7 @@ func _ready() -> void:
 	_wave_manager.stage_index = _stage.index
 	_wave_manager.enemy_hp_mult = _stage.enemy_hp_mult
 	_wave_manager.enemy_count_mult = _stage.enemy_count_mult
+	_wave_manager.wave_bonus = int(round(Balance.WAVE_BONUS * Progression.bless_wave_bonus_mult()))
 	_wave_manager.phase_changed.connect(_on_phase_changed)
 	add_child(_wave_manager)
 
@@ -163,7 +168,7 @@ func _process(delta: float) -> void:
 	# Carga do Poder Supremo (enche durante as ondas).
 	if _ult != null and not _ended and _wave_manager != null and not _wave_manager.is_in_prep():
 		if _ult_charge < 1.0:
-			_ult_charge = min(1.0, _ult_charge + delta / ULT_CHARGE_TIME)
+			_ult_charge = min(1.0, _ult_charge + delta / _ult_charge_time)
 		_match_hud.set_ult_charge(_ult_charge)
 		# Smoke/demo: dispara sozinho no centro quando carregado.
 		if auto_start and _ult_charge >= 1.0:

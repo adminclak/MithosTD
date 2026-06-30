@@ -9,6 +9,7 @@ signal heroes_pressed
 signal shop_pressed
 signal quests_pressed
 signal gacha_pressed
+signal blessings_pressed
 
 
 func _ready() -> void:
@@ -99,6 +100,7 @@ func _ready() -> void:
 	col.add_child(row)
 	row.add_child(_big_btn("MISSOES", func(): quests_pressed.emit(), 20, 144))
 	row.add_child(_big_btn("ALTAR", func(): gacha_pressed.emit(), 20, 144))
+	col.add_child(_big_btn("BENCAOS DO OLIMPO", func(): blessings_pressed.emit(), 20))
 
 	# Faixa de recursos no rodapé.
 	var res := Label.new()

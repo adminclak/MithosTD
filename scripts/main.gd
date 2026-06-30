@@ -49,7 +49,7 @@ func _ready() -> void:
 func _shot_mode(args: Array) -> void:
 	var which := "title"
 	for a in args:
-		if a in ["title", "worldmap", "heroes", "collection", "gacha", "quests", "game"]:
+		if a in ["title", "worldmap", "heroes", "collection", "gacha", "quests", "game", "blessings"]:
 			which = a
 	match which:
 		"worldmap": _show_worldmap()
@@ -57,6 +57,7 @@ func _shot_mode(args: Array) -> void:
 		"collection": _show_collection()
 		"gacha": _show_gacha()
 		"quests": _show_quests()
+		"blessings": _show_blessings()
 		"game":
 			var gidx := 1
 			for a in args:
@@ -81,7 +82,14 @@ func _show_title() -> void:
 	t.shop_pressed.connect(_show_collection)
 	t.quests_pressed.connect(_show_quests)
 	t.gacha_pressed.connect(_show_gacha)
+	t.blessings_pressed.connect(_show_blessings)
 	_switch_to(t)
+
+
+func _show_blessings() -> void:
+	var screen := BlessingsScreen.new()
+	screen.closed.connect(_show_title)
+	_switch_to(screen)
 
 
 func _show_worldmap() -> void:
@@ -134,6 +142,14 @@ func _on_start_stage(stage: StageData, squad_ids: Array, ult_id: String = "", au
 
 	# Sinergias de equipe (mitologia / duplas / classe / elemento) aplicadas a todos.
 	Synergy.apply(squad_ids, squad_datas)
+
+	# Bênção Fúria de Ares (+dano permanente): cobre torres-herói e o campeão (que
+	# usam estes dados); as torres genéricas recebem o mesmo no BuildManager.
+	var dmg_mult := Progression.bless_damage_mult()
+	if dmg_mult != 1.0:
+		for d in squad_datas:
+			d.damage = int(round(d.damage * dmg_mult))
+			d.melee_damage = int(round(d.melee_damage * dmg_mult))
 
 	var game := GameScreen.new()
 	game.setup(stage, squad_datas, ult_id)

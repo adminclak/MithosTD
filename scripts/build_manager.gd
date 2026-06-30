@@ -15,6 +15,7 @@ const BOUNDS := Rect2(20, 20, 1240, 600)
 var waypoints: Array = []
 var squad: Array = []
 var slots: Array = [] ## Vector2 dos pontos estratégicos
+var damage_mult: float = 1.0 ## bênção Fúria de Ares (aplicada às torres genéricas)
 
 var _towers: Array = []
 var _radial: RadialMenu = null
@@ -24,10 +25,11 @@ var _mode: String = ""
 @onready var _state: Node = get_node_or_null(^"/root/GameState")
 
 
-func setup(wpoints: Array, squad_datas: Array = [], slot_positions: Array = []) -> void:
+func setup(wpoints: Array, squad_datas: Array = [], slot_positions: Array = [], dmg_mult: float = 1.0) -> void:
 	waypoints = wpoints.duplicate()
 	squad = squad_datas.duplicate()
 	slots = slot_positions.duplicate()
+	damage_mult = dmg_mult
 
 
 func _ready() -> void:
@@ -79,9 +81,12 @@ func _slot_at(pos: Vector2) -> int:
 func _class_data(tcls: int) -> TowerData:
 	for d in squad:
 		if d.tower_class == tcls:
-			return d
+			return d ## herói já tem o bônus de dano aplicado em main
 	for g in TowerData.all_classes():
 		if g.tower_class == tcls:
+			if damage_mult != 1.0:
+				g.damage = int(round(g.damage * damage_mult))
+				g.melee_damage = int(round(g.melee_damage * damage_mult))
 			return g
 	return TowerData.archer()
 

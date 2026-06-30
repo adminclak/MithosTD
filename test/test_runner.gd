@@ -23,6 +23,7 @@ func _initialize() -> void:
 	_test_economy()
 	_test_build_menu_ui()
 	_test_progression()
+	_test_blessings()
 	_test_gacha()
 	_test_quests()
 	_test_squad_uniqueness()
@@ -473,6 +474,45 @@ func _test_build_menu_ui() -> void:
 	_check(menu3._box.get_child_count() == 4, "manage mostra titulo + upar + vender + fechar")
 
 	menu.free(); menu2.free(); menu3.free(); t.free()
+
+func _test_blessings() -> void:
+	print("\nBencaos do Olimpo (Essencia -> upgrades permanentes):")
+	var pr = root.get_node_or_null(^"/root/Progression")
+	if pr == null:
+		_check(false, "Progression acessivel"); return
+	pr.reset()
+	_check(pr.blessing_level("dano") == 0, "comeca sem bencaos")
+	_check(pr.blessing_cost("dano") == Blessings.cost(0), "custo do 1o nivel = Blessings.cost(0)")
+	_check(not pr.can_buy_blessing("dano"), "nao compra sem Essencia")
+	_check(abs(pr.bless_damage_mult() - 1.0) < 0.001, "sem bencao = multiplicador 1.0")
+
+	pr.add_essence(200)
+	_check(pr.buy_blessing("dano"), "compra Furia de Ares com Essencia")
+	_check(pr.blessing_level("dano") == 1, "nivel sobe p/ 1")
+	_check(abs(pr.bless_damage_mult() - 1.04) < 0.001, "Furia de Ares nv1 = +4% dano")
+	_check(pr.buy_blessing("vida_base"), "compra Muralha de Atena")
+	_check(pr.bless_base_hp_bonus() == 3, "Muralha de Atena nv1 = +3 vida base")
+
+	# Maximiza uma bênção: vira MAXIMO e nao compra mais.
+	for i in 10:
+		pr.add_essence(100)
+		pr.buy_blessing("ult")
+	_check(pr.blessing_level("ult") == Blessings.MAX_LEVEL, "bencao maximiza no teto")
+	_check(pr.blessing_cost("ult") == -1, "no teto, custo = -1")
+	_check(not pr.can_buy_blessing("ult"), "no teto nao compra mais")
+	_check(pr.bless_ult_charge_mult() < 1.0, "Trovao de Zeus acelera a recarga da ult")
+
+	# Save/load preserva as bençãos.
+	var tmp = "user://test_bless_%d.json" % Time.get_ticks_usec()
+	var lvl = pr.blessing_level("dano")
+	pr.save_to(tmp)
+	pr.reset()
+	_check(pr.blessing_level("dano") == 0, "reset zera as bencaos")
+	pr.load_from(tmp)
+	_check(pr.blessing_level("dano") == lvl, "load restaura as bencaos")
+	if FileAccess.file_exists(tmp):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(tmp))
+
 
 func _test_progression() -> void:
 	print("\nProgressao (XP / nivel / desbloqueio / save):")

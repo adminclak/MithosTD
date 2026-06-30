@@ -27,6 +27,7 @@ var characters: Dictionary = {}     ## id -> { unlocked, level, xp, stars }
 var fragments: Dictionary = {}      ## id -> quantidade de fragmentos (evoluem estrelas)
 var inventory: Array = []           ## ids de equipamentos possuídos (sem repetição)
 var equipped: Dictionary = {}       ## char_id -> { slot_index: item_id }
+var blessings: Dictionary = {}      ## Bênçãos do Olimpo: id -> nível (gasta Essência)
 
 # Até 3 equipes salvas. teams[i] = lista de ids; team_ults[i] = id do Poder Supremo.
 var teams: Array = [[], [], []]
@@ -496,6 +497,58 @@ func buy_character(char_id: String) -> bool:
 	return true
 
 
+# --- Bênçãos do Olimpo (melhorias permanentes, gastam Essência) ---
+func blessing_level(id: String) -> int:
+	return int(blessings.get(id, 0))
+
+
+## Custo da PRÓXIMA compra (-1 = já no máximo).
+func blessing_cost(id: String) -> int:
+	var lv := blessing_level(id)
+	if lv >= Blessings.MAX_LEVEL:
+		return -1
+	return Blessings.cost(lv)
+
+
+func can_buy_blessing(id: String) -> bool:
+	var c := blessing_cost(id)
+	return c >= 0 and meta_essence >= c
+
+
+func buy_blessing(id: String) -> bool:
+	if not can_buy_blessing(id):
+		return false
+	meta_essence -= blessing_cost(id)
+	blessings[id] = blessing_level(id) + 1
+	emit_signal("progress_changed")
+	return true
+
+
+## Valor acumulado da bênção (nível × per do catálogo).
+func blessing_value(id: String) -> int:
+	var b := Blessings.by_id(id)
+	if b.is_empty():
+		return 0
+	return int(b["per"]) * blessing_level(id)
+
+
+# Getters de efeito usados pelo orquestrador da partida (game_screen / main).
+func bless_base_hp_bonus() -> int:
+	return blessing_value("vida_base")
+
+func bless_start_gold_bonus() -> int:
+	return blessing_value("ouro_inicial")
+
+func bless_damage_mult() -> float:
+	return 1.0 + blessing_value("dano") / 100.0
+
+func bless_wave_bonus_mult() -> float:
+	return 1.0 + blessing_value("ouro_onda") / 100.0
+
+func bless_ult_charge_mult() -> float:
+	return maxf(0.4, 1.0 - blessing_value("ult") / 100.0)
+
+
 # --- Recompensas de fim de fase ---
 func grant_rewards(stage_index: int, victory: bool) -> Dictionary:
 	_ensure_defaults()
@@ -543,6 +596,7 @@ func reset() -> void:
 	fragments = {}
 	inventory = []
 	equipped = {}
+	blessings = {}
 	teams = [[], [], []]
 	team_ults = ["", "", ""]
 	team_champions = ["", "", ""]
@@ -575,6 +629,7 @@ func save_to(path: String) -> void:
 		"fragments": fragments,
 		"inventory": inventory,
 		"equipped": equipped,
+		"blessings": blessings,
 		"teams": teams,
 		"team_ults": team_ults,
 		"team_champions": team_champions,
@@ -625,6 +680,10 @@ func load_from(path: String) -> void:
 	inventory = []
 	for it in data.get("inventory", []):
 		inventory.append(str(it))
+	blessings = {}
+	var saved_bless: Dictionary = data.get("blessings", {})
+	for bid in saved_bless.keys():
+		blessings[bid] = int(saved_bless[bid])
 	equipped = {}
 	var saved_eq: Dictionary = data.get("equipped", {})
 	for cid in saved_eq.keys():
