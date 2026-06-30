@@ -44,6 +44,7 @@ var _melee_cd: float = 0.0
 var _down: bool = false
 var _down_timer: float = 0.0
 var _regen_accum: float = 0.0
+var _contact_accum: float = 0.0 ## dano de contato acumulado (heróis ranged expostos)
 var _shield_timer: float = 0.0
 
 var _sprite: Texture2D = null
@@ -62,7 +63,7 @@ var _face: Vector2 = Vector2.RIGHT
 func setup(d: TowerData) -> void:
 	data = d
 	invested_gold = d.cost
-	_hp = d.max_hp
+	_hp = max_hp()
 
 
 ## Reposiciona a unidade: anda até `pos` e fica estática lá (volta a lutar). Solta
@@ -83,7 +84,7 @@ func _ready() -> void:
 			add_to_group("priests")
 		if data.is_melee:
 			add_to_group("melee_allies")
-			_hp = data.max_hp
+		_hp = max_hp()
 		if force_building:
 			# Torre de slot = prédio da classe (Arqueira/Quartel/Guilda/Templo),
 			# mesmo usando os stats/elemento/equip do herói do esquadrão.
@@ -115,6 +116,15 @@ func _process(delta: float) -> void:
 			_idle += delta * 3.2
 			queue_redraw()
 			return
+	# Caído (vale p/ TODOS os heróis): aguarda reviver com vida cheia.
+	if _down:
+		_down_timer -= delta
+		if _down_timer <= 0.0:
+			_down = false
+			_hp = max_hp()
+		_idle += delta * 3.2
+		queue_redraw()
+		return
 	if _ability_cd > 0.0:
 		_ability_cd -= delta
 	if _temp_buff_timer > 0.0:
@@ -124,9 +134,11 @@ func _process(delta: float) -> void:
 	_recompute_aura_buffs()
 	if data.is_melee:
 		_process_melee(delta)
-	elif data.damage > 0 and data.attack_range > 0.0:
-		# Qualquer ranged com ataque atira (Arqueiro, Mago e o golpe do Sacerdote).
-		_process_attacker(delta)
+	else:
+		# Ranged: sobrevive (dano de contato / regeneração) e atira.
+		_process_ranged_survival(delta)
+		if data.damage > 0 and data.attack_range > 0.0:
+			_process_attacker(delta)
 	# A aura do Sacerdote também é consultada pelas entidades próximas.
 
 	# Animação: respiração contínua + decaimento do golpe + redesenho por frame.
@@ -162,7 +174,16 @@ func apply_upgrade() -> void:
 	queue_redraw()
 
 func max_hp() -> int:
-	return int(round(data.max_hp * _stat_mult())) if data.is_melee else 0
+	if data.is_melee:
+		return int(round(data.max_hp * _stat_mult()))
+	# Heróis ranged também têm vida (mais frágeis): morrem se ficarem expostos na rota.
+	var base: int = data.max_hp if data.max_hp > 0 else _ranged_base_hp()
+	return int(round(base * _stat_mult()))
+
+
+func _ranged_base_hp() -> int:
+	var vit: int = data.attributes.vitality if data.attributes != null else 12
+	return 35 + vit * 2
 
 
 # --- Aura efetiva (com nível) ---
@@ -252,6 +273,31 @@ func _shoot(target: Node2D) -> void:
 	_face = (target.global_position - global_position).normalized()
 
 
+## Heróis RANGED: tomam dano de contato de inimigos colados (ficam expostos se
+## postos/movidos para a rota; seguros se ficam ao lado dela) e regeneram devagar
+## quando seguros. Caem e revivem como os melee.
+func _process_ranged_survival(delta: float) -> void:
+	var contact := 0.0
+	for e in get_tree().get_nodes_in_group("enemies"):
+		if not is_instance_valid(e):
+			continue
+		if global_position.distance_to(e.global_position) <= 28.0:
+			contact += float(e.attack_damage)
+	if contact > 0.0:
+		_contact_accum += contact * delta
+		var whole := int(_contact_accum)
+		if whole > 0:
+			_contact_accum -= whole
+			take_damage(whole)
+	elif _hp < max_hp():
+		_regen_accum += (2.0 + _aura_heal_near()) * delta
+		var w := int(_regen_accum)
+		if w > 0:
+			_regen_accum -= w
+			_hp = min(max_hp(), _hp + w)
+			queue_redraw()
+
+
 # --- MELEE (tanque que trava inimigos) ---
 func _process_melee(delta: float) -> void:
 	if _down:
@@ -316,9 +362,10 @@ func _process_melee(delta: float) -> void:
 			_melee_cd = 1.0 / max(0.1, data.melee_attack_rate * _temp_mult())
 
 
-# Recebe dano (só faz efeito em melee). Chamado pelos inimigos travados.
+# Recebe dano (vale p/ TODOS os heróis). Chamado pelos inimigos travados (melee) ou
+# pelo dano de contato (ranged). Ranged têm defesa/esquiva 0 = mais frágeis.
 func take_damage(amount: int, _pen: int = 0) -> void:
-	if data == null or not data.is_melee or _down:
+	if data == null or _down:
 		return
 	if _shield_timer > 0.0:
 		return
@@ -331,7 +378,7 @@ func take_damage(amount: int, _pen: int = 0) -> void:
 
 func _go_down() -> void:
 	_down = true
-	_down_timer = data.revive_time
+	_down_timer = data.revive_time if data.revive_time > 0.0 else 8.0
 	for e in _melee_targets:
 		if is_instance_valid(e) and e.has_method("release"):
 			e.release()
@@ -477,10 +524,15 @@ func _draw() -> void:
 	var c: Color = data.body_color
 	var dark := Color(c.r * 0.45, c.g * 0.45, c.b * 0.45)
 
-	# Indicadores de alcance/aura (por baixo do corpo).
-	if not data.is_melee and (data.tower_class == TowerData.TowerClass.ARCHER \
-			or data.tower_class == TowerData.TowerClass.MAGE):
-		draw_arc(Vector2.ZERO, data.attack_range, 0.0, TAU, 64, Color(c.r, c.g, c.b, 0.07), 1.0)
+	# Indicador de TIPO/alcance: anel largo (ranged, cor da classe) ou anel curto
+	# vermelho (melee, raio de corpo-a-corpo). Brilha quando o herói está selecionado.
+	var ring_a: float = 0.40 if selected else 0.22
+	var ring_w: float = 3.0 if selected else 2.0
+	if not data.is_melee and data.attack_range > 0.0:
+		draw_arc(Vector2.ZERO, data.attack_range, 0.0, TAU, 64, Color(c.r, c.g, c.b, ring_a), ring_w)
+	elif data.is_melee:
+		var er: float = data.engage_radius if data.engage_radius > 0.0 else 60.0
+		draw_arc(Vector2.ZERO, er, 0.0, TAU, 48, Color(1.0, 0.42, 0.3, ring_a), ring_w)
 	if data.aura_radius > 0.0:
 		# Aura pulsante (respira com o idle).
 		var pulse: float = 0.10 + 0.06 * (0.5 + 0.5 * sin(_idle * 1.4))
@@ -525,10 +577,10 @@ func _draw() -> void:
 		_draw_equipment(off)
 
 	# Sobreposições.
-	if data.is_melee:
+	if not _is_building:
 		_draw_hp_bar()
-		if _shield_timer > 0.0:
-			draw_arc(Vector2.ZERO, 22.0, 0.0, TAU, 24, Color(1.0, 0.95, 0.5), 2.0)
+	if data.is_melee and _shield_timer > 0.0:
+		draw_arc(Vector2.ZERO, 22.0, 0.0, TAU, 24, Color(1.0, 0.95, 0.5), 2.0)
 	for i in level:
 		draw_rect(Rect2(Vector2(-18 + i * 8, -32), Vector2(6, 5)), Color(1.0, 0.9, 0.3))
 
@@ -658,6 +710,8 @@ func _draw_hp_bar() -> void:
 	var mh := max_hp()
 	if mh <= 0:
 		return
+	if _hp >= mh and not _down:
+		return # vida cheia: esconde a barra (evita poluição visual)
 	var w := 34.0
 	var pos := Vector2(-17, -26)
 	draw_rect(Rect2(pos, Vector2(w, 4)), Color(0.1, 0.1, 0.1))
