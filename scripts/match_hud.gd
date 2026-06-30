@@ -1,9 +1,10 @@
 class_name MatchHud
 extends CanvasLayer
 
-## Botões de controle da partida: lançar onda (também usado na preparação para
-## iniciar), pausar, mudar velocidade e abandonar. process_mode ALWAYS para os
-## botões continuarem respondendo enquanto o jogo está pausado.
+## Controles da partida (estilo Kingdom Rush): cluster compacto no topo (Lançar
+## Onda + Pause + velocidade + Abandonar) e dois PODERES circulares pequenos nos
+## cantos inferiores (Reforços à esquerda, Poder Supremo à direita), acima da
+## barra de heróis. process_mode ALWAYS p/ responder mesmo em pausa.
 
 signal advance_pressed
 signal pause_pressed
@@ -16,74 +17,88 @@ var _phase_label: Label
 var _advance_btn: Button
 var _pause_btn: Button
 var _speed_btn: Button
-var _ult_btn: Button
-var _ult_name: String = ""
-var _ult_color: Color = Color(1, 0.85, 0.3)
-var _ult_charge: float = 0.0
-var _power2_btn: Button
-var _power2_charge: float = 0.0
+var _ult: PowerButton
+var _power2: PowerButton
 
 
 func _ready() -> void:
 	layer = 8
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
+	# Cluster de controle no topo (centro), compacto e temático.
 	var bar := HBoxContainer.new()
-	bar.position = Vector2(340, 12)
-	bar.add_theme_constant_override("separation", 8)
+	bar.position = Vector2(338, 12)
+	bar.add_theme_constant_override("separation", 7)
 	add_child(bar)
 
-	_advance_btn = _mk("Lancar Onda")
+	_advance_btn = _btn("Lancar Onda", 150, true)
 	_advance_btn.pressed.connect(func(): advance_pressed.emit())
 	bar.add_child(_advance_btn)
 
-	_pause_btn = _mk("Pause")
+	_pause_btn = _btn("II", 46, false)
+	_pause_btn.add_theme_font_size_override("font_size", 18)
 	_pause_btn.pressed.connect(func(): pause_pressed.emit())
 	bar.add_child(_pause_btn)
 
-	_speed_btn = _mk("x1")
-	_speed_btn.custom_minimum_size = Vector2(60, 34)
+	_speed_btn = _btn("x1", 54, false)
 	_speed_btn.pressed.connect(func(): speed_pressed.emit())
 	bar.add_child(_speed_btn)
 
-	var abandon := _mk("Abandonar")
+	# Abandonar: discreto, canto superior direito.
+	var abandon := _btn("Sair", 78, false)
+	abandon.position = Vector2(1192, 12)
+	abandon.add_theme_color_override("font_color", Color(1.0, 0.6, 0.55))
 	abandon.pressed.connect(func(): abandon_pressed.emit())
-	bar.add_child(abandon)
+	add_child(abandon)
 
 	_phase_label = Label.new()
-	_phase_label.position = Vector2(340, 52)
-	_phase_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.7))
+	_phase_label.position = Vector2(340, 56)
+	_phase_label.add_theme_color_override("font_color", Color(1, 0.97, 0.85))
+	_phase_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
 	_phase_label.add_theme_constant_override("shadow_offset_x", 1)
 	_phase_label.add_theme_constant_override("shadow_offset_y", 2)
 	add_child(_phase_label)
 
-	# Poder Supremo (canto inferior DIREITO) — estilo Kingdom Rush.
-	_ult_btn = Button.new()
-	_ult_btn.position = Vector2(1034, 596)
-	_ult_btn.size = Vector2(234, 110)
-	_ult_btn.custom_minimum_size = Vector2(234, 110)
-	_ult_btn.add_theme_font_size_override("font_size", 15)
-	_ult_btn.pressed.connect(func(): ult_pressed.emit())
-	_ult_btn.visible = false
-	add_child(_ult_btn)
-	_refresh_ult()
+	# Reforços (canto inferior ESQUERDO) — circular, acima da barra de heróis.
+	_power2 = PowerButton.new()
+	_power2.position = Vector2(20, 520)
+	_power2.setup("R", Color(0.45, 0.9, 0.55), "Reforcos")
+	_power2.pressed.connect(func(): power2_pressed.emit())
+	add_child(_power2)
 
-	# Reforços (canto inferior ESQUERDO) — 2º poder do jogador.
-	_power2_btn = Button.new()
-	_power2_btn.position = Vector2(12, 596)
-	_power2_btn.size = Vector2(220, 110)
-	_power2_btn.custom_minimum_size = Vector2(220, 110)
-	_power2_btn.add_theme_font_size_override("font_size", 15)
-	_power2_btn.pressed.connect(func(): power2_pressed.emit())
-	add_child(_power2_btn)
-	_refresh_power2()
+	# Poder Supremo (canto inferior DIREITO) — começa escondido (só se houver ult).
+	_ult = PowerButton.new()
+	_ult.position = Vector2(1174, 520)
+	_ult.setup("★", Color(1, 0.85, 0.3), "Supremo")
+	_ult.visible = false
+	_ult.pressed.connect(func(): ult_pressed.emit())
+	add_child(_ult)
 
 
-func _mk(text: String) -> Button:
+## Botão temático (madeira/ouro) — primary = destaque dourado (ação principal).
+func _btn(text: String, w: int, primary: bool) -> Button:
 	var b := Button.new()
-	b.custom_minimum_size = Vector2(124, 34)
+	b.custom_minimum_size = Vector2(w, 40)
 	b.text = text
-	UiTheme.style_button(b)
+	b.add_theme_font_size_override("font_size", 16)
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.30, 0.22, 0.10, 0.96) if primary else Color(0.15, 0.14, 0.13, 0.92)
+	sb.set_corner_radius_all(8)
+	sb.set_border_width_all(2)
+	sb.border_color = Color(1.0, 0.82, 0.35) if primary else Color(0.55, 0.48, 0.34)
+	sb.content_margin_left = 6
+	sb.content_margin_right = 6
+	var hv := sb.duplicate()
+	hv.bg_color = Color(0.40, 0.30, 0.14, 0.98) if primary else Color(0.22, 0.20, 0.18, 0.95)
+	var dis := sb.duplicate()
+	dis.bg_color = Color(0.12, 0.12, 0.12, 0.7)
+	dis.border_color = Color(0.35, 0.32, 0.28)
+	b.add_theme_stylebox_override("normal", sb)
+	b.add_theme_stylebox_override("hover", hv)
+	b.add_theme_stylebox_override("pressed", hv)
+	b.add_theme_stylebox_override("disabled", dis)
+	b.add_theme_color_override("font_color", Color(1.0, 0.92, 0.6) if primary else Color(0.92, 0.9, 0.85))
+	b.add_theme_color_override("font_disabled_color", Color(0.6, 0.6, 0.62))
 	return b
 
 
@@ -96,7 +111,7 @@ func set_advance_enabled(on: bool) -> void:
 
 
 func set_paused(p: bool) -> void:
-	_pause_btn.text = "Continuar" if p else "Pause"
+	_pause_btn.text = "▶" if p else "II"
 
 
 func set_fast(fast: bool) -> void:
@@ -104,69 +119,15 @@ func set_fast(fast: bool) -> void:
 
 
 func set_ult(name: String, color: Color) -> void:
-	_ult_name = name
-	_ult_color = color
-	_ult_btn.visible = true
-	_refresh_ult()
+	_ult.visible = true
+	_ult.setup("★", color, "Supremo")
 
 
 func set_ult_charge(frac: float) -> void:
-	_ult_charge = clampf(frac, 0.0, 1.0)
-	_refresh_ult()
-
-
-func _refresh_ult() -> void:
-	if _ult_btn == null or _ult_name == "":
-		return
-	var ready := _ult_charge >= 1.0
-	_ult_btn.disabled = not ready
-	if ready:
-		_ult_btn.text = "★ %s ★\nPODER SUPREMO PRONTO" % _ult_name
-	else:
-		_ult_btn.text = "%s\nCarregando %d%%" % [_ult_name, int(_ult_charge * 100.0)]
-	# Moldura dourada acende quando pronto.
-	var border := _ult_color if ready else Color(0.45, 0.4, 0.3)
-	var bg := Color(0.20, 0.16, 0.10, 0.95) if ready else Color(0.12, 0.12, 0.14, 0.85)
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = bg
-	sb.set_corner_radius_all(10)
-	sb.set_border_width_all(3)
-	sb.border_color = border
-	if ready:
-		sb.shadow_color = Color(_ult_color.r, _ult_color.g, _ult_color.b, 0.6)
-		sb.shadow_size = 8
-	_ult_btn.add_theme_stylebox_override("normal", sb)
-	_ult_btn.add_theme_stylebox_override("hover", sb)
-	_ult_btn.add_theme_stylebox_override("disabled", sb)
-	_ult_btn.add_theme_color_override("font_color", Color(1, 0.95, 0.8))
-	_ult_btn.add_theme_color_override("font_disabled_color", Color(0.7, 0.7, 0.72))
+	if _ult != null:
+		_ult.set_charge(frac)
 
 
 func set_power2_charge(frac: float) -> void:
-	_power2_charge = clampf(frac, 0.0, 1.0)
-	_refresh_power2()
-
-
-func _refresh_power2() -> void:
-	if _power2_btn == null:
-		return
-	var ready := _power2_charge >= 1.0
-	_power2_btn.disabled = not ready
-	if ready:
-		_power2_btn.text = "⚔ REFORCOS ⚔\nPRONTO (clique no mapa)"
-	else:
-		_power2_btn.text = "Reforcos\nCarregando %d%%" % int(_power2_charge * 100.0)
-	var col := Color(0.45, 0.85, 0.5) if ready else Color(0.45, 0.4, 0.3)
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.12, 0.20, 0.12, 0.95) if ready else Color(0.12, 0.12, 0.14, 0.85)
-	sb.set_corner_radius_all(10)
-	sb.set_border_width_all(3)
-	sb.border_color = col
-	if ready:
-		sb.shadow_color = Color(0.3, 0.8, 0.4, 0.6)
-		sb.shadow_size = 8
-	_power2_btn.add_theme_stylebox_override("normal", sb)
-	_power2_btn.add_theme_stylebox_override("hover", sb)
-	_power2_btn.add_theme_stylebox_override("disabled", sb)
-	_power2_btn.add_theme_color_override("font_color", Color(0.95, 1, 0.9))
-	_power2_btn.add_theme_color_override("font_disabled_color", Color(0.7, 0.7, 0.72))
+	if _power2 != null:
+		_power2.set_charge(frac)
