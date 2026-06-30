@@ -60,9 +60,20 @@ func _ready() -> void:
 func _shot_mode(args: Array) -> void:
 	var which := "title"
 	for a in args:
-		if a in ["title", "worldmap", "heroes", "collection", "gacha", "quests", "game", "blessings", "picker", "build", "teamselect"]:
+		if a in ["title", "worldmap", "heroes", "collection", "gacha", "quests", "game", "blessings", "picker", "build", "teamselect", "result"]:
 			which = a
 	match which:
+		"result":
+			var rs := ResultScreen.new()
+			var summary := {
+				"hercules": {"levels_gained": 1, "new_level": 5},
+				"ares": {"levels_gained": 0, "new_level": 4},
+				"artemis": {"levels_gained": 2, "new_level": 6},
+			}
+			rs.setup(true, 120, summary, ["zeus"],
+				{"gold": 240, "essence": 18, "item_id": "ouro"}, 3, {"improved": true, "gained": 2})
+			rs.set_difficulty(1, true)
+			_switch_to(rs)
 		"worldmap": _show_worldmap()
 		"teamselect":
 			var sel := TeamSelectScreen.new()
