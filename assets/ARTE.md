@@ -71,7 +71,7 @@ poucos steps e CFG baixo (senão a imagem "queima"):
 - `hermes.png` — Hermes, greek messenger god, winged sandals and winged helmet, fast and nimble, holding a short bow, blue accents, archer
 - `hercules.png` — Heracles, mighty greek hero, very muscular, lion pelt hood, wooden club, red accents, melee warrior tank
 - `ares.png` — Ares, greek god of war, fierce, crested helmet, red battle armor, spear and round shield, melee warrior
-- `atena.png` — Athena, greek goddess of wisdom and war, golden armor, spear, aegis shield, owl companion, supportive aura, priest
+- `atena.png` — Athena, wise greek goddess, noble woman in golden armor, holding a spear and a round shield, a small owl companion on her shoulder, blue and gold tones, female priestess
 - `apolo.png` — Apollo, greek god of sun and healing, golden laurel wreath, lyre, radiant warm light, healer, priest
 - `medusa.png` — Medusa, a beautiful but fierce woman, on her head she has NO hair at all, instead many small green snakes grow out of her scalp like hair (snakes replacing her hair), feminine female face, glowing green eyes, green scaled skin, snake-tail lower body, holding a magic staff, green and teal tones
 - `zeus.png` — Zeus, king of the greek gods, mighty bearded man wearing a white tunic and toga (fully clothed), crackling lightning bolt in hand, golden aura, mage
