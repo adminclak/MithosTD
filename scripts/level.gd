@@ -11,11 +11,12 @@ extends Node2D
 # (tools/tracepath.py: segmenta a cor da trilha -> A* pelo miolo -> simplifica).
 # Assim os inimigos andam exatamente sobre a faixa desenhada na arte.
 const PATHS_BY_THEME := {
-	# Elis: entra pelo topo, desce e segue a faixa bege até o canto inferior-direito.
+	# Elis: a arte tem um ANEL de terra (oval) em volta do gramado central. Os inimigos
+	# seguem a oval — portal no topo, castelo embaixo, dois arcos (ver MULTI). Esta é a
+	# rota principal (arco direito/horário). Traçado sobre a terra pintada.
 	"elis": [
-		Vector2(-40, 215), Vector2(210, 245), Vector2(420, 320), Vector2(600, 380),
-		Vector2(780, 325), Vector2(945, 250), Vector2(1055, 360), Vector2(1115, 500),
-		Vector2(1150, 590), Vector2(1330, 615),
+		Vector2(560, 178), Vector2(770, 186), Vector2(950, 230), Vector2(1078, 340),
+		Vector2(1045, 472), Vector2(872, 556), Vector2(620, 588),
 	],
 	# Nemeia: caminho horizontal ondulado, da borda esquerda à direita (centro aberto).
 	"nemeia": [
@@ -48,15 +49,16 @@ const DEFAULT_PATH := [Vector2(-40, 160), Vector2(360, 160), Vector2(360, 420),
 # recebe inimigos por dois lados. Os inimigos são distribuídos entre as rotas. Mapas
 # fora deste dict têm um único caminho (get_paths devolve [caminho único]).
 const MULTI_PATHS_BY_THEME := {
-	# Elis: a estrada se abre em duas após a 3ª curva — rota de cima (principal) e
-	# rota de baixo pelo centro — e as duas se juntam de novo perto do castelo.
+	# Elis: a oval de terra da arte vira bifurcação NATURAL. Portal no topo da oval,
+	# castelo embaixo; os inimigos contornam o gramado pelos dois lados (arco direito
+	# e arco esquerdo) e convergem no castelo. Traçado sobre a terra pintada.
 	"elis": [
-		[Vector2(-40, 215), Vector2(210, 245), Vector2(420, 320), Vector2(600, 380),
-			Vector2(780, 325), Vector2(945, 250), Vector2(1055, 360), Vector2(1115, 500),
-			Vector2(1150, 590), Vector2(1330, 615)],
-		[Vector2(-40, 215), Vector2(210, 245), Vector2(420, 320), Vector2(600, 470),
-			Vector2(800, 545), Vector2(1000, 505), Vector2(1115, 500), Vector2(1150, 590),
-			Vector2(1330, 615)],
+		# arco DIREITO (horário): topo -> direita -> baixo
+		[Vector2(560, 178), Vector2(770, 186), Vector2(950, 230), Vector2(1078, 340),
+			Vector2(1045, 472), Vector2(872, 556), Vector2(620, 588)],
+		# arco ESQUERDO (anti-horário): topo -> esquerda -> baixo
+		[Vector2(560, 178), Vector2(350, 196), Vector2(220, 256), Vector2(170, 362),
+			Vector2(216, 466), Vector2(370, 558), Vector2(620, 588)],
 	],
 	# Nemeia: a partir da 2ª curva uma rota sobe (arco superior) e a outra desce
 	# (rota principal ondulada); ambas chegam ao mesmo castelo à direita.
@@ -68,10 +70,12 @@ const MULTI_PATHS_BY_THEME := {
 	],
 }
 
-# Temas cujo CAMINHO já está PINTADO na arte do mapa (estilo Kingdom Rush). Nesses
-# não desenhamos a faixa de caminho por código — o trajeto só segue a trilha da arte.
+# Temas cujo CAMINHO já está PINTADO na arte do mapa (estilo Kingdom Rush) E cujos
+# waypoints foram TRAÇADOS sobre essa trilha. Nesses NÃO desenhamos a estrada por
+# código — os inimigos andam direto na terra pintada (visual 100% integrado). Os
+# demais mapas ainda usam a estrada-código até serem traçados sobre a arte.
 const PATH_IN_ART := {
-	"elis": true, "nemeia": true, "pantano": true, "desfiladeiro": true, "olimpo": true,
+	"elis": true,
 }
 
 # Pontos de torre: gerados automaticamente AO LADO da trilha (perpendicular a cada
@@ -221,12 +225,15 @@ func _ready() -> void:
 	var border: Color = pc[0]
 	var dark := Color(border.r * 0.5, border.g * 0.5, border.b * 0.4)
 	var paths := get_paths()
-	for route in paths:
-		# Transição esfumada (faixa larga fraca -> média -> miolo opaco -> brilho central).
-		add_child(_make_path_line(route, 86, Color(dark.r, dark.g, dark.b, 0.22), null, -10))
-		add_child(_make_path_line(route, 66, Color(border.r, border.g, border.b, 0.85), null, -9))
-		add_child(_make_path_line(route, 50, fill, null, -8))
-		add_child(_make_path_line(route, 22, Color(fill.r * 1.08, fill.g * 1.06, fill.b * 1.04, 0.45), null, -7))
+	# Mapas com a estrada PINTADA na arte (PATH_IN_ART): não desenhamos nada por cima —
+	# os inimigos seguem a terra pintada. Os demais ganham a faixa por código.
+	if not PATH_IN_ART.get(theme, false):
+		for route in paths:
+			# Transição esfumada (faixa larga fraca -> média -> miolo opaco -> brilho central).
+			add_child(_make_path_line(route, 86, Color(dark.r, dark.g, dark.b, 0.22), null, -10))
+			add_child(_make_path_line(route, 66, Color(border.r, border.g, border.b, 0.85), null, -9))
+			add_child(_make_path_line(route, 50, fill, null, -8))
+			add_child(_make_path_line(route, 22, Color(fill.r * 1.08, fill.g * 1.06, fill.b * 1.04, 0.45), null, -7))
 
 	# Portal por ENTRADA distinta (1º ponto de cada rota) e UM castelo no destino
 	# comum (último ponto da rota principal). Tudo grampeado p/ dentro da tela.
