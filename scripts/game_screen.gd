@@ -35,6 +35,7 @@ var _aim_mode: String = ""
 var _power2_charge: float = 1.0 ## Reforços (2º poder), começa pronto
 const POWER2_CHARGE_TIME := 18.0
 var _joystick: TouchJoystick = null
+var _popup: ScrollPopup = null
 
 
 func setup(stage: StageData, squad_datas: Array, ult_char_id: String = "") -> void:
@@ -80,12 +81,12 @@ func _ready() -> void:
 	var hud := Hud.new()
 	add_child(hud)
 
-	# Anúncio de onda em pergaminho (estilo KR).
-	var popup := ScrollPopup.new()
-	add_child(popup)
-	GameState.wave_changed.connect(func(cur, total):
-		if cur >= 1:
-			popup.announce("ONDA %d / %d" % [cur, total]))
+	# Anúncio de onda em pergaminho (estilo KR). Conecta via método (não lambda) e
+	# desconecta no _exit_tree: o GameState é autoload e persiste entre fases, então
+	# um lambda capturando o popup vazaria e seria chamado com o popup já liberado.
+	_popup = ScrollPopup.new()
+	add_child(_popup)
+	GameState.wave_changed.connect(_on_wave_changed)
 
 	_match_hud = MatchHud.new()
 	add_child(_match_hud)
@@ -261,6 +262,21 @@ func _fire_ult_at(pos: Vector2) -> void:
 	var fx := UltimateEffect.new()
 	_ult_layer.add_child(fx)
 	fx.play(_ult, pos)
+
+
+## Anúncio de onda (pergaminho). Guarda contra popup já liberado por segurança.
+func _on_wave_changed(cur: int, _total: int) -> void:
+	if cur >= 1 and is_instance_valid(_popup):
+		_popup.announce("ONDA %d / %d" % [cur, _total])
+
+
+## Ao sair da partida, solta as conexões feitas no autoload GameState (que
+## sobrevive entre fases) para não chamar callbacks de uma tela já liberada.
+func _exit_tree() -> void:
+	if GameState.wave_changed.is_connected(_on_wave_changed):
+		GameState.wave_changed.disconnect(_on_wave_changed)
+	if GameState.game_over.is_connected(_on_game_over):
+		GameState.game_over.disconnect(_on_game_over)
 
 
 func _on_advance() -> void:
