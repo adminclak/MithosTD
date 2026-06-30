@@ -72,6 +72,18 @@ DIRS = {
     "items": os.path.join(PROJ, "assets", "items"),
     "maps": os.path.join(PROJ, "assets", "map"),
     "scenery": os.path.join(PROJ, "assets", "map"),  # props do mapa (portal/castelo), fundo transparente
+    "splash": os.path.join(PROJ, "assets", "map"),   # fundo de tela cheia (ex.: menu_bg), 1280x720
+}
+
+# Fundos de tela cheia (splash art) — ex.: o fundo do menu principal.
+SPLASH_STYLE = ("Kingdom Rush mobile game splash art, hand-painted digital illustration, epic and "
+                "cinematic, vibrant saturated colors, dramatic lighting, highly detailed, "
+                "ancient Greek mythology theme, no characters, no people, no text, no words, no UI")
+SPLASH_PROMPTS = {
+    "menu_bg": ("a breathtaking view of Mount Olympus, a majestic ancient Greek marble temple with "
+                "tall columns crowning a mountain peak high above a sea of golden clouds at sunset, "
+                "dramatic god rays, lush green slopes, distant blue Aegean sea and islands, grand, "
+                "heroic, awe-inspiring fantasy vista"),
 }
 
 # Props do mapa (portal de entrada, castelo/base). Objeto unico, fundo transparente,
@@ -210,6 +222,10 @@ def save(png_bytes, category, cid):
         im = remove_bg(im)
         im = im.resize((192, 192), Image.LANCZOS)
         out = os.path.join(DIRS[category], cid + ".png")
+    elif category == "splash":
+        # Fundo de tela cheia (sem recorte), 1280x720, arquivo <id>.png.
+        im = im.resize((1280, 720), Image.LANCZOS)
+        out = os.path.join(DIRS[category], cid + ".png")
     else:
         im = remove_bg(im)
         im = im.resize((OUT_SIZE, OUT_SIZE), Image.LANCZOS)
@@ -229,14 +245,24 @@ def main():
     category = args[0]
     is_maps = category == "maps"
     is_scenery = category == "scenery"
+    is_splash = category == "splash"
     if is_maps:
         jobs = MAP_PROMPTS
     elif is_scenery:
         jobs = SCENERY_PROMPTS
+    elif is_splash:
+        jobs = SPLASH_PROMPTS
     else:
         jobs = parse_arte()
     ids = list(jobs.keys()) if args[1] == "all" else args[1:]
-    style = "" if is_maps else (SCENERY_STYLE if is_scenery else STYLE[category])
+    if is_maps:
+        style = ""
+    elif is_scenery:
+        style = SCENERY_STYLE
+    elif is_splash:
+        style = SPLASH_STYLE
+    else:
+        style = STYLE[category]
     print("Modelo:", MODEL, "| categoria:", category, "| itens:", len(ids))
     for cid in ids:
         desc = jobs.get(cid)
@@ -246,7 +272,7 @@ def main():
         prompt = (desc + ", " + MAP_STYLE) if is_maps else (style + ", " + desc)
         try:
             t0 = time.time()
-            png = fal_generate(prompt, landscape=is_maps)
+            png = fal_generate(prompt, landscape=(is_maps or is_splash))
             out = save(png, category, cid)
             print("  OK  %-16s %5.1fs  -> %s" % (cid, time.time() - t0, out))
         except Exception as e:
