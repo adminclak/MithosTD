@@ -69,7 +69,11 @@ func _ready() -> void:
 	_enemies_root = enemies_root
 
 	_build_manager = BuildManager.new()
-	_build_manager.setup(level.get_waypoints(), _squad, level.get_build_slots(), Progression.bless_damage_mult())
+	# Limita os slots ao TETO da fase (menor que o esquadrão): o jogador escolhe
+	# quais heróis posicionar. Espalha o subconjunto ao longo do caminho.
+	var cap: int = _stage.slots if _stage != null else 99
+	var build_slots := _pick_slots(level.get_build_slots(), cap)
+	_build_manager.setup(level.get_waypoints(), _squad, build_slots, Progression.bless_damage_mult())
 	add_child(_build_manager)
 
 	# Campeão (1 por partida): o herói escolhido anda pelo mapa (clique no chão = mover).
@@ -145,6 +149,26 @@ func _ready() -> void:
 	if auto_start:
 		_auto_place_demo()
 		_wave_manager.player_advance()
+
+
+## Seleciona até `n` slots dos disponíveis, espalhados uniformemente ao longo do
+## caminho (os slots já vêm ordenados por segmento). Se houver `n` ou menos,
+## devolve todos.
+func _pick_slots(all_slots: Array, n: int) -> Array:
+	if n <= 0:
+		return []
+	if all_slots.size() <= n:
+		return all_slots.duplicate()
+	var out: Array = []
+	var used := {}
+	for i in n:
+		var idx: int = int(floor(float(i) * all_slots.size() / float(n)))
+		idx = clampi(idx, 0, all_slots.size() - 1)
+		while used.has(idx) and idx < all_slots.size() - 1:
+			idx += 1
+		used[idx] = true
+		out.append(all_slots[idx])
+	return out
 
 
 ## Demo automática (smoke / auto-stage): posiciona os HERÓIS do esquadrão (fora o

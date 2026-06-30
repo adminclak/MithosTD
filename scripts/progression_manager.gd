@@ -6,7 +6,9 @@ extends Node
 ## global Progression (no jogo). Ver a pegadinha de autoload no modo -s.
 
 const SAVE_PATH := "user://mithos_save.json"
-const SQUAD_MAX := 6
+## Esquadrão maior que os slots do mapa de propósito: o jogador leva mais heróis
+## do que cabe e escolhe na hora quais posicionar (ver pilar de design).
+const SQUAD_MAX := 8
 const PERM_LEVEL_STEP := 0.04
 
 # Teto de nível por estrela (⭐/⭐⭐/⭐⭐⭐).
