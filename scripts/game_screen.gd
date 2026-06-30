@@ -69,7 +69,7 @@ func _ready() -> void:
 
 	_build_manager = BuildManager.new()
 	# Sem slots: o jogador arrasta os heróis da barra inferior para o mapa.
-	_build_manager.setup(level.get_waypoints(), _squad, Progression.bless_damage_mult())
+	_build_manager.setup(level.get_waypoints(), _squad, Progression.bless_damage_mult(), level.get_blocked_zones())
 	add_child(_build_manager)
 
 	# Barra inferior de heróis (arrastar p/ posicionar).

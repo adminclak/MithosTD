@@ -52,6 +52,25 @@ const PATH_IN_ART := {
 # segmento, alternando os lados) por _slots_for_path, acompanhando o caminho traçado.
 const SLOTS_BY_THEME := {}
 
+# Zonas SÓLIDAS de cada mapa (templos, torres, muralhas, água) onde NÃO se pode
+# posicionar herói — assim ninguém fica "em cima de uma parede". São retângulos
+# autorais sobre as estruturas pintadas na arte (coords de tela 1280x720). Mapas de
+# centro aberto (elis/nemeia) não precisam — a estrutura fica nas bordas, fora da
+# faixa de construção. Conservador de propósito: melhor bloquear um pouco a mais
+# perto de um prédio do que deixar um herói flutuando sobre ele.
+const BLOCKED_BY_THEME := {
+	# Pântano é lama (não parede/água profunda) — centro fica livre p/ construir.
+	"desfiladeiro": [
+		Rect2(650, 16, 210, 196),     # torre de vigia (topo-centro)
+		Rect2(946, 446, 176, 176),    # poço/estrutura (canto inferior-direito)
+	],
+	"olimpo": [
+		Rect2(684, 64, 210, 168),     # templo grego (centro-direita)
+		Rect2(984, 64, 168, 156),     # santuário menor (topo-direita)
+		Rect2(770, 416, 348, 224),    # ruínas/piscina (canto inferior-direito)
+	],
+}
+
 const GRASS := Color(0.27, 0.45, 0.22)
 const PATH_BORDER := Color(0.46, 0.36, 0.24)
 const PATH_FILL := Color(0.78, 0.66, 0.45)
@@ -225,6 +244,11 @@ func _make_path_line(w: float, col: Color, tex: Texture2D, z: int) -> Line2D:
 
 func get_waypoints() -> Array:
 	return _theme_path().duplicate()
+
+
+## Retângulos sólidos (estruturas) onde NÃO se pode posicionar herói neste mapa.
+func get_blocked_zones() -> Array:
+	return (BLOCKED_BY_THEME.get(theme, []) as Array).duplicate()
 
 
 func get_build_slots() -> Array:

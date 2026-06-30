@@ -472,6 +472,15 @@ func _test_hero_placement() -> void:
 	_check(not bm.can_place(Vector2(300, 305)), "ranged SOBRE a estrada e bloqueado")
 	_check(bm.can_place(Vector2(300, 305), true), "MELEE pode na estrada (e tanque)")
 
+	# Zonas sólidas (templo/água/muralha): ninguém pode ficar — nem melee.
+	var bmz = BuildManager.new()
+	bmz.setup([Vector2(0, 300), Vector2(1200, 300)], [], 1.0, [Rect2(400, 380, 120, 120)])
+	root.add_child(bmz)
+	_check(not bmz.can_place(Vector2(460, 440)), "ranged SOBRE estrutura solida e bloqueado")
+	_check(not bmz.can_place(Vector2(460, 440), true), "MELEE tambem nao fica sobre estrutura")
+	_check(bmz.can_place(Vector2(200, 440)), "ao lado da estrutura (fora dela) e valido")
+	bmz.free()
+
 	_check(bm.try_place(p1, h1), "posiciona o heroi escolhido")
 	var av2 = bm.placeable()
 	_check(av2.size() == 2, "heroi ja em campo some da lista (unico)")

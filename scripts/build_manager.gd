@@ -18,6 +18,7 @@ signal changed ## posicionou/vendeu -> a barra de heróis se atualiza
 var waypoints: Array = []
 var squad: Array = []
 var damage_mult: float = 1.0
+var blocked_zones: Array = []   ## Rect2 de estruturas sólidas (templos, água, muralhas)
 
 var _towers: Array = []
 var _menu: BuildMenu = null
@@ -26,14 +27,16 @@ var _pending_tower: Tower = null
 var _moving_tower: Tower = null ## herói em move_mode (sendo arrastado p/ reposicionar)
 var _ok_layer: CanvasLayer = null
 var _ok_btn: Button = null
+var _placing: bool = false   ## mostrando o guia de zonas bloqueadas (posicionar/mover)
 
 @onready var _state: Node = get_node_or_null(^"/root/GameState")
 
 
-func setup(wpoints: Array, squad_datas: Array = [], dmg_mult: float = 1.0) -> void:
+func setup(wpoints: Array, squad_datas: Array = [], dmg_mult: float = 1.0, blocked: Array = []) -> void:
 	waypoints = wpoints.duplicate()
 	squad = squad_datas.duplicate()
 	damage_mult = dmg_mult
+	blocked_zones = blocked.duplicate()
 
 
 func _ready() -> void:
@@ -118,6 +121,7 @@ func _on_move_requested() -> void:
 	_moving_tower = _selected
 	_moving_tower.set_move_mode(true)
 	_ok_btn.visible = true
+	set_placing(true)
 
 
 func _confirm_move() -> void:
@@ -125,7 +129,23 @@ func _confirm_move() -> void:
 		_moving_tower.set_move_mode(false)
 	_moving_tower = null
 	_ok_btn.visible = false
+	set_placing(false)
 	_clear_selection()
+
+
+## Liga/desliga o guia visual das zonas bloqueadas (enquanto posiciona/move herói).
+func set_placing(on: bool) -> void:
+	_placing = on
+	queue_redraw()
+
+
+func _draw() -> void:
+	if not _placing or blocked_zones.is_empty():
+		return
+	for r in blocked_zones:
+		var rect := r as Rect2
+		draw_rect(rect, Color(0.92, 0.22, 0.20, 0.16))           # preenchimento vermelho suave
+		draw_rect(rect, Color(0.98, 0.34, 0.30, 0.55), false, 3.0) # contorno
 
 
 func _on_upgrade_requested() -> void:
@@ -178,10 +198,21 @@ func _dist_to_seg(p: Vector2, a: Vector2, b: Vector2) -> float:
 	return p.distance_to(a + ab * t)
 
 
-## Pode posicionar aqui? No campo e sem sobrepor. MELEE (tanques) PODEM ficar na
-## estrada para segurar os inimigos; ranged ficam bloqueados na estrada (frágeis).
+## Está sobre uma estrutura sólida (templo, água, muralha)? Ninguém pode — nem melee.
+func _in_blocked(pos: Vector2) -> bool:
+	for r in blocked_zones:
+		if (r as Rect2).has_point(pos):
+			return true
+	return false
+
+
+## Pode posicionar aqui? No campo, fora de estruturas sólidas e sem sobrepor. MELEE
+## (tanques) PODEM ficar na estrada para segurar os inimigos; ranged ficam bloqueados
+## na estrada (frágeis). Nenhum dos dois pode ficar sobre uma estrutura sólida.
 func can_place(pos: Vector2, is_melee: bool = false) -> bool:
 	if not BOUNDS.has_point(pos):
+		return false
+	if _in_blocked(pos):
 		return false
 	var d := _dist_to_path(pos)
 	if d > BUILD_BAND:
@@ -197,6 +228,8 @@ func can_place(pos: Vector2, is_melee: bool = false) -> bool:
 ## Pode um herói EXISTENTE parar aqui (ao mover)? Como can_place, mas ignora a si.
 func _can_stand(pos: Vector2, who: Tower) -> bool:
 	if not BOUNDS.has_point(pos):
+		return false
+	if _in_blocked(pos):
 		return false
 	var d := _dist_to_path(pos)
 	if d > BUILD_BAND:

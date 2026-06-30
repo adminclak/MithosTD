@@ -130,6 +130,8 @@ func _arm(d: TowerData) -> void:
 		add_child(_ghost)
 	_ghost.texture = Art.hero(d.char_id)
 	_update_ghost(get_viewport().get_mouse_position())
+	if _bm != null:
+		_bm.set_placing(true) # mostra as zonas bloqueadas enquanto posiciona
 	refresh()
 
 
@@ -167,4 +169,6 @@ func _clear() -> void:
 	if _ghost != null:
 		_ghost.queue_free()
 		_ghost = null
+	if _bm != null:
+		_bm.set_placing(false)
 	refresh()
