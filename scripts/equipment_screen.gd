@@ -2,24 +2,26 @@ class_name EquipmentScreen
 extends CanvasLayer
 
 ## Tela de EQUIPAR (paper-doll): escolhe o herói (lista à esquerda), ele aparece
-## GRANDE no centro com os 8 slots posicionados no corpo; à direita o inventário —
-## clicar num item o encaixa no slot certo do herói. Se o slot já estiver ocupado,
-## pede confirmação da troca. Tudo salvo no Progression.
+## GRANDE e CENTRALIZADO num pedestal, com os 8 slots organizados em duas colunas
+## ao lado; à direita o inventário — clicar num item o encaixa no slot certo. Se o
+## slot já estiver ocupado, pede confirmação da troca. Tudo salvo no Progression.
+## (O equipamento DESENHADO sobre o corpo virá com o rig de "ossos" — frente própria.)
 
 signal closed
 signal section_selected(id: String)
 
-# Onde cada slot fica SOBRE o corpo do herói (centro do herói ~ (640,350)).
+# Slots em DUAS COLUNAS flanqueando o herói centralizado (centro do herói ~ x=512).
 const SLOT_POS := {
-	0: Vector2(640, 162),   # Elmo (cabeça)
-	6: Vector2(748, 214),   # Amuleto (pescoço)
-	1: Vector2(640, 304),   # Peito
-	4: Vector2(806, 336),   # Arma (mão direita)
-	5: Vector2(474, 336),   # Escudo (mão esquerda)
-	2: Vector2(640, 432),   # Pernas
-	3: Vector2(640, 520),   # Botas (pés)
-	7: Vector2(806, 448),   # Anel
+	0: Vector2(348, 196),   # Elmo
+	1: Vector2(348, 312),   # Peito
+	2: Vector2(348, 428),   # Pernas
+	3: Vector2(348, 544),   # Botas
+	4: Vector2(676, 196),   # Arma
+	5: Vector2(676, 312),   # Escudo
+	6: Vector2(676, 428),   # Amuleto
+	7: Vector2(676, 544),   # Anel
 }
+const HERO_CENTER := Vector2(512, 360)
 
 var _sel: String = ""
 var _center: Control
@@ -32,40 +34,52 @@ func _ready() -> void:
 	layer = 5
 	add_child(UiTheme.wood_bg())
 	var scrim := ColorRect.new()
-	scrim.color = Color(0.05, 0.04, 0.03, 0.30)
+	scrim.color = Color(0.05, 0.04, 0.03, 0.32)
 	scrim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	scrim.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(scrim)
-	add_child(_title("EQUIPAR", Vector2(96, 26), 32))
+	add_child(_title("EQUIPAR", Vector2(28, 24), 32))
 
 	# Coluna esquerda: lista de heróis.
-	add_child(_title("Herois", Vector2(28, 92), 18, Color(0.85, 0.82, 0.7)))
+	add_child(_title("Herois", Vector2(28, 86), 16, Color(0.85, 0.82, 0.7)))
 	var hscroll := ScrollContainer.new()
-	hscroll.position = Vector2(24, 122)
-	hscroll.custom_minimum_size = Vector2(176, 472)
-	hscroll.size = Vector2(176, 472)
+	hscroll.position = Vector2(20, 114)
+	hscroll.custom_minimum_size = Vector2(168, 480)
+	hscroll.size = Vector2(168, 480)
 	hscroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	add_child(hscroll)
 	_hero_list = VBoxContainer.new()
 	_hero_list.add_theme_constant_override("separation", 6)
 	hscroll.add_child(_hero_list)
 
-	# Centro: herói + slots (reconstruído ao trocar de herói).
+	# Painel central (palco do herói + slots).
+	var stage := Panel.new()
+	stage.position = Vector2(208, 96)
+	stage.size = Vector2(620, 510)
+	var ssb := StyleBoxFlat.new()
+	ssb.bg_color = Color(0.11, 0.09, 0.07, 0.82)
+	ssb.set_corner_radius_all(16)
+	ssb.set_border_width_all(2)
+	ssb.border_color = Color(0.72, 0.56, 0.28)
+	stage.add_theme_stylebox_override("panel", ssb)
+	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(stage)
+
 	_center = Control.new()
 	_center.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_center)
 
 	# Coluna direita: inventário.
-	add_child(_title("Inventario", Vector2(904, 92), 18, Color(0.85, 0.82, 0.7)))
+	add_child(_title("Inventario", Vector2(854, 86), 16, Color(0.85, 0.82, 0.7)))
 	var panel := Panel.new()
-	panel.position = Vector2(900, 122)
-	panel.size = Vector2(356, 472)
+	panel.position = Vector2(850, 114)
+	panel.size = Vector2(410, 480)
 	panel.add_theme_stylebox_override("panel", UiTheme.panel_box(0.96))
 	add_child(panel)
 	var mar := MarginContainer.new()
-	mar.position = Vector2(8, 8)
-	mar.size = Vector2(340, 456)
+	mar.position = Vector2(10, 10)
+	mar.size = Vector2(390, 460)
 	panel.add_child(mar)
 	var iscroll := ScrollContainer.new()
 	iscroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -88,10 +102,10 @@ func _build_hero_list() -> void:
 	for id in Progression.unlocked_ids():
 		var ch := Roster.by_id(id)
 		var b := Button.new()
-		b.custom_minimum_size = Vector2(166, 60)
+		b.custom_minimum_size = Vector2(158, 58)
 		b.text = "  " + (ch.display_name if ch != null else id)
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		b.add_theme_font_size_override("font_size", 16)
+		b.add_theme_font_size_override("font_size", 15)
 		var tex := Art.hero(id)
 		if tex != null:
 			b.icon = tex
@@ -113,27 +127,53 @@ func _rebuild_center() -> void:
 	if _sel == "":
 		return
 	var ch := Roster.by_id(_sel)
-	_center.add_child(_title(ch.display_name if ch != null else _sel, Vector2(420, 96), 28))
+	_center.add_child(_ctitle(ch.display_name if ch != null else _sel))
 
-	# Herói GRANDE no centro.
+	# Brilho radial atrás do herói.
+	var glow := _Glow.new()
+	glow.position = HERO_CENTER + Vector2(0, -10)
+	_center.add_child(glow)
+
+	# Pedestal sob os pés.
+	var ped := TextureRect.new()
+	ped.texture = Art.map("pedestal")
+	ped.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	ped.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	ped.size = Vector2(260, 120)
+	ped.position = HERO_CENTER + Vector2(-130, 150)
+	ped.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_center.add_child(ped)
+
+	# Herói GRANDE e centralizado.
 	var art := TextureRect.new()
 	art.texture = Art.hero(_sel)
-	art.position = Vector2(480, 150)
-	art.size = Vector2(320, 420)
+	art.size = Vector2(300, 400)
+	art.position = HERO_CENTER + Vector2(-150, -210)
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_center.add_child(art)
 
-	# Slots posicionados sobre o corpo.
+	# Slots (botão + rótulo) nas duas colunas.
 	var worn: Dictionary = Progression.equipped_ids(_sel)
 	for slot in range(EquipmentData.SLOT_NAMES.size()):
-		var pos: Vector2 = SLOT_POS.get(slot, Vector2(640, 350))
+		var pos: Vector2 = SLOT_POS.get(slot, HERO_CENTER)
 		_center.add_child(_make_slot(slot, str(worn.get(str(slot), "")), pos))
+		var lbl := _title(EquipmentData.slot_name(slot), pos + Vector2(-40, 36), 13, Color(0.82, 0.78, 0.66))
+		lbl.size = Vector2(80, 18)
+		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_center.add_child(lbl)
+
+
+func _ctitle(text: String) -> Label:
+	var l := _title(text, Vector2(208, 100), 26)
+	l.size = Vector2(620, 34)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	return l
 
 
 func _make_slot(slot: int, item_id: String, center: Vector2) -> Control:
-	const R := 32.0
+	const R := 30.0
 	var item: EquipmentData = EquipmentList.by_id(item_id) if item_id != "" else null
 	var b := Button.new()
 	b.position = center - Vector2(R, R)
@@ -142,7 +182,7 @@ func _make_slot(slot: int, item_id: String, center: Vector2) -> Control:
 	b.tooltip_text = EquipmentData.slot_name(slot) + ("" if item == null else (": " + item.display_name))
 	var border := EquipmentData.rarity_color(item.rarity) if item != null else Color(0.7, 0.62, 0.42)
 	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.10, 0.08, 0.06, 0.92) if item != null else Color(0.08, 0.07, 0.06, 0.78)
+	sb.bg_color = Color(0.10, 0.08, 0.06, 0.95) if item != null else Color(0.07, 0.06, 0.05, 0.85)
 	sb.set_corner_radius_all(int(R))
 	sb.set_border_width_all(3 if item != null else 2)
 	sb.border_color = border
@@ -158,10 +198,6 @@ func _make_slot(slot: int, item_id: String, center: Vector2) -> Control:
 			b.icon = tex
 			b.expand_icon = true
 		b.pressed.connect(func(): Progression.unequip(_sel, slot); Progression.save_game(); _rebuild())
-	else:
-		b.text = EquipmentData.slot_name(slot)
-		b.add_theme_font_size_override("font_size", 11)
-		b.add_theme_color_override("font_color", Color(0.7, 0.66, 0.56))
 	return b
 
 
@@ -177,7 +213,6 @@ func _rebuild_inventory() -> void:
 		none.add_theme_color_override("font_color", Color(0.8, 0.76, 0.66))
 		_inv.add_child(none)
 		return
-	# Ordena por slot e raridade para facilitar.
 	ids.sort_custom(func(a, b):
 		var ia := EquipmentList.by_id(a)
 		var ib := EquipmentList.by_id(b)
@@ -196,7 +231,7 @@ func _inv_row(item: EquipmentData) -> Button:
 	var owner: String = Progression._item_owner(item.id)
 	var here := owner == _sel
 	var b := Button.new()
-	b.custom_minimum_size = Vector2(326, 50)
+	b.custom_minimum_size = Vector2(360, 48)
 	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	var tex := Art.item(item.icon_id())
 	if tex != null:
@@ -231,7 +266,6 @@ func _pick_item(item: EquipmentData) -> void:
 
 
 func _do_equip(item: EquipmentData) -> void:
-	# Se está equipado em outro herói, tira de lá primeiro (move).
 	var owner: String = Progression._item_owner(item.id)
 	if owner != "" and owner != _sel:
 		Progression.unequip(owner, item.slot)
@@ -264,7 +298,7 @@ func _show_confirm(text: String, on_yes: Callable) -> void:
 	sb.shadow_size = 12
 	card.add_theme_stylebox_override("panel", sb)
 	_overlay.add_child(card)
-	var lbl := _title(text, Vector2(440, 274), 22, Color(1.0, 0.92, 0.72))
+	var lbl := _title(text, Vector2(440, 272), 22, Color(1.0, 0.92, 0.72))
 	lbl.size = Vector2(400, 120)
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_overlay.add_child(lbl)
@@ -314,3 +348,11 @@ func _title(text: String, pos: Vector2, fsize: int, col: Color = Color(1.0, 0.9,
 	if ff != null:
 		l.add_theme_font_override("font", ff)
 	return l
+
+
+## Brilho radial suave (atrás do herói).
+class _Glow extends Node2D:
+	func _draw() -> void:
+		for i in 6:
+			var t := 1.0 - i / 6.0
+			draw_circle(Vector2.ZERO, 70 + i * 22, Color(1.0, 0.86, 0.45, 0.05 * t))

@@ -111,6 +111,9 @@ SCENERY_PROMPTS = {
     "castle": ("a small heroic Greek fortress keep, a round defensive tower of white marble and "
                "golden bronze with columns, battlements and a bright red banner flag on top, "
                "stately and bright, a stronghold to defend"),
+    "pedestal": ("an ornate round ancient Greek marble pedestal podium platform, white marble with "
+                 "golden trim and a laurel motif, viewed slightly from above, empty top, a base for "
+                 "a hero to stand on, no character"),
 }
 
 # Mapas de fase (16:9, top-down) com a ESTRADA integrada na arte (estilo Kingdom
