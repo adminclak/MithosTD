@@ -861,7 +861,7 @@ func _test_quests() -> void:
 func _test_bestiary() -> void:
 	print("\nBestiario grego (7 inimigos + divisao da Hidra):")
 	var lacaio = GreekBestiary.by_id("lacaio")
-	_check(lacaio != null and lacaio.max_hp == 16, "Lacaio tem 16 de vida")
+	_check(lacaio != null and lacaio.max_hp == 24, "Lacaio tem 24 de vida")
 	var talos = GreekBestiary.by_id("talos")
 	_check(talos != null and talos.max_hp >= 450, "Talos (boss) tem muita vida")
 	var hidra = GreekBestiary.by_id("hidra")
@@ -869,10 +869,10 @@ func _test_bestiary() -> void:
 
 	# apply_data aplica os stats e o multiplicador de vida da fase.
 	var e = Enemy.new()
-	e.apply_data(GreekBestiary.by_id("esqueleto"), 2.0)
+	e.apply_data(GreekBestiary.by_id("esqueleto"), 2.0) # 70 * 2 = 140
 	root.add_child(e)
-	_check(e.max_hp == 112, "apply_data aplica hp_mult (56 * 2 = 112)")
-	_check(e.hp == 112, "_ready inicia hp = max_hp")
+	_check(e.max_hp == 140, "apply_data aplica hp_mult (70 * 2 = 140)")
+	_check(e.hp == 140, "_ready inicia hp = max_hp")
 	e.free()
 
 	# Matar uma Hidra gera 2 filhotes que entram no jogo.
