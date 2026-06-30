@@ -13,10 +13,9 @@ extends Node2D
 const PATHS_BY_THEME := {
 	# Elis: entra pelo topo, desce e segue a faixa bege até o canto inferior-direito.
 	"elis": [
-		Vector2(269, 164), Vector2(278, 282), Vector2(305, 310), Vector2(352, 310),
-		Vector2(405, 278), Vector2(570, 258), Vector2(622, 305), Vector2(632, 335),
-		Vector2(680, 368), Vector2(698, 420), Vector2(728, 450), Vector2(772, 452),
-		Vector2(932, 572), Vector2(1025, 598), Vector2(1098, 598), Vector2(1166, 560),
+		Vector2(262, -30), Vector2(258, 140), Vector2(272, 205), Vector2(430, 190),
+		Vector2(620, 182), Vector2(800, 186), Vector2(945, 205), Vector2(1040, 290),
+		Vector2(1075, 420), Vector2(1095, 520), Vector2(1185, 560),
 	],
 	# Nemeia: trilha bege quase horizontal, da borda esquerda à direita (ondas suaves).
 	"nemeia": [
@@ -182,18 +181,17 @@ func _ready() -> void:
 			_add_shadow(base, 192.0 * scl * 0.34, 192.0 * scl * 0.13, -11)
 			_add_sprite(Art.map(did), pos, scl, -10, i % 3 == 0)
 
-	# Caminho: se o tema tem o caminho PINTADO na arte, não desenha faixa por código
-	# (o trajeto segue só a trilha da arte). Senão, faixa de terra integrada ao chão.
-	if not PATH_IN_ART.get(theme, false):
-		var pc := _path_pair()
-		var fill: Color = pc[1]
-		var border: Color = pc[0]
-		var dark := Color(border.r * 0.5, border.g * 0.5, border.b * 0.4)
-		# Transição esfumada (3 faixas: larga e fraca -> média -> caminho).
-		add_child(_make_path_line(84, Color(dark.r, dark.g, dark.b, 0.14), null, -10))
-		add_child(_make_path_line(64, Color(dark.r, dark.g, dark.b, 0.30), null, -9))
-		add_child(_make_path_line(48, fill, null, -8))
-		add_child(_make_path_line(20, Color(border.r, border.g, border.b, 0.30), null, -7))
+	# Caminho desenhado por CÓDIGO sobre os waypoints (a estrada visível é SEMPRE por
+	# onde os inimigos andam — fonte única da verdade, independente da arte de fundo).
+	var pc := _path_pair()
+	var fill: Color = pc[1]
+	var border: Color = pc[0]
+	var dark := Color(border.r * 0.5, border.g * 0.5, border.b * 0.4)
+	# Transição esfumada (faixa larga fraca -> média -> miolo opaco -> brilho central).
+	add_child(_make_path_line(86, Color(dark.r, dark.g, dark.b, 0.22), null, -10))
+	add_child(_make_path_line(66, Color(border.r, border.g, border.b, 0.85), null, -9))
+	add_child(_make_path_line(50, fill, null, -8))
+	add_child(_make_path_line(22, Color(fill.r * 1.08, fill.g * 1.06, fill.b * 1.04, 0.45), null, -7))
 
 	# Portal de entrada (1º ponto) e castelo/base (último) — grampeados p/ dentro da
 	# tela (o trajeto pode entrar/sair por qualquer borda), grandes, com sombra.

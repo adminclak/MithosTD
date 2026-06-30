@@ -9,9 +9,9 @@ static func compose(stage_index: int, wave_index: int, total_waves: int) -> Arra
 	var w := wave_index
 	match stage_index:
 		1: # Campos de Elis — tutorial: só lacaios (mas em volume que exige >1 herói).
-			return [{"id": "lacaio", "count": 10 + 4 * w}]
+			return [{"id": "lacaio", "count": 8 + 3 * w}]
 		2: # Bosque de Nemeia — espectros velozes (ensina o bloqueio).
-			return [{"id": "lacaio", "count": 8 + 2 * w}, {"id": "espectro", "count": 3 + w}]
+			return [{"id": "lacaio", "count": 6 + 2 * w}, {"id": "espectro", "count": 2 + w}]
 		3: # Pantano da Hidra — hidras que se dividem (premia AoE).
 			return [{"id": "lacaio", "count": 6 + 2 * w}, {"id": "hidra", "count": 2 + w}]
 		4: # Desfiladeiro dos Centauros — mistura pesada.
