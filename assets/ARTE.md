@@ -13,6 +13,24 @@ projeto no Godot uma vez (ele importa as imagens) e rode.
 
 ---
 
+## Geração via API PAGA (qualidade alta — recomendado p/ o roster final)
+`tools/gen_api.py` gera pela **fal.ai** (modelos top: FLUX/Seedream/Recraft),
+reaproveitando as descrições deste arquivo + um estilo fixo (cartoon pintado HD).
+Custa centavos por imagem.
+
+1. Conta em https://fal.ai → adicione créditos → copie a API key (Dashboard → Keys).
+2. No Git Bash, exporte a chave e rode com o **python do ComfyUI** (tem requests+PIL):
+```
+export FAL_KEY="xxxx:yyyy"
+PY="C:\Users\leoar\AppData\Local\Comfy-Desktop\ComfyUI-Installs\ComfyUI\standalone-env\python.exe"
+"$PY" tools/gen_api.py heroes zeus artemis medusa   # testa 2-3 p/ travar o estilo
+"$PY" tools/gen_api.py heroes all                   # depois, o resto
+```
+3. (Opcional) Fundo transparente: `"$PY" -m pip install rembg onnxruntime`.
+Trocar de modelo: `export FAL_MODEL="fal-ai/bytedance/seedream/v3/text-to-image"`.
+
+---
+
 ## Como usar no ComfyUI
 O prompt final de cada personagem é:
 
