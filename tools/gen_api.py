@@ -74,6 +74,70 @@ DIRS = {
     "scenery": os.path.join(PROJ, "assets", "map"),  # props do mapa (portal/castelo), fundo transparente
     "splash": os.path.join(PROJ, "assets", "map"),   # fundo de tela cheia (ex.: menu_bg), 1280x720
     "logo": os.path.join(PROJ, "assets", "ui"),      # logo do jogo (transparente, wide)
+    "rig": os.path.join(PROJ, "assets", "rig"),      # boneco modular: base + pecas encaixaveis
+    "autorig": os.path.join(PROJ, "assets", "autorig"),  # entrada p/ auto-rig (God Mode AI -> Spine)
+}
+
+# Personagens MODULARES (paper-doll): um corpo-BASE em pose neutra (sem capacete/arma)
+# + PECAS encaixaveis (elmo, peito, arma...). Tudo transparente, mesma escala, pose
+# frontal previsivel p/ encaixar por offset. Estilo cartoon coeso com o resto.
+RIG_STYLE = ("Kingdom Rush 2D cartoon game art, TALL ADULT mature proportions (long legs, normal "
+             "sized head, NOT chibi, not a child), hand-painted, bold clean black outlines, soft cel "
+             "shading, vibrant saturated colors, crisp, single object centered, strict front view, "
+             "plain flat light gray background, no text, no words, no extra objects")
+RIG_PROMPTS = {
+    "base_hoplite": ("a clothing mannequin reference of a TALL ADULT athletic Greek man, mature "
+                     "adult long legs normal head (NOT chibi), standing perfectly straight upright and "
+                     "still in a calm symmetric T-pose facing the camera, both arms held out to the "
+                     "sides, EMPTY OPEN relaxed hands with nothing in them, wearing only a plain simple "
+                     "short white tunic and brown sandals, completely BARE HEAD short brown hair, no "
+                     "helmet no hat no crown, no weapon no sword no shield no spear, calm blank "
+                     "expression, full body head to toe centered, plain front view"),
+    "piece_helmet_bronze": ("a single bronze ancient Greek Corinthian helmet with a tall red "
+                            "horsehair crest, STRAIGHT FRONT VIEW facing the camera symmetric, ONLY "
+                            "the helmet floating with empty dark face opening, NO head NO face NO neck "
+                            "NO person, just the helmet object centered"),
+    "piece_chest_bronze": ("a single bronze ancient Greek muscle cuirass breastplate, STRAIGHT FRONT "
+                           "VIEW facing the camera symmetric, ONLY the chest armor piece floating, NO "
+                           "body NO arms NO head NO person, just the breastplate object centered"),
+    "piece_sword_xiphos": ("a single short bronze ancient Greek sword (xiphos) with leather-wrapped "
+                           "handle, blade pointing straight up, ONLY the sword object, NO hand, NO "
+                           "arm, NO person, just the sword"),
+    # Bases T-pose por herói (mantêm a identidade; cabeça nua e mãos vazias p/ encaixar peças).
+    "base_hercules": ("a clothing mannequin reference of a TALL very MUSCULAR adult Greek man with "
+                      "short brown hair and a short brown beard, standing perfectly straight "
+                      "upright still in a calm symmetric T-pose facing camera, arms out to the sides, "
+                      "EMPTY OPEN hands holding nothing, wearing only a plain simple short brown tunic "
+                      "and sandals, BARE HEAD no helmet no lion hood, no weapon no club, full body "
+                      "head to toe centered, front view"),
+    "base_artemis": ("a clothing mannequin reference of Artemis, a TALL athletic adult Greek huntress "
+                     "woman with long blonde hair in a ponytail, standing perfectly straight upright "
+                     "still in a calm symmetric T-pose facing camera, arms out to the sides, EMPTY "
+                     "OPEN hands holding nothing, wearing only a plain simple short white tunic and "
+                     "sandals, BARE HEAD no helmet, no weapon no bow, full body head to toe centered, "
+                     "front view"),
+    "base_zeus": ("a clothing mannequin reference of a TALL imposing OLD adult Greek man with "
+                  "long white hair and a long white beard, standing perfectly straight upright still "
+                  "in a calm symmetric T-pose facing camera, arms out to the sides, EMPTY OPEN hands "
+                  "holding nothing, wearing a plain simple white toga and sandals, BARE HEAD no helmet "
+                  "no crown, no weapon no staff no stick, full body head to toe centered, front view"),
+}
+
+# ENTRADA PARA AUTO-RIG (God Mode AI -> Spine). A IA de auto-rig segmenta o corpo em
+# ossos a partir de UMA imagem: ela precisa do herói de CORPO INTEIRO, FRENTE, pose A
+# NEUTRA com os membros AFASTADOS do tronco (vão entre braços/pernas), traço chapado,
+# fundo limpo. Cabeça nua + mãos vazias p/ depois sobrepor as skins de equipamento.
+AUTORIG_STYLE = ("Kingdom Rush 2D cartoon game character, tall adult heroic proportions (NOT chibi), "
+                 "hand-painted, bold clean black outlines, flat cel shading, vibrant colors, even "
+                 "flat lighting, single character centered, full body head to toe, strict symmetric "
+                 "FRONT view, plain solid white background, no text")
+AUTORIG_PROMPTS = {
+    "hercules": ("a clothing mannequin reference of a tall very muscular adult Greek man with short "
+                 "brown hair and short brown beard, standing perfectly straight upright and still in "
+                 "a calm symmetric T-pose facing the camera, both arms held straight out to the "
+                 "sides, empty open relaxed hands holding nothing, wearing only a plain simple short "
+                 "brown tunic and sandals, bare head no helmet no hood, no weapon no club no shield "
+                 "no spear, calm blank expression, full body head to toe centered, plain front view"),
 }
 
 # Fundo de tela cheia em CARTOON (mesmo traço dos heróis/mapas — Kingdom Rush), p/ o
@@ -185,14 +249,15 @@ def parse_arte():
     return jobs
 
 
-def fal_generate(prompt, landscape=False):
-    """Chama a fal.ai (REST sincrono) e devolve os bytes do PNG gerado."""
+def fal_generate(prompt, landscape=False, size=None):
+    """Chama a fal.ai (REST sincrono) e devolve os bytes do PNG gerado.
+    `size` sobrescreve o image_size (ex.: 'portrait_4_3' p/ corpo inteiro do auto-rig)."""
     url = "https://fal.run/" + MODEL
     headers = {"Authorization": "Key " + FAL_KEY, "Content-Type": "application/json"}
     seed_env = os.environ.get("SEED")
     body = {
         "prompt": prompt,
-        "image_size": "landscape_16_9" if landscape else "square_hd",
+        "image_size": size if size else ("landscape_16_9" if landscape else "square_hd"),
         "num_images": 1,
         "enable_safety_checker": True,
         "negative_prompt": NEGATIVE,         # ignorado por modelos que nao usam
@@ -246,6 +311,19 @@ def save(png_bytes, category, cid):
         im = remove_bg(im)
         im = im.resize((768, 768), Image.LANCZOS)
         out = os.path.join(DIRS[category], cid + ".png")
+    elif category == "rig":
+        # Peça/base modular: fundo transparente, 512px (escala comum p/ encaixar).
+        im = remove_bg(im)
+        im = im.resize((512, 512), Image.LANCZOS)
+        out = os.path.join(DIRS[category], cid + ".png")
+    elif category == "autorig":
+        # Entrada do auto-rig: fundo transparente, alta-res, SEM forçar quadrado
+        # (preservar a proporção do corpo inteiro). Lado maior = 1024px.
+        im = remove_bg(im)
+        w, h = im.size
+        scale = 1024.0 / max(w, h)
+        im = im.resize((max(1, int(round(w * scale))), max(1, int(round(h * scale)))), Image.LANCZOS)
+        out = os.path.join(DIRS[category], cid + ".png")
     else:
         im = remove_bg(im)
         im = im.resize((OUT_SIZE, OUT_SIZE), Image.LANCZOS)
@@ -267,6 +345,8 @@ def main():
     is_scenery = category == "scenery"
     is_splash = category == "splash"
     is_logo = category == "logo"
+    is_rig = category == "rig"
+    is_autorig = category == "autorig"
     if is_maps:
         jobs = MAP_PROMPTS
     elif is_scenery:
@@ -275,6 +355,10 @@ def main():
         jobs = SPLASH_PROMPTS
     elif is_logo:
         jobs = LOGO_PROMPTS
+    elif is_rig:
+        jobs = RIG_PROMPTS
+    elif is_autorig:
+        jobs = AUTORIG_PROMPTS
     else:
         jobs = parse_arte()
     ids = list(jobs.keys()) if args[1] == "all" else args[1:]
@@ -286,6 +370,10 @@ def main():
         style = SPLASH_STYLE
     elif is_logo:
         style = LOGO_STYLE
+    elif is_rig:
+        style = RIG_STYLE
+    elif is_autorig:
+        style = AUTORIG_STYLE
     else:
         style = STYLE[category]
     print("Modelo:", MODEL, "| categoria:", category, "| itens:", len(ids))
@@ -297,7 +385,8 @@ def main():
         prompt = (desc + ", " + MAP_STYLE) if is_maps else (style + ", " + desc)
         try:
             t0 = time.time()
-            png = fal_generate(prompt, landscape=(is_maps or is_splash))
+            png = fal_generate(prompt, landscape=(is_maps or is_splash),
+                               size=("square_hd" if is_autorig else None))
             out = save(png, category, cid)
             print("  OK  %-16s %5.1fs  -> %s" % (cid, time.time() - t0, out))
         except Exception as e:
