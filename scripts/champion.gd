@@ -34,7 +34,8 @@ var _manual_dir: Vector2 = Vector2.ZERO ## comando do joystick (0 = automático)
 func setup(d: TowerData) -> void:
 	data = d
 	_max = d.max_hp if d.is_melee and d.max_hp > 0 else 70 + d.damage * 4
-	_max = int(round(_max * 1.1)) # campeão um pouco mais robusto que torres
+	# Vida igual a uma torre tanque (sem bônus): a vantagem do campeão é a
+	# mobilidade + habilidade, não força bruta.
 	_hp = _max
 
 
@@ -165,7 +166,7 @@ func _melee_fight(delta: float, e: Node2D) -> void:
 	if _melee_cd <= 0.0:
 		_atk = 1.0
 		var dmg: int = data.melee_damage if data.melee_damage > 0 else int(round(data.damage * 1.2))
-		dmg = int(round(dmg * 1.3))
+		dmg = int(round(dmg * 0.9)) ## ataque do campeão um pouco abaixo de uma torre
 		if e.has_method("take_damage"):
 			e.take_damage(dmg, data.penetration, data.element)
 		_melee_cd = 1.0 / maxf(0.3, data.melee_attack_rate if data.melee_attack_rate > 0 else 1.2)
@@ -178,7 +179,7 @@ func _ranged_fight(delta: float, e: Node2D) -> void:
 		var p := Projectile.new()
 		get_parent().add_child(p)
 		p.global_position = global_position + Vector2(0, -10)
-		var dmg := int(round(data.damage * 1.3))
+		var dmg := int(round(data.damage * 0.85)) ## tiro do campeão um pouco abaixo de uma torre
 		p.setup(e, dmg, data.splash_radius, data.projectile_color, data.penetration, data.element)
 		if data.tower_class == TowerData.TowerClass.MAGE:
 			p.set_kind(Projectile.Kind.FIREBALL if data.splash_radius > 0.0 else Projectile.Kind.BOLT)
@@ -191,7 +192,7 @@ func _ranged_fight(delta: float, e: Node2D) -> void:
 ## Lança a habilidade do herói: dano em área ao redor + efeito conforme o tipo.
 func _cast_ability() -> void:
 	var ab: AbilityData = data.ability
-	_abil_cd = maxf(6.0, ab.cooldown * 0.5)
+	_abil_cd = maxf(9.0, ab.cooldown * 0.9) ## habilidade menos frequente (era spammada)
 	_atk = 1.0
 	var r: float = ab.radius if ab.radius > 0.0 else 150.0
 	var pw: int = int(ab.power) if ab.power > 0.0 else int(data.damage * 2.0)

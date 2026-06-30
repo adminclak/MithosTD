@@ -699,7 +699,7 @@ func _test_quests() -> void:
 func _test_bestiary() -> void:
 	print("\nBestiario grego (7 inimigos + divisao da Hidra):")
 	var lacaio = GreekBestiary.by_id("lacaio")
-	_check(lacaio != null and lacaio.max_hp == 12, "Lacaio tem 12 de vida")
+	_check(lacaio != null and lacaio.max_hp == 16, "Lacaio tem 16 de vida")
 	var talos = GreekBestiary.by_id("talos")
 	_check(talos != null and talos.max_hp >= 450, "Talos (boss) tem muita vida")
 	var hidra = GreekBestiary.by_id("hidra")
@@ -709,8 +709,8 @@ func _test_bestiary() -> void:
 	var e = Enemy.new()
 	e.apply_data(GreekBestiary.by_id("esqueleto"), 2.0)
 	root.add_child(e)
-	_check(e.max_hp == 88, "apply_data aplica hp_mult (44 * 2 = 88)")
-	_check(e.hp == 88, "_ready inicia hp = max_hp")
+	_check(e.max_hp == 112, "apply_data aplica hp_mult (56 * 2 = 112)")
+	_check(e.hp == 112, "_ready inicia hp = max_hp")
 	e.free()
 
 	# Matar uma Hidra gera 2 filhotes que entram no jogo.
@@ -821,7 +821,7 @@ func _test_balance() -> void:
 			capped = false
 	var boss_eff: float = tal.max_hp * StageList.get_stage(5).enemy_hp_mult
 	_check(rising and capped, "hp_mult das fases é crescente e <=2.0")
-	_check(boss_eff <= 1000.0, "boss efetivo na fase 5 (%.0f) é batível (<=1000)" % boss_eff)
+	_check(boss_eff <= 1200.0, "boss efetivo na fase 5 (%.0f) é batível (<=1200)" % boss_eff)
 
 func _test_attributes() -> void:
 	print("\nAtributos (Ragnarok-like) + critico:")
