@@ -32,6 +32,7 @@ var _ult: UltimateData = null
 var _ult_charge: float = 1.0 ## começa carregado para a 1ª investida
 var _ult_layer: CanvasLayer = null
 var _aimer: UltAimer = null
+var _hero_bar: HeroBar = null
 var _enemies_root: Node2D = null
 var _aim_mode: String = ""
 var _power2_charge: float = 1.0 ## Reforços (2º poder), começa pronto
@@ -67,11 +68,14 @@ func _ready() -> void:
 	_enemies_root = enemies_root
 
 	_build_manager = BuildManager.new()
-	# Modelo "heróis móveis": você posiciona TODOS os heróis do esquadrão nos slots
-	# e cada um pode ser movido depois. Garante ao menos `_squad` slots disponíveis.
-	var build_slots := _ensure_min_slots(level.get_build_slots(), _squad.size())
-	_build_manager.setup(level.get_waypoints(), _squad, build_slots, Progression.bless_damage_mult())
+	# Sem slots: o jogador arrasta os heróis da barra inferior para o mapa.
+	_build_manager.setup(level.get_waypoints(), _squad, Progression.bless_damage_mult())
 	add_child(_build_manager)
+
+	# Barra inferior de heróis (arrastar p/ posicionar).
+	_hero_bar = HeroBar.new()
+	_hero_bar.setup(_build_manager)
+	add_child(_hero_bar)
 
 	var hud := Hud.new()
 	add_child(hud)
@@ -126,43 +130,21 @@ func _ready() -> void:
 		_wave_manager.player_advance()
 
 
-## Garante pelo menos `n` slots para caber todos os heróis do esquadrão. Se o mapa
-## gerou menos, adiciona pontos extras ao lado do caminho (próximos dos waypoints).
-func _ensure_min_slots(all_slots: Array, n: int) -> Array:
-	var out: Array = all_slots.duplicate()
-	if out.size() >= n or _stage == null:
-		return out
-	# Reaproveita os waypoints como base p/ slots extras (deslocados, sem sobrepor).
-	var wps: Array = _build_waypoints_fallback()
-	var i := 0
-	while out.size() < n and i < wps.size():
-		var cand: Vector2 = wps[i] + Vector2(0, -70 if i % 2 == 0 else 70)
-		var ok := true
-		for s in out:
-			if cand.distance_to(s) < 60.0:
-				ok = false
-				break
-		if ok:
-			out.append(cand)
-		i += 1
-	return out
-
-
-## Pontos ao longo do caminho da fase (fallback p/ slots extras).
-func _build_waypoints_fallback() -> Array:
-	return [Vector2(360, 300), Vector2(560, 240), Vector2(760, 360),
-		Vector2(520, 460), Vector2(900, 280), Vector2(680, 500),
-		Vector2(440, 200), Vector2(820, 460)]
-
-
-## Demo automática (smoke / auto-stage): posiciona os HERÓIS do esquadrão nos slots
-## disponíveis, para exercitar o combate sem input.
+## Demo automática (smoke / auto-stage): posiciona os HERÓIS do esquadrão em pontos
+## VÁLIDOS ao lado do caminho (sem slots), para exercitar o combate sem input.
 func _auto_place_demo() -> void:
 	GameState.add_gold(1500) # ouro extra apenas para a demo
 	var avail: Array = _build_manager.placeable()
-	var sl: Array = _build_manager.slots
-	for i in mini(sl.size(), avail.size()):
-		_build_manager.try_place(sl[i], avail[i])
+	var wps: Array = _build_manager.waypoints
+	var placed := 0
+	var i := 1
+	while placed < avail.size() and i < wps.size():
+		for off in [Vector2(0, -68), Vector2(0, 68), Vector2(-68, 0), Vector2(68, 0)]:
+			var p: Vector2 = wps[i] + off
+			if _build_manager.can_place(p) and _build_manager.try_place(p, avail[placed]):
+				placed += 1
+				break
+		i += 1
 
 
 func _process(delta: float) -> void:

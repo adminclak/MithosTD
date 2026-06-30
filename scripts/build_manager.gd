@@ -1,105 +1,61 @@
 class_name BuildManager
 extends Node2D
 
-## Construção do Mithos TD (modelo: HERÓIS são as unidades — ver pilar de design).
-## Slots fixos no mapa; tocar num slot vazio abre um painel com OS SEUS HERÓIS do
-## esquadrão que ainda não estão em campo (e que não são o campeão móvel) -> você
-## escolhe qual posicionar, gastando ouro. Tocar numa unidade abre Melhorar/Vender.
-## Cada herói é único em campo. A economia (try_place/try_upgrade/sell/can_place)
-## fica separada da UI e é testável via /root/GameState.
+## Posicionamento do Mithos TD (modelo: HERÓIS são as unidades, SEM slots).
+## - O jogador ARRASTA um herói da barra inferior (HeroBar) para o mapa: place_at()
+##   valida (dentro do campo, FORA da estrada, sem sobrepor) e posiciona com ouro.
+## - Toca num herói posicionado -> menu Mover/Melhorar/Vender.
+##   "Mover" deixa o herói SOLTO (arrasta livre, não ataca, toma dano) até clicar OK.
+## A economia (try_place/try_upgrade/sell/can_place) fica testável via /root/GameState.
 
-const CLICK_RADIUS := 30.0
-const MIN_SPACING := 36.0
-const SLOT_PICK_RADIUS := 46.0
-const BOUNDS := Rect2(20, 20, 1240, 600)
+const MIN_SPACING := 42.0
+const PATH_CLEAR := 40.0       ## distância mínima da estrada (não pode posicionar nela)
+const BOUNDS := Rect2(24, 90, 1232, 540)
+
+signal changed ## posicionou/vendeu -> a barra de heróis se atualiza
 
 var waypoints: Array = []
 var squad: Array = []
-var slots: Array = [] ## Vector2 dos pontos estratégicos
-var damage_mult: float = 1.0 ## bênção Fúria de Ares (futuras torres utilitárias)
+var damage_mult: float = 1.0
 
 var _towers: Array = []
 var _menu: BuildMenu = null
-var _pending_slot: int = -1
+var _selected: Tower = null
 var _pending_tower: Tower = null
-var _selected: Tower = null  ## herói escolhido (anel) para gerir/mover
-var _move_mode: bool = false ## aguardando o toque de destino do herói selecionado
+var _moving_tower: Tower = null ## herói em move_mode (sendo arrastado p/ reposicionar)
+var _ok_layer: CanvasLayer = null
+var _ok_btn: Button = null
 
 @onready var _state: Node = get_node_or_null(^"/root/GameState")
 
 
-func setup(wpoints: Array, squad_datas: Array = [], slot_positions: Array = [], dmg_mult: float = 1.0) -> void:
+func setup(wpoints: Array, squad_datas: Array = [], dmg_mult: float = 1.0) -> void:
 	waypoints = wpoints.duplicate()
 	squad = squad_datas.duplicate()
-	slots = slot_positions.duplicate()
 	damage_mult = dmg_mult
 
 
 func _ready() -> void:
 	_menu = BuildMenu.new()
 	add_child(_menu)
-	_menu.build_requested.connect(_on_build_requested)
 	_menu.upgrade_requested.connect(_on_upgrade_requested)
 	_menu.sell_requested.connect(_on_sell_requested)
 	_menu.move_requested.connect(_on_move_requested)
-	queue_redraw()
+	# Botão OK (confirmar reposicionamento), escondido fora do move mode.
+	_ok_layer = CanvasLayer.new()
+	_ok_layer.layer = 9
+	add_child(_ok_layer)
+	_ok_btn = Button.new()
+	_ok_btn.text = "OK — fixar aqui"
+	_ok_btn.add_theme_font_size_override("font_size", 20)
+	_ok_btn.custom_minimum_size = Vector2(220, 50)
+	_ok_btn.position = Vector2(530, 70)
+	_ok_btn.visible = false
+	_ok_btn.pressed.connect(_confirm_move)
+	_ok_layer.add_child(_ok_btn)
 
 
-# --- Entrada: posicionar herói (slot) / gerir / mover (todos os heróis são móveis) ---
-func _unhandled_input(event: InputEvent) -> void:
-	if _state != null and _state.is_over():
-		return
-	if not (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT):
-		return
-	var pos := get_global_mouse_position()
-	# 1) Modo mover: o próximo toque manda o herói selecionado andar até ali.
-	if _move_mode and is_instance_valid(_selected):
-		_selected.move_to(pos)
-		_clear_selection()
-		get_viewport().set_input_as_handled()
-		return
-	# 2) Painel aberto: um toque fora fecha e limpa a seleção.
-	if _menu != null and _menu.is_open():
-		_menu.close()
-		_clear_selection()
-		get_viewport().set_input_as_handled()
-		return
-	# 3) Tocou num herói posicionado (em qualquer lugar): gerir (Mover/Melhorar/Vender).
-	var t := _tower_at(pos)
-	if t != null:
-		_select(t)
-		_pending_tower = t
-		_menu.open_manage(t.global_position, t, _gold())
-		get_viewport().set_input_as_handled()
-		return
-	# 4) Tocou num slot vazio: posicionar um herói do esquadrão.
-	var si := _slot_at(pos)
-	if si >= 0 and _tower_near(slots[si]) == null:
-		_open_build(si)
-		get_viewport().set_input_as_handled()
-
-
-func _select(t: Tower) -> void:
-	_clear_selection()
-	_selected = t
-	if is_instance_valid(t):
-		t.selected = true
-
-
-func _clear_selection() -> void:
-	if is_instance_valid(_selected):
-		_selected.selected = false
-	_selected = null
-	_move_mode = false
-
-
-func _on_move_requested() -> void:
-	if is_instance_valid(_selected):
-		_move_mode = true ## próximo toque no mapa define o destino
-	_menu.close()
-
-
-## Heróis do esquadrão que ainda podem entrar (fora de campo). Cada herói é único.
+# --- Heróis ainda fora de campo (mostrados na barra) ---
 func _available_squad() -> Array:
 	var in_field := {}
 	for t in _towers:
@@ -114,28 +70,65 @@ func _available_squad() -> Array:
 	return out
 
 
-## Exposto para o smoke/--auto-stage posicionar a demo sem UI.
 func placeable() -> Array:
 	return _available_squad()
 
 
-func _open_build(si: int) -> void:
-	_pending_slot = si
-	_pending_tower = null
-	_menu.open_build(slots[si], _available_squad(), _gold())
-
-
-func _on_build_requested(data: TowerData) -> void:
-	if _pending_slot < 0:
+# --- Entrada: arrastar o herói SOLTO (move mode) ou tocar p/ gerir ---
+func _unhandled_input(event: InputEvent) -> void:
+	if _state != null and _state.is_over():
 		return
-	if try_place(slots[_pending_slot], data):
+	# Em move mode: arrastar/clicar no campo reposiciona o herói (se o ponto é válido).
+	if _moving_tower != null and is_instance_valid(_moving_tower):
+		var do_move := false
+		if event is InputEventMouseMotion:
+			do_move = ((event as InputEventMouseMotion).button_mask & MOUSE_BUTTON_MASK_LEFT) != 0
+		elif event is InputEventMouseButton:
+			var mb := event as InputEventMouseButton
+			do_move = mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT
+		if do_move:
+			var p := get_global_mouse_position()
+			if _can_stand(p, _moving_tower):
+				_moving_tower.reposition(p)
+			get_viewport().set_input_as_handled()
+		return
+	if not (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT):
+		return
+	var pos := get_global_mouse_position()
+	# Painel aberto: toque fora fecha.
+	if _menu != null and _menu.is_open():
 		_menu.close()
-		queue_redraw()
-	_pending_slot = -1
+		_clear_selection()
+		get_viewport().set_input_as_handled()
+		return
+	# Tocou num herói posicionado -> gerir (Mover/Melhorar/Vender).
+	var t := _tower_at(pos)
+	if t != null:
+		_select(t)
+		_pending_tower = t
+		_menu.open_manage(t.global_position, t, _gold())
+		get_viewport().set_input_as_handled()
+
+
+func _on_move_requested() -> void:
+	if not is_instance_valid(_selected):
+		return
+	_menu.close()
+	_moving_tower = _selected
+	_moving_tower.set_move_mode(true)
+	_ok_btn.visible = true
+
+
+func _confirm_move() -> void:
+	if is_instance_valid(_moving_tower):
+		_moving_tower.set_move_mode(false)
+	_moving_tower = null
+	_ok_btn.visible = false
+	_clear_selection()
 
 
 func _on_upgrade_requested() -> void:
-	if _pending_tower != null and is_instance_valid(_pending_tower):
+	if is_instance_valid(_pending_tower):
 		try_upgrade(_pending_tower)
 	_menu.close()
 	_clear_selection()
@@ -143,50 +136,52 @@ func _on_upgrade_requested() -> void:
 
 
 func _on_sell_requested() -> void:
-	if _pending_tower != null and is_instance_valid(_pending_tower):
+	if is_instance_valid(_pending_tower):
 		sell(_pending_tower)
-		queue_redraw()
 	_menu.close()
 	_clear_selection()
 	_pending_tower = null
+	changed.emit()
 
 
-## Unidade construída sobre/perto de um slot (robusto p/ menu e demo).
-func _tower_near(pos: Vector2, r: float = 26.0) -> Tower:
-	for t in _towers:
-		if is_instance_valid(t) and t.global_position.distance_to(pos) < r:
-			return t
-	return null
+func _select(t: Tower) -> void:
+	_clear_selection()
+	_selected = t
+	if is_instance_valid(t):
+		t.selected = true
 
 
-func _slot_at(pos: Vector2) -> int:
-	var best := -1
-	var best_d := SLOT_PICK_RADIUS
-	for i in slots.size():
-		var d: float = slots[i].distance_to(pos)
-		if d <= best_d:
-			best_d = d
-			best = i
+func _clear_selection() -> void:
+	if is_instance_valid(_selected):
+		_selected.selected = false
+	_selected = null
+
+
+# --- Validação / economia ---
+## Distância do ponto à estrada (polilinha dos waypoints).
+func _dist_to_path(p: Vector2) -> float:
+	var best := 1e20
+	for i in range(waypoints.size() - 1):
+		var d: float = _dist_to_seg(p, waypoints[i], waypoints[i + 1])
+		if d < best:
+			best = d
 	return best
 
 
-# --- Desenho dos slots vazios ---
-func _draw() -> void:
-	for i in slots.size():
-		if _tower_near(slots[i]) != null:
-			continue
-		var p: Vector2 = slots[i]
-		draw_circle(p + Vector2(0, 3), 20.0, Color(0, 0, 0, 0.25))
-		draw_circle(p, 18.0, Color(0.52, 0.40, 0.24, 0.85))
-		draw_arc(p, 18.0, 0.0, TAU, 24, Color(0.30, 0.22, 0.12), 3.0)
-		# "+" indicando ponto de posicionamento.
-		draw_line(p + Vector2(-7, 0), p + Vector2(7, 0), Color(1, 0.95, 0.7, 0.9), 3.0)
-		draw_line(p + Vector2(0, -7), p + Vector2(0, 7), Color(1, 0.95, 0.7, 0.9), 3.0)
+func _dist_to_seg(p: Vector2, a: Vector2, b: Vector2) -> float:
+	var ab := b - a
+	var t: float = 0.0
+	var len2 := ab.length_squared()
+	if len2 > 0.0:
+		t = clampf((p - a).dot(ab) / len2, 0.0, 1.0)
+	return p.distance_to(a + ab * t)
 
 
-# --- Validação / economia (testável, sem UI) ---
-func can_place(_tower_class: int, pos: Vector2) -> bool:
+## Pode posicionar um NOVO herói aqui? (no campo, fora da estrada, sem sobrepor)
+func can_place(pos: Vector2) -> bool:
 	if not BOUNDS.has_point(pos):
+		return false
+	if _dist_to_path(pos) < PATH_CLEAR:
 		return false
 	for t in _towers:
 		if is_instance_valid(t) and t.global_position.distance_to(pos) < MIN_SPACING:
@@ -194,9 +189,21 @@ func can_place(_tower_class: int, pos: Vector2) -> bool:
 	return true
 
 
+## Pode um herói EXISTENTE parar aqui (ao mover)? Igual a can_place, mas ignora a si.
+func _can_stand(pos: Vector2, who: Tower) -> bool:
+	if not BOUNDS.has_point(pos):
+		return false
+	if _dist_to_path(pos) < PATH_CLEAR:
+		return false
+	for t in _towers:
+		if is_instance_valid(t) and t != who and t.global_position.distance_to(pos) < MIN_SPACING:
+			return false
+	return true
+
+
 func _tower_at(pos: Vector2) -> Tower:
 	var best: Tower = null
-	var best_d := CLICK_RADIUS
+	var best_d := 34.0
 	for t in _towers:
 		if not is_instance_valid(t):
 			continue
@@ -211,13 +218,21 @@ func _gold() -> int:
 	return _state.gold if _state != null else 0
 
 
+## Posiciona o herói arrastado da barra. Retorna true se conseguiu (válido + ouro).
+func place_at(pos: Vector2, data: TowerData) -> bool:
+	var ok := try_place(pos, data)
+	if ok:
+		changed.emit()
+	return ok
+
+
 func try_place(pos: Vector2, data: TowerData) -> bool:
-	if not can_place(data.tower_class, pos):
+	if not can_place(pos):
 		return false
 	if _state == null or not _state.try_spend(data.cost):
 		return false
 	var t := Tower.new()
-	t.force_building = (data.char_id == "") ## herói aparece como herói; utilitária = prédio
+	t.force_building = false ## herói sempre aparece como herói (nunca prédio)
 	t.setup(data)
 	t.waypoints = waypoints
 	t.position = pos

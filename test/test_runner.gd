@@ -410,13 +410,13 @@ func _test_economy() -> void:
 
 	# Invocar Arqueiro (100) em qualquer ponto livre: desconta ouro.
 	var archer = TowerData.archer()
-	_check(bm.can_place(archer.tower_class, ranged_pos) == true, "pode posicionar em ponto livre")
+	_check(bm.can_place(ranged_pos) == true, "pode posicionar em ponto livre")
 	_check(bm.try_place(ranged_pos, archer) == true, "try_place com saldo retorna true")
 	_check(gs.gold == 200, "invocar Arqueiro desconta 100 (300 -> 200)")
 	_check(bm._towers.size() == 1, "torre fica posicionada")
 
 	# Espacamento: nao pode colocar em cima de outra.
-	_check(bm.can_place(archer.tower_class, ranged_pos + Vector2(8, 0)) == false, "perto demais e bloqueado")
+	_check(bm.can_place(ranged_pos + Vector2(8, 0)) == false, "perto demais e bloqueado")
 
 	# Upgrade.
 	var t = bm._tower_at(ranged_pos)
@@ -433,11 +433,10 @@ func _test_economy() -> void:
 	_check(gs.gold == before + 96, "vender credita o valor de venda")
 	_check(bm._towers.size() == 0, "torre removida apos vender")
 
-	# Posicionamento livre: qualquer classe pode em qualquer ponto valido.
+	# Posicionamento livre: qualquer ponto válido (no campo, fora da estrada).
 	var ponto := Vector2(300, 200)
-	_check(bm.can_place(TowerData.warrior().tower_class, ponto) == true, "Guerreiro pode em qualquer ponto livre")
-	_check(bm.can_place(TowerData.archer().tower_class, ponto) == true, "Arqueiro pode em qualquer ponto livre")
-	_check(bm.can_place(TowerData.archer().tower_class, Vector2(-50, 200)) == false, "fora do mapa e bloqueado")
+	_check(bm.can_place(ponto) == true, "ponto livre fora da estrada e valido")
+	_check(bm.can_place(Vector2(-50, 200)) == false, "fora do mapa e bloqueado")
 
 	# Sem ouro suficiente: nao invoca e nao gasta.
 	gs.reset_run(20, 50)
@@ -462,15 +461,17 @@ func _test_hero_placement() -> void:
 	var h1 = TowerData.archer(); h1.char_id = "art"; h1.cost = 100
 	var h2 = TowerData.warrior(); h2.char_id = "her"; h2.cost = 100
 	var h3 = TowerData.mage(); h3.char_id = "zeus"; h3.cost = 100
-	var slots := [Vector2(200, 440), Vector2(400, 440), Vector2(600, 440)]
 	var bm = BuildManager.new()
-	bm.setup([Vector2(0, 300), Vector2(1200, 300)], [h1, h2, h3], slots)
+	bm.setup([Vector2(0, 300), Vector2(1200, 300)], [h1, h2, h3])
 	root.add_child(bm)
 
+	var p1 := Vector2(200, 440) # longe da estrada (y=300) -> ponto valido
 	var av = bm.placeable()
 	_check(av.size() == 3, "todos os herois do esquadrao sao posicionaveis (3)")
+	_check(bm.can_place(p1), "ponto fora da estrada e valido")
+	_check(not bm.can_place(Vector2(300, 305)), "ponto SOBRE a estrada e bloqueado")
 
-	_check(bm.try_place(slots[0], h1), "posiciona o heroi escolhido")
+	_check(bm.try_place(p1, h1), "posiciona o heroi escolhido")
 	var av2 = bm.placeable()
 	_check(av2.size() == 2, "heroi ja em campo some da lista (unico)")
 	var ids2 := []
@@ -478,14 +479,16 @@ func _test_hero_placement() -> void:
 		ids2.append(d.char_id)
 	_check(not ids2.has("art"), "o heroi posicionado nao reaparece na lista")
 
-	# Heróis móveis: move_to leva a unidade até o ponto comandado.
-	var t = bm._tower_at(slots[0])
+	# Reposicionamento livre: move_mode + reposition; OK encerra.
+	var t = bm._tower_at(p1)
 	_check(t != null, "encontra o heroi posicionado")
 	if t != null:
-		t.move_to(Vector2(300, 440))
-		for _i in 60:
-			t._process(0.05)
-		_check(t.global_position.distance_to(Vector2(300, 440)) < 6.0, "move_to leva o heroi ate o destino")
+		t.set_move_mode(true)
+		_check(t.move_mode, "Mover deixa o heroi solto")
+		t.reposition(Vector2(500, 440))
+		_check(t.global_position == Vector2(500, 440), "reposition move o heroi")
+		t.set_move_mode(false)
+		_check(not t.move_mode, "OK encerra o modo mover")
 	bm.free()
 
 

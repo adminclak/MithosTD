@@ -73,14 +73,11 @@ func _shot_mode(args: Array) -> void:
 			await get_tree().process_frame
 			(_current as WorldMapScreen)._on_node(StageList.get_stage(1))
 		"build":
-			# Abre o menu de um slot vazio na fase 1 p/ ver a lista de heróis.
+			# Fase 1 em preparação p/ ver a BARRA de heróis (arrastar p/ posicionar).
 			_on_start_stage(StageList.get_stage(1), \
 				["hercules", "ares", "artemis", "atena", "apolo", "medusa", "hermes"], "ares", false)
 			for _i in 5:
 				await get_tree().process_frame
-			var g := _current as GameScreen
-			if g != null and g._build_manager != null and not g._build_manager.slots.is_empty():
-				g._build_manager._open_build(0)
 		"heroes": _show_heroes()
 		"collection": _show_collection()
 		"gacha": _show_gacha()

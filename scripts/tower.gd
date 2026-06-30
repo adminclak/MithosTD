@@ -21,11 +21,10 @@ var waypoints: Array = []
 var level: int = 1
 var invested_gold: int = 0
 
-# Reposicionamento manual (modelo "heróis móveis"): anda até o ponto comandado e
-# volta a agir (estático) ao chegar. selected = unidade escolhida pelo jogador.
-const MOVE_SPEED := 115.0
-var _moving: bool = false
-var _move_target: Vector2 = Vector2.ZERO
+# Reposicionamento manual: ao entrar em move_mode o herói fica "solto" (posição
+# controlada pelo arraste do jogador, via reposition()), NÃO ataca e TOMA dano, até
+# o jogador confirmar (OK). selected = unidade escolhida (anel).
+var move_mode: bool = false
 var selected: bool = false
 
 var _cooldown: float = 0.0
@@ -66,15 +65,22 @@ func setup(d: TowerData) -> void:
 	_hp = max_hp()
 
 
-## Reposiciona a unidade: anda até `pos` e fica estática lá (volta a lutar). Solta
-## inimigos que estava travando ao começar a andar.
-func move_to(pos: Vector2) -> void:
-	_move_target = pos
-	_moving = true
-	for e in _melee_targets:
-		if is_instance_valid(e) and e.has_method("release"):
-			e.release()
-	_melee_targets.clear()
+## Entra/sai do modo de reposicionamento livre (solto). Ao entrar, solta inimigos
+## travados (não luta enquanto está sendo movido).
+func set_move_mode(on: bool) -> void:
+	move_mode = on
+	if on:
+		for e in _melee_targets:
+			if is_instance_valid(e) and e.has_method("release"):
+				e.release()
+		_melee_targets.clear()
+	queue_redraw()
+
+
+## Move a unidade para `pos` enquanto o jogador arrasta (durante move_mode).
+func reposition(pos: Vector2) -> void:
+	global_position = pos
+	queue_redraw()
 
 
 func _ready() -> void:
@@ -105,17 +111,13 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if data == null or (_state != null and _state.is_over()):
 		return
-	# Reposicionamento manual: anda até o ponto e fica estático lá (não ataca andando).
-	if _moving:
-		var to: Vector2 = _move_target - global_position
-		if to.length() <= 3.0:
-			_moving = false
-		else:
-			global_position += to.normalized() * MOVE_SPEED * delta
-			_face = to.normalized()
-			_idle += delta * 3.2
-			queue_redraw()
-			return
+	# Sendo reposicionado (solto): NÃO ataca, mas TOMA dano de contato. A posição é
+	# controlada pelo arraste do jogador (reposition); aqui só anima e sofre dano.
+	if move_mode and not _down:
+		_contact_tick(delta)
+		_idle += delta * 3.2
+		queue_redraw()
+		return
 	# Caído (vale p/ TODOS os heróis): aguarda reviver com vida cheia.
 	if _down:
 		_down_timer -= delta
@@ -273,23 +275,30 @@ func _shoot(target: Node2D) -> void:
 	_face = (target.global_position - global_position).normalized()
 
 
-## Heróis RANGED: tomam dano de contato de inimigos colados (ficam expostos se
-## postos/movidos para a rota; seguros se ficam ao lado dela) e regeneram devagar
-## quando seguros. Caem e revivem como os melee.
-func _process_ranged_survival(delta: float) -> void:
+## Dano de contato: inimigos colados (<=28px) ferem o herói. Retorna true se houve
+## contato. Vale p/ ranged expostos E p/ qualquer herói sendo reposicionado (solto).
+func _contact_tick(delta: float) -> bool:
 	var contact := 0.0
 	for e in get_tree().get_nodes_in_group("enemies"):
 		if not is_instance_valid(e):
 			continue
 		if global_position.distance_to(e.global_position) <= 28.0:
 			contact += float(e.attack_damage)
-	if contact > 0.0:
-		_contact_accum += contact * delta
-		var whole := int(_contact_accum)
-		if whole > 0:
-			_contact_accum -= whole
-			take_damage(whole)
-	elif _hp < max_hp():
+	if contact <= 0.0:
+		return false
+	_contact_accum += contact * delta
+	var whole := int(_contact_accum)
+	if whole > 0:
+		_contact_accum -= whole
+		take_damage(whole)
+	return true
+
+
+## Heróis RANGED: tomam dano de contato se expostos; senão regeneram devagar.
+func _process_ranged_survival(delta: float) -> void:
+	if _contact_tick(delta):
+		return
+	if _hp < max_hp():
 		_regen_accum += (2.0 + _aura_heal_near()) * delta
 		var w := int(_regen_accum)
 		if w > 0:
@@ -524,6 +533,16 @@ func _draw() -> void:
 	var c: Color = data.body_color
 	var dark := Color(c.r * 0.45, c.g * 0.45, c.b * 0.45)
 
+	# Brilho por NÍVEL (atrás do corpo): nv1 nenhum, nv2 leve, nv3 (máx) ascendente
+	# e pulsante. Marca a evolução do herói na partida.
+	if not _is_building and data.char_id != "":
+		if level == 2:
+			draw_circle(Vector2(0, 2), 28.0, Color(1.0, 0.85, 0.35, 0.16))
+		elif level >= 3:
+			var pulse := 0.5 + 0.5 * sin(_idle * 2.2)
+			draw_circle(Vector2(0, 2), 33.0, Color(1.0, 0.82, 0.30, 0.14 + 0.10 * pulse))
+			draw_circle(Vector2(0, 2), 24.0, Color(1.0, 0.92, 0.5, 0.18 + 0.14 * pulse))
+
 	# Indicador de TIPO/alcance: anel largo (ranged, cor da classe) ou anel curto
 	# vermelho (melee, raio de corpo-a-corpo). Brilha quando o herói está selecionado.
 	var ring_a: float = 0.40 if selected else 0.22
@@ -581,15 +600,23 @@ func _draw() -> void:
 		_draw_hp_bar()
 	if data.is_melee and _shield_timer > 0.0:
 		draw_arc(Vector2.ZERO, 22.0, 0.0, TAU, 24, Color(1.0, 0.95, 0.5), 2.0)
-	for i in level:
-		draw_rect(Rect2(Vector2(-18 + i * 8, -32), Vector2(6, 5)), Color(1.0, 0.9, 0.3))
+	# Indicador de NÍVEL: quadradinho amarelo acima do herói com o número.
+	if not _is_building and data.char_id != "":
+		var sq := Rect2(Vector2(-10, -46), Vector2(20, 17))
+		draw_rect(sq, Color(0.12, 0.09, 0.03, 0.92))
+		draw_rect(Rect2(sq.position + Vector2(2, 2), sq.size - Vector2(4, 4)), Color(1.0, 0.86, 0.25))
+		draw_string(ThemeDB.fallback_font, Vector2(-4, -32), str(level),
+			HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(0.20, 0.15, 0.04))
 
 	# Emblema da classe (guerreiro/mago/sacerdote/arqueiro) no canto do herói.
 	if not _is_building and data.char_id != "":
 		ClassBadge.paint(self, data.tower_class, Vector2(16, -20), 17.0)
 
-	# Anel de seleção (unidade escolhida pelo jogador para mover/gerir).
-	if selected:
+	# Modo mover: anel pulsante azul (herói solto). Senão, anel de seleção.
+	if move_mode:
+		var mp := 0.5 + 0.5 * sin(_idle * 3.0)
+		draw_arc(Vector2(0, 6), 26.0, 0.0, TAU, 28, Color(0.5, 0.85, 1.0, 0.5 + 0.4 * mp), 3.0)
+	elif selected:
 		draw_arc(Vector2(0, 6), 24.0, 0.0, TAU, 28, Color(1.0, 0.95, 0.55, 0.9), 2.5)
 
 
