@@ -84,6 +84,8 @@ func _ready() -> void:
 		_champion.setup(champ_data)
 		_champion.position = Vector2(620, 400)
 		enemies_root.add_child(_champion)
+		# O campeão anda pelo mapa: não deve aparecer na lista de heróis dos slots.
+		_build_manager.champion_id = champ_data.char_id
 
 	var hud := Hud.new()
 	add_child(hud)
@@ -145,14 +147,14 @@ func _ready() -> void:
 		_wave_manager.player_advance()
 
 
-## Demo automática (smoke / auto-stage): constrói as 4 torres genéricas nos slots,
-## para exercitar o combate sem input.
+## Demo automática (smoke / auto-stage): posiciona os HERÓIS do esquadrão (fora o
+## campeão) nos slots disponíveis, para exercitar o combate sem input.
 func _auto_place_demo() -> void:
 	GameState.add_gold(1500) # ouro extra apenas para a demo
-	var classes := TowerData.all_classes()
+	var avail: Array = _build_manager.placeable()
 	var sl: Array = _build_manager.slots
-	for i in sl.size():
-		_build_manager.try_place(sl[i], classes[i % classes.size()])
+	for i in mini(sl.size(), avail.size()):
+		_build_manager.try_place(sl[i], avail[i])
 
 
 func _process(delta: float) -> void:

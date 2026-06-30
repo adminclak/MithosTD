@@ -52,6 +52,8 @@ func open_build(world_pos: Vector2, entries: Array, gold: int) -> void:
 		b.disabled = (gold < data.cost) or (not allowed)
 		b.pressed.connect(func(): build_requested.emit(data))
 		_box.add_child(b)
+	if entries.is_empty():
+		_add_label("Sem herois disponiveis")
 	_add_close_button()
 	_show_at(world_pos)
 
@@ -81,6 +83,10 @@ func open_manage(world_pos: Vector2, tower: Tower, gold: int) -> void:
 func close() -> void:
 	if _panel != null:
 		_panel.visible = false
+
+
+func is_open() -> bool:
+	return _panel != null and _panel.visible
 
 
 func _show_at(world_pos: Vector2) -> void:

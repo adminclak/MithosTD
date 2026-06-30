@@ -21,6 +21,7 @@ func _initialize() -> void:
 	_test_blocking()
 	_test_priest_aura()
 	_test_economy()
+	_test_hero_placement()
 	_test_build_menu_ui()
 	_test_progression()
 	_test_blessings()
@@ -448,6 +449,41 @@ func _test_economy() -> void:
 
 	bm.free()
 	bm2.free()
+
+## Modelo "heróis são as unidades": o slot lista os heróis do esquadrão (não as 4
+## classes), exclui o campeão móvel e os já em campo; cada herói é único.
+func _test_hero_placement() -> void:
+	print("\nConstrucao por HEROI (herois sao as unidades):")
+	var gs = root.get_node_or_null(^"/root/GameState")
+	if gs == null:
+		_check(false, "GameState acessivel"); return
+	gs.reset_run(20, 1000)
+	var h1 = TowerData.archer(); h1.char_id = "art"; h1.cost = 100
+	var h2 = TowerData.warrior(); h2.char_id = "her"; h2.cost = 100
+	var champ = TowerData.mage(); champ.char_id = "zeus"; champ.cost = 100
+	var slots := [Vector2(200, 440), Vector2(400, 440), Vector2(600, 440)]
+	var bm = BuildManager.new()
+	bm.setup([Vector2(0, 300), Vector2(1200, 300)], [h1, h2, champ], slots)
+	bm.champion_id = "zeus"
+	root.add_child(bm)
+
+	var av = bm.placeable()
+	_check(av.size() == 2, "campeao fica fora dos slots (3 herois -> 2 posicionaveis)")
+	var ids := []
+	for d in av:
+		ids.append(d.char_id)
+	_check(ids.has("art") and ids.has("her"), "lista os herois nao-campeao")
+	_check(not ids.has("zeus"), "o campeao (zeus) nao aparece nos slots")
+
+	_check(bm.try_place(slots[0], h1), "posiciona o heroi escolhido")
+	var av2 = bm.placeable()
+	_check(av2.size() == 1, "heroi ja em campo some da lista (unico)")
+	var ids2 := []
+	for d in av2:
+		ids2.append(d.char_id)
+	_check(not ids2.has("art") and ids2.has("her"), "so resta o heroi ainda fora de campo")
+	bm.free()
+
 
 func _test_build_menu_ui() -> void:
 	print("\nUI do BuildMenu (montagem dos paineis):")

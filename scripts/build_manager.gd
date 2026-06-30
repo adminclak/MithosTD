@@ -1,11 +1,12 @@
 class_name BuildManager
 extends Node2D
 
-## Construção estilo Kingdom Rush (slots): pontos estratégicos fixos no mapa.
-## - Toca num slot vazio -> menu radial com as 4 torres (Arqueiro/Guerreiro/
-##   Sacerdote/Mago) + custo -> constrói com ouro.
-## - Toca numa torre -> radial Melhorar/Vender.
-## A API de economia (try_place/try_upgrade/sell/can_place) é mantida e testável.
+## Construção do Mithos TD (modelo: HERÓIS são as unidades — ver pilar de design).
+## Slots fixos no mapa; tocar num slot vazio abre um painel com OS SEUS HERÓIS do
+## esquadrão que ainda não estão em campo (e que não são o campeão móvel) -> você
+## escolhe qual posicionar, gastando ouro. Tocar numa unidade abre Melhorar/Vender.
+## Cada herói é único em campo. A economia (try_place/try_upgrade/sell/can_place)
+## fica separada da UI e é testável via /root/GameState.
 
 const CLICK_RADIUS := 30.0
 const MIN_SPACING := 36.0
@@ -15,12 +16,13 @@ const BOUNDS := Rect2(20, 20, 1240, 600)
 var waypoints: Array = []
 var squad: Array = []
 var slots: Array = [] ## Vector2 dos pontos estratégicos
-var damage_mult: float = 1.0 ## bênção Fúria de Ares (aplicada às torres genéricas)
+var damage_mult: float = 1.0 ## bênção Fúria de Ares (futuras torres utilitárias)
+var champion_id: String = "" ## herói que anda pelo mapa: não ocupa slot
 
 var _towers: Array = []
-var _radial: RadialMenu = null
+var _menu: BuildMenu = null
 var _pending_slot: int = -1
-var _mode: String = ""
+var _pending_tower: Tower = null
 
 @onready var _state: Node = get_node_or_null(^"/root/GameState")
 
@@ -33,31 +35,97 @@ func setup(wpoints: Array, squad_datas: Array = [], slot_positions: Array = [], 
 
 
 func _ready() -> void:
-	_radial = RadialMenu.new()
-	add_child(_radial)
-	_radial.chosen.connect(_on_radial_chosen)
+	_menu = BuildMenu.new()
+	add_child(_menu)
+	_menu.build_requested.connect(_on_build_requested)
+	_menu.upgrade_requested.connect(_on_upgrade_requested)
+	_menu.sell_requested.connect(_on_sell_requested)
 	queue_redraw()
 
 
-# --- Entrada: tocar slot (construir) ou torre (gerir) ---
+# --- Entrada: tocar slot (posicionar herói) ou unidade (gerir) ---
 func _unhandled_input(event: InputEvent) -> void:
 	if _state != null and _state.is_over():
 		return
-	if _radial != null and _radial.is_open():
+	if not (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT):
 		return
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		var pos := get_global_mouse_position()
-		var si := _slot_at(pos)
-		if si < 0:
-			return
-		if _tower_near(slots[si]) != null:
-			_open_manage(si)
-		else:
-			_open_build(si)
+	# Painel aberto: um clique fora apenas fecha (não posiciona no mesmo toque).
+	if _menu != null and _menu.is_open():
+		_menu.close()
 		get_viewport().set_input_as_handled()
+		return
+	var pos := get_global_mouse_position()
+	var si := _slot_at(pos)
+	if si < 0:
+		return
+	if _tower_near(slots[si]) != null:
+		_open_manage(si)
+	else:
+		_open_build(si)
+	get_viewport().set_input_as_handled()
 
 
-## Torre construída sobre/perto de um slot (robusto p/ radial e demo).
+## Heróis do esquadrão que ainda podem entrar: fora de campo e que não sejam o
+## campeão móvel (esse anda pelo mapa, não ocupa slot).
+func _available_squad() -> Array:
+	var in_field := {}
+	for t in _towers:
+		if is_instance_valid(t) and t.data.char_id != "":
+			in_field[t.data.char_id] = true
+	var out: Array = []
+	for d in squad:
+		if d.char_id == "" or d.char_id == champion_id:
+			continue
+		if not in_field.has(d.char_id):
+			out.append(d)
+	return out
+
+
+## Exposto para o smoke/--auto-stage posicionar a demo sem UI.
+func placeable() -> Array:
+	return _available_squad()
+
+
+func _open_build(si: int) -> void:
+	_pending_slot = si
+	_pending_tower = null
+	_menu.open_build(slots[si], _available_squad(), _gold())
+
+
+func _open_manage(si: int) -> void:
+	var t: Tower = _tower_near(slots[si])
+	if t == null:
+		return
+	_pending_slot = si
+	_pending_tower = t
+	_menu.open_manage(t.global_position, t, _gold())
+
+
+func _on_build_requested(data: TowerData) -> void:
+	if _pending_slot < 0:
+		return
+	if try_place(slots[_pending_slot], data):
+		_menu.close()
+		queue_redraw()
+	_pending_slot = -1
+
+
+func _on_upgrade_requested() -> void:
+	if _pending_tower != null and is_instance_valid(_pending_tower):
+		try_upgrade(_pending_tower)
+	_menu.close()
+	_pending_tower = null
+
+
+func _on_sell_requested() -> void:
+	if _pending_tower != null and is_instance_valid(_pending_tower):
+		sell(_pending_tower)
+		queue_redraw()
+	_menu.close()
+	_pending_tower = null
+
+
+## Unidade construída sobre/perto de um slot (robusto p/ menu e demo).
 func _tower_near(pos: Vector2, r: float = 26.0) -> Tower:
 	for t in _towers:
 		if is_instance_valid(t) and t.global_position.distance_to(pos) < r:
@@ -76,76 +144,6 @@ func _slot_at(pos: Vector2) -> int:
 	return best
 
 
-## Dados da torre por classe: usa o HERÓI do esquadrão daquela classe (com elemento/
-## equip/sets/sinergia já aplicados em main); senão, a torre genérica da classe.
-func _class_data(tcls: int) -> TowerData:
-	for d in squad:
-		if d.tower_class == tcls:
-			return d ## herói já tem o bônus de dano aplicado em main
-	for g in TowerData.all_classes():
-		if g.tower_class == tcls:
-			if damage_mult != 1.0:
-				g.damage = int(round(g.damage * damage_mult))
-				g.melee_damage = int(round(g.melee_damage * damage_mult))
-			return g
-	return TowerData.archer()
-
-
-func _class_order() -> Array:
-	return TowerData.all_classes() # Arqueiro, Guerreiro, Sacerdote, Mago
-
-
-func _options_classes() -> Array:
-	var out: Array = []
-	for g in _class_order():
-		var d := _class_data(g.tower_class)
-		var nm: String = d.display_name if d.char_id != "" else g.display_name
-		out.append({"text": "%s\n%d" % [nm.left(9), d.cost],
-			"color": d.body_color, "enabled": _gold() >= d.cost})
-	return out
-
-
-func _open_build(si: int) -> void:
-	_pending_slot = si
-	_mode = "build"
-	_radial.open_menu(slots[si], _options_classes())
-
-
-func _open_manage(si: int) -> void:
-	_pending_slot = si
-	_mode = "manage"
-	var t: Tower = _tower_near(slots[si])
-	if t == null:
-		return
-	var up_ok := t.can_upgrade() and _gold() >= t.upgrade_cost()
-	var up_text := ("Melhorar\n%d" % t.upgrade_cost()) if t.can_upgrade() else "Maximo"
-	_radial.open_menu(t.global_position, [
-		{"text": up_text, "color": Color(0.6, 1, 0.6), "enabled": up_ok},
-		{"text": "Vender\n+%d" % t.sell_value(), "color": Color(1, 0.85, 0.4), "enabled": true},
-	])
-
-
-func _on_radial_chosen(index: int) -> void:
-	if _pending_slot < 0:
-		return
-	if _mode == "build":
-		var tcls: int = _class_order()[index].tower_class
-		var data: TowerData = _class_data(tcls)
-		if try_place(slots[_pending_slot], data):
-			queue_redraw()
-	elif _mode == "manage":
-		var t: Tower = _tower_near(slots[_pending_slot])
-		if t == null:
-			return
-		if index == 0:
-			try_upgrade(t)
-		elif index == 1:
-			sell(t)
-			queue_redraw()
-	_pending_slot = -1
-	_mode = ""
-
-
 # --- Desenho dos slots vazios ---
 func _draw() -> void:
 	for i in slots.size():
@@ -155,7 +153,7 @@ func _draw() -> void:
 		draw_circle(p + Vector2(0, 3), 20.0, Color(0, 0, 0, 0.25))
 		draw_circle(p, 18.0, Color(0.52, 0.40, 0.24, 0.85))
 		draw_arc(p, 18.0, 0.0, TAU, 24, Color(0.30, 0.22, 0.12), 3.0)
-		# "+" indicando ponto de construção.
+		# "+" indicando ponto de posicionamento.
 		draw_line(p + Vector2(-7, 0), p + Vector2(7, 0), Color(1, 0.95, 0.7, 0.9), 3.0)
 		draw_line(p + Vector2(0, -7), p + Vector2(0, 7), Color(1, 0.95, 0.7, 0.9), 3.0)
 
@@ -168,20 +166,6 @@ func can_place(_tower_class: int, pos: Vector2) -> bool:
 		if is_instance_valid(t) and t.global_position.distance_to(pos) < MIN_SPACING:
 			return false
 	return true
-
-
-func _available_squad() -> Array:
-	if squad.is_empty():
-		return TowerData.all_classes()
-	var in_field := {}
-	for t in _towers:
-		if is_instance_valid(t) and t.data.char_id != "":
-			in_field[t.data.char_id] = true
-	var out: Array = []
-	for d in squad:
-		if not in_field.has(d.char_id):
-			out.append(d)
-	return out
 
 
 func _tower_at(pos: Vector2) -> Tower:
@@ -207,6 +191,7 @@ func try_place(pos: Vector2, data: TowerData) -> bool:
 	if _state == null or not _state.try_spend(data.cost):
 		return false
 	var t := Tower.new()
+	t.force_building = (data.char_id == "") ## herói aparece como herói; utilitária = prédio
 	t.setup(data)
 	t.waypoints = waypoints
 	t.position = pos
