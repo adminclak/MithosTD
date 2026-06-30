@@ -60,10 +60,14 @@ func _ready() -> void:
 func _shot_mode(args: Array) -> void:
 	var which := "title"
 	for a in args:
-		if a in ["title", "worldmap", "heroes", "collection", "gacha", "quests", "game", "blessings", "picker", "build"]:
+		if a in ["title", "worldmap", "heroes", "collection", "gacha", "quests", "game", "blessings", "picker", "build", "teamselect"]:
 			which = a
 	match which:
 		"worldmap": _show_worldmap()
+		"teamselect":
+			var sel := TeamSelectScreen.new()
+			sel.setup(StageList.get_stage(1), 0)
+			_switch_to(sel)
 		"picker":
 			_show_worldmap()
 			await get_tree().process_frame
@@ -129,8 +133,14 @@ func _show_heroes() -> void:
 	_switch_to(h)
 
 
+## Após escolher a fase + dificuldade no mapa, abre a tela de SELEÇÃO DE EQUIPE;
+## só depois de montar os heróis a partida começa.
 func _start_stage_from_map(stage: StageData, diff: int = 0) -> void:
-	_on_start_stage(stage, Progression.current_squad(), Progression.current_ult(), false, diff)
+	var sel := TeamSelectScreen.new()
+	sel.setup(stage, diff)
+	sel.started.connect(func(squad, ult, d): _on_start_stage(stage, squad, ult, false, d))
+	sel.back.connect(_show_worldmap)
+	_switch_to(sel)
 
 
 func _show_collection() -> void:
