@@ -10,6 +10,7 @@ extends Node2D
 
 const MIN_SPACING := 42.0
 const PATH_CLEAR := 40.0       ## distância mínima da estrada (não pode posicionar nela)
+const BUILD_BAND := 165.0      ## distância MÁXIMA da estrada (constrói no corredor, não em paredes/água longe)
 const BOUNDS := Rect2(24, 90, 1232, 540)
 
 signal changed ## posicionou/vendeu -> a barra de heróis se atualiza
@@ -182,7 +183,10 @@ func _dist_to_seg(p: Vector2, a: Vector2, b: Vector2) -> float:
 func can_place(pos: Vector2, is_melee: bool = false) -> bool:
 	if not BOUNDS.has_point(pos):
 		return false
-	if not is_melee and _dist_to_path(pos) < PATH_CLEAR:
+	var d := _dist_to_path(pos)
+	if d > BUILD_BAND:
+		return false  # longe demais da estrada (evita posicionar em parede/água distante)
+	if not is_melee and d < PATH_CLEAR:
 		return false
 	for t in _towers:
 		if is_instance_valid(t) and t.global_position.distance_to(pos) < MIN_SPACING:
@@ -194,7 +198,10 @@ func can_place(pos: Vector2, is_melee: bool = false) -> bool:
 func _can_stand(pos: Vector2, who: Tower) -> bool:
 	if not BOUNDS.has_point(pos):
 		return false
-	if not who.data.is_melee and _dist_to_path(pos) < PATH_CLEAR:
+	var d := _dist_to_path(pos)
+	if d > BUILD_BAND:
+		return false
+	if not who.data.is_melee and d < PATH_CLEAR:
 		return false
 	for t in _towers:
 		if is_instance_valid(t) and t != who and t.global_position.distance_to(pos) < MIN_SPACING:

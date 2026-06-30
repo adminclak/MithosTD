@@ -70,6 +70,35 @@ DIRS = {
     "heroes": os.path.join(PROJ, "assets", "heroes"),
     "enemies": os.path.join(PROJ, "assets", "enemies"),
     "items": os.path.join(PROJ, "assets", "items"),
+    "maps": os.path.join(PROJ, "assets", "map"),
+}
+
+# Mapas de fase (16:9, top-down) com a ESTRADA integrada na arte (estilo Kingdom
+# Rush): a estrada é clara, bonita e com curvas — depois traçamos os waypoints em
+# cima dela. Decoracoes ficam SO ao lado da estrada.
+MAP_STYLE = ("top-down bird's eye aerial view, 2D cartoon tower-defense game battlefield map, "
+             "Kingdom Rush mobile game art style, hand-painted, vibrant saturated colors, clean "
+             "bold shapes, high detail, the road is wide clear smooth and continuous, decorations "
+             "only on the grass beside the road never on top of it, no characters, no people, "
+             "no units, no text, no words, no UI, no labels")
+MAP_PROMPTS = {
+    "elis": ("a lush bright green grassy meadow, ONE clear wide light tan dirt road that winds in "
+             "smooth gentle S curves across the whole map, entering from the top edge and exiting "
+             "at the bottom-right corner, scattered round trees bushes rocks and small flowers on "
+             "the grass beside the road"),
+    "nemeia": ("a dark dense green forest floor clearing, ONE clear brown dirt trail that winds "
+               "horizontally across the map with smooth curves from the left edge to the right "
+               "edge, tall round pine trees and mossy boulders framing the top and bottom edges"),
+    "pantano": ("a murky green swamp with patches of dark still water and mud, ONE raised dirt and "
+                "wooden-plank path snaking in a smooth S shape from the bottom-left corner up to "
+                "the right edge, reeds lily pads and twisted dead trees beside the path"),
+    "desfiladeiro": ("a dark volcanic basalt rocky gorge with black stone ground, ONE clear light "
+                     "beige sandy path winding between the black rocks from the top edge down and "
+                     "curving to the right edge, glowing orange lava cracks on the rocks beside "
+                     "the path"),
+    "olimpo": ("a snowy white mountain slope with greek marble ruins, ONE clear pale stone path "
+               "winding upward from the left edge to the upper-right, white greek columns and "
+               "snow-covered rocks beside the path"),
 }
 
 FAL_KEY = os.environ.get("FAL_KEY", "")
@@ -114,14 +143,14 @@ def parse_arte():
     return jobs
 
 
-def fal_generate(prompt):
+def fal_generate(prompt, landscape=False):
     """Chama a fal.ai (REST sincrono) e devolve os bytes do PNG gerado."""
     url = "https://fal.run/" + MODEL
     headers = {"Authorization": "Key " + FAL_KEY, "Content-Type": "application/json"}
     seed_env = os.environ.get("SEED")
     body = {
         "prompt": prompt,
-        "image_size": "square_hd",          # 1024x1024
+        "image_size": "landscape_16_9" if landscape else "square_hd",
         "num_images": 1,
         "enable_safety_checker": True,
         "negative_prompt": NEGATIVE,         # ignorado por modelos que nao usam
@@ -156,10 +185,15 @@ def remove_bg(im):
 
 def save(png_bytes, category, cid):
     im = Image.open(io.BytesIO(png_bytes)).convert("RGBA")
-    im = remove_bg(im)
-    im = im.resize((OUT_SIZE, OUT_SIZE), Image.LANCZOS)
     os.makedirs(DIRS[category], exist_ok=True)
-    out = os.path.join(DIRS[category], cid + ".png")
+    if category == "maps":
+        # Mapa = fundo cheio (sem recorte), 1280x720, arquivo map_<id>.png.
+        im = im.resize((1280, 720), Image.LANCZOS)
+        out = os.path.join(DIRS[category], "map_" + cid + ".png")
+    else:
+        im = remove_bg(im)
+        im = im.resize((OUT_SIZE, OUT_SIZE), Image.LANCZOS)
+        out = os.path.join(DIRS[category], cid + ".png")
     im.save(out)
     return out
 
@@ -173,19 +207,20 @@ def main():
         print("uso: python tools/gen_api.py <heroes|enemies|items> <id ...|all>")
         return
     category = args[0]
-    jobs = parse_arte()
+    is_maps = category == "maps"
+    jobs = MAP_PROMPTS if is_maps else parse_arte()
     ids = list(jobs.keys()) if args[1] == "all" else args[1:]
-    style = STYLE[category]
+    style = "" if is_maps else STYLE[category]
     print("Modelo:", MODEL, "| categoria:", category, "| itens:", len(ids))
     for cid in ids:
         desc = jobs.get(cid)
         if not desc:
-            print("  (sem descricao no ARTE.md):", cid)
+            print("  (sem descricao):", cid)
             continue
-        prompt = style + ", " + desc
+        prompt = (desc + ", " + MAP_STYLE) if is_maps else (style + ", " + desc)
         try:
             t0 = time.time()
-            png = fal_generate(prompt)
+            png = fal_generate(prompt, landscape=is_maps)
             out = save(png, category, cid)
             print("  OK  %-16s %5.1fs  -> %s" % (cid, time.time() - t0, out))
         except Exception as e:
