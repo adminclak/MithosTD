@@ -202,6 +202,11 @@ func _ready() -> void:
 	var castle_pos := Vector2(clampf(wp[-1].x, 40, 1240), clampf(wp[-1].y, 40, 680)) + Vector2(0, -8)
 	_add_shadow(castle_pos + Vector2(0, 56), 80, 28, -2)
 	_add_sprite(Art.map("castle"), castle_pos, 0.70, -1)
+
+	# Vida ambiente (partículas que se mexem conforme o bioma).
+	var amb := MapAmbience.new()
+	amb.setup(theme)
+	add_child(amb)
 	queue_redraw()
 
 
