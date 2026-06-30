@@ -42,6 +42,29 @@ except ImportError:
     sys.exit(1)
 
 PROJ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def _load_dotenv():
+    """Le PROJ/.env (KEY=valor por linha) sem dependencia externa.
+    So define o que ainda nao estiver no ambiente — assim `export FAL_KEY=...`
+    continua tendo prioridade sobre o arquivo."""
+    path = os.path.join(PROJ, ".env")
+    if not os.path.exists(path):
+        return
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, v = line.split("=", 1)
+            k = k.strip()
+            v = v.strip().strip('"').strip("'")
+            if k and k not in os.environ:
+                os.environ[k] = v
+
+
+_load_dotenv()
+
 ARTE = os.path.join(PROJ, "assets", "ARTE.md")
 DIRS = {
     "heroes": os.path.join(PROJ, "assets", "heroes"),
@@ -50,15 +73,20 @@ DIRS = {
 }
 
 FAL_KEY = os.environ.get("FAL_KEY", "")
-MODEL = os.environ.get("FAL_MODEL", "fal-ai/flux/dev")
+MODEL = os.environ.get("FAL_MODEL", "fal-ai/recraft-v3")
+# Estilo do Recraft (so usado quando MODEL e recraft). digital_illustration = cartoon
+# nitido; realistic_image = mais realista. Substilos: digital_illustration/hand_drawn etc.
+RECRAFT_STYLE = os.environ.get("RECRAFT_STYLE", "digital_illustration")
 OUT_SIZE = 512  # salva quadrado; o jogo redimensiona
 
 # Estilo FIXO (coeso entre todos). Cartoon pintado HD, igual aos mapas / Kingdom Rush.
 STYLE = {
-    "heroes": ("Kingdom Rush style 2D cartoon game hero, hand-painted, vibrant saturated "
-               "colors, bold clean outlines, soft cel shading, full body single character, "
-               "centered, front view, dynamic heroic pose, plain flat light gray background, "
-               "mobile tower-defense character art, crisp, high quality"),
+    "heroes": ("Kingdom Rush style 2D cartoon game hero, TALL ADULT character with long legs "
+               "and normal sized head (not chibi, mature adult, athletic build), hand-painted, "
+               "vibrant saturated colors, bold clean outlines, soft cel shading, full body "
+               "single character, centered, front view, dynamic heroic pose, fully clothed, "
+               "modest clothing, plain flat light gray background, mobile tower-defense character "
+               "art, crisp, sharp, high quality"),
     "enemies": ("Kingdom Rush style 2D cartoon tower-defense enemy monster, cute but menacing, "
                 "hand-painted, vibrant colors, bold clean outlines, soft cel shading, full body "
                 "single creature, centered, front view, plain flat light gray background, "
@@ -67,7 +95,8 @@ STYLE = {
               "soft shading, single object centered, plain flat light gray background, crisp, "
               "high quality, RPG equipment icon"),
 }
-NEGATIVE = ("photorealistic, realistic, 3d render, photograph, blurry, low quality, lowres, "
+NEGATIVE = ("chibi, super deformed, big head, oversized head, baby face, child proportions, "
+            "photorealistic, realistic, 3d render, photograph, blurry, low quality, lowres, "
             "jpeg artifacts, extra limbs, extra fingers, deformed, mutated, bad anatomy, text, "
             "words, letters, watermark, signature, logo, multiple characters, duplicate, "
             "cropped, out of frame, dark, gritty, horror gore")
@@ -97,12 +126,14 @@ def fal_generate(prompt):
         "enable_safety_checker": True,
         "negative_prompt": NEGATIVE,         # ignorado por modelos que nao usam
         "num_inference_steps": 30,
-        "guidance_scale": 3.5,
+        "guidance_scale": float(os.environ.get("GUIDANCE", "3.5")),
     }
     if seed_env:
         body["seed"] = int(seed_env)
     else:
         body["seed"] = random.randint(1, 2_000_000_000)
+    if "recraft" in MODEL:
+        body["style"] = RECRAFT_STYLE  # cartoon nitido / consistencia de estilo
     r = requests.post(url, json=body, headers=headers, timeout=180)
     if r.status_code != 200:
         raise RuntimeError("fal.ai %d: %s" % (r.status_code, r.text[:300]))

@@ -73,8 +73,8 @@ poucos steps e CFG baixo (senão a imagem "queima"):
 - `ares.png` — Ares, greek god of war, fierce, crested helmet, red battle armor, spear and round shield, melee warrior
 - `atena.png` — Athena, greek goddess of wisdom and war, golden armor, spear, aegis shield, owl companion, supportive aura, priest
 - `apolo.png` — Apollo, greek god of sun and healing, golden laurel wreath, lyre, radiant warm light, healer, priest
-- `medusa.png` — Medusa, gorgon woman whose hair is made of many live writhing snakes (very prominent snake hair), glowing petrifying green eyes, scaled skin, holding a magic staff, green and teal tones, mage
-- `zeus.png` — Zeus, king of the greek gods, muscular bearded man, crackling lightning bolt, white toga, golden aura, mage
+- `medusa.png` — Medusa, a beautiful but fierce woman, on her head she has NO hair at all, instead many small green snakes grow out of her scalp like hair (snakes replacing her hair), feminine female face, glowing green eyes, green scaled skin, snake-tail lower body, holding a magic staff, green and teal tones
+- `zeus.png` — Zeus, king of the greek gods, mighty bearded man wearing a white tunic and toga (fully clothed), crackling lightning bolt in hand, golden aura, mage
 
 ### NPCs (loja)
 - `merchant.png` — friendly cheerful greek market merchant shopkeeper, plump bearded man, simple cream tunic with a brown leather apron, olive wreath, holding up a clay amphora and a coin pouch, welcoming open-hand gesture, warm inviting smile, NOT a warrior, no weapon
