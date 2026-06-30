@@ -975,11 +975,11 @@ func _test_balance() -> void:
 		if s.enemy_hp_mult <= prev:
 			rising = false
 		prev = s.enemy_hp_mult
-		if s.enemy_hp_mult > 2.0:
+		if s.enemy_hp_mult > 3.0:
 			capped = false
 	var boss_eff: float = tal.max_hp * StageList.get_stage(5).enemy_hp_mult
-	_check(rising and capped, "hp_mult das fases é crescente e <=2.0")
-	_check(boss_eff <= 1200.0, "boss efetivo na fase 5 (%.0f) é batível (<=1200)" % boss_eff)
+	_check(rising and capped, "hp_mult das fases é crescente e <=3.0")
+	_check(boss_eff <= 1800.0, "boss efetivo na fase 5 (%.0f) é batível (<=1800)" % boss_eff)
 
 func _test_attributes() -> void:
 	print("\nAtributos (Ragnarok-like) + critico:")

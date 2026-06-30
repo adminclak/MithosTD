@@ -4,6 +4,7 @@ extends Node2D
 ## (XP/desbloqueio) -> Hub. A persistência fica no autoload Progression.
 
 var _current: Node = null
+var _no_save: bool = false ## simulação fresca: não grava o save real do jogador
 
 
 func _ready() -> void:
@@ -29,7 +30,17 @@ func _ready() -> void:
 				idx = clampi(int(a), 1, StageList.count())
 		# Esquadrao de demo variado (bloqueio + AoE + dano + suporte).
 		var squad := ["hercules", "ares", "artemis", "zeus", "atena", "medusa"]
-		_on_start_stage(StageList.get_stage(idx), squad, "zeus", true)
+		var ult := "zeus"
+		# --fresh-sim: simula um JOGADOR NOVO (starters nivel 1, sem bencaos) só EM
+		# MEMORIA, sem gravar — para medir a dificuldade base sem o save leveldo.
+		if args.has("--fresh-sim"):
+			Progression.reset()
+			Progression.ensure_starting_team()
+			squad = Roster.STARTERS.duplicate()
+			ult = squad[0]
+			_no_save = true
+			print("Simulacao FRESCA (starters nv1, sem gravar).")
+		_on_start_stage(StageList.get_stage(idx), squad, ult, true)
 	elif args.has("--heroes"):
 		_show_heroes()
 	elif args.has("--worldmap"):
@@ -192,7 +203,8 @@ func _on_game_finished(victory: bool, stars: int, stage: StageData, squad_ids: A
 		if gained > 0:
 			rewards["essence"] = int(rewards.get("essence", 0)) + gained * 3
 			Progression.add_essence(gained * 3)
-	Progression.save_game()
+	if not _no_save:
+		Progression.save_game()
 
 	var result := ResultScreen.new()
 	result.setup(victory, xp, summary, newly, rewards, stars, star_info)

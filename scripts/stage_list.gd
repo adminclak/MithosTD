@@ -9,11 +9,11 @@ static func all() -> Array:
 	# propósito: o jogador escolhe quais levar pra cada fase). O campeão móvel não
 	# ocupa slot, então o total em campo = slots + 1.
 	return [
-		_stage(1, "Campos de Elis", 4, 5, 1.1, 1.15, 50, "elis"),
-		_stage(2, "Bosque de Nemeia", 4, 6, 1.3, 1.25, 62, "nemeia"),
-		_stage(3, "Pantano da Hidra", 5, 7, 1.5, 1.4, 78, "pantano"),
-		_stage(4, "Desfiladeiro dos Centauros", 5, 8, 1.7, 1.55, 98, "desfiladeiro"),
-		_stage(5, "Encosta do Olimpo", 6, 8, 2.0, 1.7, 122, "olimpo"),
+		_stage(1, "Campos de Elis", 4, 5, 1.2, 1.2, 50, "elis"),
+		_stage(2, "Bosque de Nemeia", 4, 6, 1.45, 1.3, 62, "nemeia"),
+		_stage(3, "Pantano da Hidra", 5, 7, 1.8, 1.5, 78, "pantano"),
+		_stage(4, "Desfiladeiro dos Centauros", 5, 8, 2.1, 1.7, 98, "desfiladeiro"),
+		_stage(5, "Encosta do Olimpo", 6, 8, 2.5, 1.9, 122, "olimpo"),
 	]
 
 
