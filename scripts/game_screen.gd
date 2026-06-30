@@ -70,6 +70,7 @@ func _ready() -> void:
 	_build_manager = BuildManager.new()
 	# Sem slots: o jogador arrasta os heróis da barra inferior para o mapa.
 	_build_manager.setup(level.get_waypoints(), _squad, Progression.bless_damage_mult(), level.get_blocked_zones())
+	_build_manager.set_paths(level.get_paths())
 	add_child(_build_manager)
 
 	# Barra inferior de heróis (arrastar p/ posicionar).
@@ -101,6 +102,7 @@ func _ready() -> void:
 
 	_wave_manager = WaveManager.new()
 	_wave_manager.waypoints = level.get_waypoints()
+	_wave_manager.paths = level.get_paths()
 	_wave_manager.enemies_root = enemies_root
 	_wave_manager.total_waves = _stage.waves
 	_wave_manager.stage_index = _stage.index

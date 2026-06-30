@@ -17,13 +17,19 @@ signal new_enemy_type(data: EnemyData) ## 1ª vez que um tipo aparece na partida
 @export var enemy_hp_mult: float = 1.0
 @export var enemy_count_mult: float = 1.0
 
-var waypoints: Array = []
+var waypoints: Array = []     ## rota principal (compat); = paths[0]
+var paths: Array = []         ## TODAS as rotas (bifurcações). Vazio => usa [waypoints]
 var enemies_root: Node2D
 
 var _begun: bool = false
 var _skip: bool = false
 var _in_interval: bool = false
 var _seen: Dictionary = {} ## ids de inimigo já apresentados nesta partida
+var _route_rr: int = 0     ## round-robin: distribui os inimigos entre as rotas
+
+# Acessado por nó (não pelo identificador global) para a classe COMPILAR fora do jogo
+# (testes headless com -s), onde o autoload GameState não está registrado.
+@onready var _state: Node = get_node_or_null(^"/root/GameState")
 
 
 ## Chamado pelo botão do jogador: inicia a 1ª onda (sai da prep) ou antecipa a
@@ -47,28 +53,28 @@ func can_advance() -> bool:
 
 func _run_waves() -> void:
 	for w in range(1, total_waves + 1):
-		if GameState.is_over():
+		if _state.is_over():
 			return
-		GameState.set_wave(w, total_waves)
+		_state.set_wave(w, total_waves)
 		phase_changed.emit("Onda %d/%d" % [w, total_waves])
 		for group in WaveComposer.compose(stage_index, w, total_waves):
 			var count: int = max(1, int(round(group["count"] * enemy_count_mult)))
 			for i in count:
-				if GameState.is_over():
+				if _state.is_over():
 					return
 				_spawn(group["id"])
 				await get_tree().create_timer(spawn_interval).timeout
-		GameState.add_gold(wave_bonus)
+		_state.add_gold(wave_bonus)
 		if w < total_waves:
 			await _interval()
 
 	# Espera limpar os inimigos restantes.
 	while get_tree().get_nodes_in_group("enemies").size() > 0:
-		if GameState.is_over():
+		if _state.is_over():
 			return
 		await get_tree().create_timer(0.5).timeout
-	if not GameState.is_over():
-		GameState.win()
+	if not _state.is_over():
+		_state.win()
 
 
 ## Intervalo entre ondas: espera wave_pause OU a antecipação do jogador.
@@ -77,11 +83,11 @@ func _interval() -> void:
 	_skip = false
 	phase_changed.emit("Prepare-se... (pode antecipar)")
 	var elapsed := 0.0
-	while elapsed < wave_pause and not _skip and not GameState.is_over():
+	while elapsed < wave_pause and not _skip and not _state.is_over():
 		await get_tree().create_timer(0.1).timeout
 		elapsed += 0.1
-	if _skip and not GameState.is_over():
-		GameState.add_gold(early_bonus) # recompensa por antecipar
+	if _skip and not _state.is_over():
+		_state.add_gold(early_bonus) # recompensa por antecipar
 	_in_interval = false
 
 
@@ -95,8 +101,16 @@ func _spawn(enemy_id: String) -> void:
 		new_enemy_type.emit(d)
 	var e := Enemy.new()
 	e.apply_data(d, enemy_hp_mult)
-	e.setup(waypoints)
+	e.setup(_next_route())
 	if enemies_root != null:
 		enemies_root.add_child(e)
 	else:
 		add_child(e)
+
+
+## Escolhe a próxima rota (alterna entre as bifurcações). Sem bifurcação, sempre a principal.
+func _next_route() -> Array:
+	var routes: Array = paths if not paths.is_empty() else [waypoints]
+	var r: Array = routes[_route_rr % routes.size()]
+	_route_rr += 1
+	return r

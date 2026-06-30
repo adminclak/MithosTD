@@ -15,7 +15,8 @@ const BOUNDS := Rect2(24, 90, 1232, 540)
 
 signal changed ## posicionou/vendeu -> a barra de heróis se atualiza
 
-var waypoints: Array = []
+var waypoints: Array = []       ## rota principal (compat); = paths[0]
+var paths: Array = []           ## TODAS as rotas (bifurcações). Vazio => usa [waypoints]
 var squad: Array = []
 var damage_mult: float = 1.0
 var blocked_zones: Array = []   ## Rect2 de estruturas sólidas (templos, água, muralhas)
@@ -37,6 +38,11 @@ func setup(wpoints: Array, squad_datas: Array = [], dmg_mult: float = 1.0, block
 	squad = squad_datas.duplicate()
 	damage_mult = dmg_mult
 	blocked_zones = blocked.duplicate()
+
+
+## Define TODAS as rotas (bifurcações) para a validação considerar o ramo mais próximo.
+func set_paths(p: Array) -> void:
+	paths = p.duplicate()
 
 
 func _ready() -> void:
@@ -179,13 +185,15 @@ func _clear_selection() -> void:
 
 
 # --- Validação / economia ---
-## Distância do ponto à estrada (polilinha dos waypoints).
+## Distância do ponto à estrada MAIS PRÓXIMA (considera todas as rotas/bifurcações).
 func _dist_to_path(p: Vector2) -> float:
+	var routes: Array = paths if not paths.is_empty() else [waypoints]
 	var best := 1e20
-	for i in range(waypoints.size() - 1):
-		var d: float = _dist_to_seg(p, waypoints[i], waypoints[i + 1])
-		if d < best:
-			best = d
+	for route in routes:
+		for i in range(route.size() - 1):
+			var d: float = _dist_to_seg(p, route[i], route[i + 1])
+			if d < best:
+				best = d
 	return best
 
 

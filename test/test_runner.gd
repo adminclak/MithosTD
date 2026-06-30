@@ -22,6 +22,7 @@ func _initialize() -> void:
 	_test_priest_aura()
 	_test_economy()
 	_test_hero_placement()
+	_test_multi_paths()
 	_test_build_menu_ui()
 	_test_progression()
 	_test_blessings()
@@ -500,6 +501,41 @@ func _test_hero_placement() -> void:
 		t.set_move_mode(false)
 		_check(not t.move_mode, "OK encerra o modo mover")
 	bm.free()
+
+
+## Bifurcações: distribuição round-robin dos inimigos e validação considerando o
+## ramo mais próximo (dá p/ construir ao longo de QUALQUER rota).
+func _test_multi_paths() -> void:
+	print("\nMultiplos caminhos (bifurcacoes):")
+	var levelm := Level.new()
+	levelm.theme = "elis"
+	var ps := levelm.get_paths()
+	_check(ps.size() == 2, "Elis tem 2 rotas (bifurcacao)")
+	_check(ps[0][0] == ps[1][0], "as duas rotas compartilham a entrada")
+	_check(ps[0][-1] == ps[1][-1], "as duas rotas chegam ao mesmo castelo")
+	var levels := Level.new()
+	levels.theme = "olimpo"
+	_check(levels.get_paths().size() == 1, "Olimpo tem 1 rota (sem bifurcacao)")
+	levelm.free()
+	levels.free()
+
+	# WaveManager alterna as rotas entre os inimigos (round-robin).
+	var wm := WaveManager.new()
+	wm.paths = [[Vector2(0, 0), Vector2(100, 0)], [Vector2(0, 0), Vector2(0, 100)]]
+	_check(wm._next_route()[-1] == Vector2(100, 0), "1o inimigo vai pela rota A")
+	_check(wm._next_route()[-1] == Vector2(0, 100), "2o inimigo vai pela rota B")
+	_check(wm._next_route()[-1] == Vector2(100, 0), "3o inimigo volta p/ a rota A")
+	wm.free()
+
+	# BuildManager: distancia considera o ramo mais proximo entre as duas rotas.
+	var bmm := BuildManager.new()
+	bmm.setup([Vector2(0, 200), Vector2(1200, 200)]) # rota principal em y=200
+	bmm.set_paths([[Vector2(0, 200), Vector2(1200, 200)], [Vector2(0, 500), Vector2(1200, 500)]])
+	root.add_child(bmm)
+	# Ponto perto da rota B (y=500): sem multi seria longe; com multi e valido.
+	_check(bmm.can_place(Vector2(600, 460)), "constroi perto do RAMO secundario (rota B)")
+	_check(not bmm.can_place(Vector2(600, 205)), "ranged SOBRE a rota A continua bloqueado")
+	bmm.free()
 
 
 func _test_build_menu_ui() -> void:

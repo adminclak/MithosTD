@@ -42,6 +42,32 @@ const DEFAULT_PATH := [Vector2(-40, 160), Vector2(360, 160), Vector2(360, 420),
 	Vector2(760, 420), Vector2(760, 180), Vector2(1040, 180), Vector2(1040, 520),
 	Vector2(1240, 520)]
 
+# Mapas com MÚLTIPLOS caminhos até o castelo (bifurcações, estilo Kingdom Rush). A
+# 1ª rota de cada lista É IGUAL ao PATHS_BY_THEME (rota principal); a 2ª compartilha
+# a entrada e o castelo, mas faz um trajeto alternativo pelo miolo — então o castelo
+# recebe inimigos por dois lados. Os inimigos são distribuídos entre as rotas. Mapas
+# fora deste dict têm um único caminho (get_paths devolve [caminho único]).
+const MULTI_PATHS_BY_THEME := {
+	# Elis: a estrada se abre em duas após a 3ª curva — rota de cima (principal) e
+	# rota de baixo pelo centro — e as duas se juntam de novo perto do castelo.
+	"elis": [
+		[Vector2(-40, 215), Vector2(210, 245), Vector2(420, 320), Vector2(600, 380),
+			Vector2(780, 325), Vector2(945, 250), Vector2(1055, 360), Vector2(1115, 500),
+			Vector2(1150, 590), Vector2(1330, 615)],
+		[Vector2(-40, 215), Vector2(210, 245), Vector2(420, 320), Vector2(600, 470),
+			Vector2(800, 545), Vector2(1000, 505), Vector2(1115, 500), Vector2(1150, 590),
+			Vector2(1330, 615)],
+	],
+	# Nemeia: a partir da 2ª curva uma rota sobe (arco superior) e a outra desce
+	# (rota principal ondulada); ambas chegam ao mesmo castelo à direita.
+	"nemeia": [
+		[Vector2(-40, 320), Vector2(230, 290), Vector2(450, 380), Vector2(660, 320),
+			Vector2(880, 390), Vector2(1080, 330), Vector2(1330, 360)],
+		[Vector2(-40, 320), Vector2(230, 290), Vector2(450, 230), Vector2(660, 200),
+			Vector2(880, 240), Vector2(1080, 300), Vector2(1330, 360)],
+	],
+}
+
 # Temas cujo CAMINHO já está PINTADO na arte do mapa (estilo Kingdom Rush). Nesses
 # não desenhamos a faixa de caminho por código — o trajeto só segue a trilha da arte.
 const PATH_IN_ART := {
@@ -187,24 +213,38 @@ func _ready() -> void:
 			_add_shadow(base, 192.0 * scl * 0.34, 192.0 * scl * 0.13, -11)
 			_add_sprite(Art.map(did), pos, scl, -10, i % 3 == 0)
 
-	# Caminho desenhado por CÓDIGO sobre os waypoints (a estrada visível é SEMPRE por
-	# onde os inimigos andam — fonte única da verdade, independente da arte de fundo).
+	# Caminho(s) desenhado(s) por CÓDIGO sobre os waypoints (a estrada visível é SEMPRE
+	# por onde os inimigos andam — fonte única da verdade). Mapas com bifurcação têm
+	# mais de uma rota; cada uma é pintada (os trechos compartilhados se sobrepõem).
 	var pc := _path_pair()
 	var fill: Color = pc[1]
 	var border: Color = pc[0]
 	var dark := Color(border.r * 0.5, border.g * 0.5, border.b * 0.4)
-	# Transição esfumada (faixa larga fraca -> média -> miolo opaco -> brilho central).
-	add_child(_make_path_line(86, Color(dark.r, dark.g, dark.b, 0.22), null, -10))
-	add_child(_make_path_line(66, Color(border.r, border.g, border.b, 0.85), null, -9))
-	add_child(_make_path_line(50, fill, null, -8))
-	add_child(_make_path_line(22, Color(fill.r * 1.08, fill.g * 1.06, fill.b * 1.04, 0.45), null, -7))
+	var paths := get_paths()
+	for route in paths:
+		# Transição esfumada (faixa larga fraca -> média -> miolo opaco -> brilho central).
+		add_child(_make_path_line(route, 86, Color(dark.r, dark.g, dark.b, 0.22), null, -10))
+		add_child(_make_path_line(route, 66, Color(border.r, border.g, border.b, 0.85), null, -9))
+		add_child(_make_path_line(route, 50, fill, null, -8))
+		add_child(_make_path_line(route, 22, Color(fill.r * 1.08, fill.g * 1.06, fill.b * 1.04, 0.45), null, -7))
 
-	# Portal de entrada (1º ponto) e castelo/base (último) — grampeados p/ dentro da
-	# tela (o trajeto pode entrar/sair por qualquer borda), grandes, com sombra.
-	var wp := _theme_path()
-	var portal_pos := Vector2(clampf(wp[0].x, 36, 1244), clampf(wp[0].y, 30, 690))
-	_add_shadow(portal_pos + Vector2(0, 38), 56, 20, -6)
-	_add_sprite(Art.map("portal"), portal_pos, 0.46, -5)
+	# Portal por ENTRADA distinta (1º ponto de cada rota) e UM castelo no destino
+	# comum (último ponto da rota principal). Tudo grampeado p/ dentro da tela.
+	var seen_entries: Array = []
+	for route in paths:
+		var e: Vector2 = route[0]
+		var dup := false
+		for s in seen_entries:
+			if (s as Vector2).distance_to(e) < 40.0:
+				dup = true
+				break
+		if dup:
+			continue
+		seen_entries.append(e)
+		var portal_pos := Vector2(clampf(e.x, 36, 1244), clampf(e.y, 30, 690))
+		_add_shadow(portal_pos + Vector2(0, 38), 56, 20, -6)
+		_add_sprite(Art.map("portal"), portal_pos, 0.46, -5)
+	var wp: Array = paths[0]
 	var castle_pos := Vector2(clampf(wp[-1].x, 40, 1240), clampf(wp[-1].y, 40, 680)) + Vector2(0, -8)
 	_add_shadow(castle_pos + Vector2(0, 56), 80, 28, -2)
 	_add_sprite(Art.map("castle"), castle_pos, 0.70, -1)
@@ -227,9 +267,9 @@ func _add_sprite(tex: Texture2D, pos: Vector2, scl: float, z: int, flip: bool = 
 	add_child(s)
 
 
-func _make_path_line(w: float, col: Color, tex: Texture2D, z: int) -> Line2D:
+func _make_path_line(points: Array, w: float, col: Color, tex: Texture2D, z: int) -> Line2D:
 	var l := Line2D.new()
-	l.points = PackedVector2Array(_theme_path())
+	l.points = PackedVector2Array(points)
 	l.width = w
 	l.default_color = col
 	l.joint_mode = Line2D.LINE_JOINT_ROUND
@@ -244,6 +284,17 @@ func _make_path_line(w: float, col: Color, tex: Texture2D, z: int) -> Line2D:
 
 func get_waypoints() -> Array:
 	return _theme_path().duplicate()
+
+
+## TODAS as rotas dos inimigos (1+). Mapas com bifurcação devolvem várias; os demais,
+## uma só. A rota 0 é sempre a principal (= get_waypoints).
+func get_paths() -> Array:
+	if MULTI_PATHS_BY_THEME.has(theme):
+		var out: Array = []
+		for p in MULTI_PATHS_BY_THEME[theme]:
+			out.append((p as Array).duplicate())
+		return out
+	return [_theme_path().duplicate()]
 
 
 ## Retângulos sólidos (estruturas) onde NÃO se pode posicionar herói neste mapa.
