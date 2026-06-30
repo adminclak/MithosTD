@@ -285,7 +285,7 @@ func _draw() -> void:
 	# Balanço vertical da caminhada (o corpo sobe/desce; a sombra não) + recuo do hit.
 	var off := Vector2(0, sin(_bob) * 2.0) + _hit_kick
 	if _sprite != null:
-		var s := _radius * 2.5
+		var s := _radius * 2.9
 		var dest := Rect2(Vector2(-s * 0.5, -s * 0.6), Vector2(s, s))
 		var atkp: float = 0.5 + 0.5 * sin(_bob * 2.0) if _anim_state == Anim.ATTACK else 0.0
 		Anim.draw_action(self, _sprite, dest, _face_x, _anim_state, _bob, atkp)

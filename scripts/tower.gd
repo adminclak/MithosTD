@@ -584,7 +584,7 @@ func _draw() -> void:
 		var bs := Vector2(78, 92)
 		draw_texture_rect(_sprite, Rect2(Vector2(-bs.x * 0.5, -bs.y + 22), bs), false)
 	elif _sprite != null:
-		var sz := Vector2(52, 52)
+		var sz := Vector2(62, 62)
 		var dest := Rect2(off + (-sz * 0.5) + Vector2(0, -8), sz)
 		var mod := Color(1, 1, 1, 0.7) if _down else Color.WHITE
 		var lean := _face.x * 9.0 * _atk
