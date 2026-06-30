@@ -32,15 +32,19 @@ const PATHS_BY_THEME := {
 		Vector2(655, 602), Vector2(850, 545), Vector2(955, 405), Vector2(985, 285),
 		Vector2(1150, 250), Vector2(1330, 248),
 	],
-	# Desfiladeiro (garganta vulcânica): entra no topo e desce curvando até a direita.
+	# Desfiladeiro: a arte tem um ANEL de terra em volta da fortaleza murada. Portal à
+	# ESQUERDA, castelo à DIREITA; os inimigos contornam a fortaleza por cima ou por
+	# baixo (ver MULTI). Esta é a rota principal (arco superior). Traçado sobre a terra.
 	"desfiladeiro": [
-		Vector2(300, -40), Vector2(330, 180), Vector2(470, 330), Vector2(680, 290),
-		Vector2(860, 380), Vector2(1040, 320), Vector2(1330, 350),
+		Vector2(150, 360), Vector2(255, 128), Vector2(560, 96), Vector2(975, 110),
+		Vector2(1150, 300), Vector2(1170, 372),
 	],
-	# Olimpo: entra à esquerda e sobe até o canto superior-direito (centro aberto).
+	# Olimpo: planalto nevado com templo (topo-dir), praça/fonte (centro-esq) e piscina
+	# (centro-dir). A rota desce pela neve aberta CONTORNANDO o templo e a piscina pela
+	# direita — portal no canto superior-direito, castelo embaixo. Caminho único.
 	"olimpo": [
-		Vector2(-40, 470), Vector2(230, 450), Vector2(450, 370), Vector2(670, 410),
-		Vector2(880, 290), Vector2(1080, 220), Vector2(1330, 190),
+		Vector2(1180, 140), Vector2(1090, 300), Vector2(1075, 450), Vector2(1045, 560),
+		Vector2(820, 605), Vector2(580, 610),
 	],
 }
 const DEFAULT_PATH := [Vector2(-40, 160), Vector2(360, 160), Vector2(360, 420),
@@ -64,6 +68,17 @@ const MULTI_PATHS_BY_THEME := {
 		[Vector2(560, 178), Vector2(350, 196), Vector2(220, 256), Vector2(170, 362),
 			Vector2(216, 466), Vector2(370, 558), Vector2(620, 588)],
 	],
+	# Desfiladeiro: anel de terra em volta da fortaleza. Portal à esquerda, castelo à
+	# direita; os inimigos contornam os muros por cima (arco superior) ou por baixo
+	# (arco inferior) e convergem no castelo à direita.
+	"desfiladeiro": [
+		# arco SUPERIOR: esquerda -> topo -> direita
+		[Vector2(150, 360), Vector2(255, 128), Vector2(560, 96), Vector2(975, 110),
+			Vector2(1150, 300), Vector2(1170, 372)],
+		# arco INFERIOR: esquerda -> baixo -> direita
+		[Vector2(150, 360), Vector2(305, 595), Vector2(600, 632), Vector2(950, 600),
+			Vector2(1130, 470), Vector2(1170, 372)],
+	],
 }
 
 # Temas cujo CAMINHO já está PINTADO na arte do mapa (estilo Kingdom Rush) E cujos
@@ -73,6 +88,8 @@ const MULTI_PATHS_BY_THEME := {
 const PATH_IN_ART := {
 	"elis": true,
 	"nemeia": true,
+	"desfiladeiro": true,
+	"olimpo": true,
 }
 
 # Pontos de torre: gerados automaticamente AO LADO da trilha (perpendicular a cada
@@ -92,11 +109,13 @@ const BLOCKED_BY_THEME := {
 	"desfiladeiro": [
 		Rect2(650, 16, 210, 196),     # torre de vigia (topo-centro)
 		Rect2(946, 446, 176, 176),    # poço/estrutura (canto inferior-direito)
+		Rect2(560, 264, 188, 150),    # altar/braseiro central
 	],
 	"olimpo": [
-		Rect2(684, 64, 210, 168),     # templo grego (centro-direita)
-		Rect2(984, 64, 168, 156),     # santuário menor (topo-direita)
-		Rect2(770, 416, 348, 224),    # ruínas/piscina (canto inferior-direito)
+		Rect2(700, 70, 335, 230),     # templo grande (topo-direita)
+		Rect2(245, 310, 150, 140),    # santuário/colunas (esquerda)
+		Rect2(355, 300, 340, 275),    # praça murada + fonte (centro-esquerda)
+		Rect2(748, 422, 275, 175),    # piscina/banho (centro-direita)
 	],
 }
 
