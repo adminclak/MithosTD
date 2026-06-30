@@ -18,12 +18,12 @@ const PATHS_BY_THEME := {
 		Vector2(560, 178), Vector2(770, 186), Vector2(950, 230), Vector2(1078, 340),
 		Vector2(1045, 472), Vector2(872, 556), Vector2(620, 588),
 	],
-	# Nemeia: a arte tem uma TRILHA de terra sinuosa do topo-esquerdo até embaixo.
-	# Os inimigos seguem essa trilha (portal no topo, castelo embaixo). Traçado sobre
-	# a terra pintada — caminho único (a arte não tem bifurcação limpa).
+	# Nemeia: TRILHA de terra em S — desce do topo (~x420) mantendo-se à esquerda no
+	# miolo e curva para a direita embaixo. Traçado SOBRE a terra pintada (portal no
+	# topo, castelo no fim visível da trilha, acima da barra).
 	"nemeia": [
-		Vector2(400, 120), Vector2(452, 212), Vector2(516, 272), Vector2(560, 346),
-		Vector2(576, 442), Vector2(606, 536), Vector2(622, 628), Vector2(616, 700),
+		Vector2(420, 118), Vector2(440, 214), Vector2(462, 304), Vector2(478, 382),
+		Vector2(528, 458), Vector2(600, 528), Vector2(655, 592),
 	],
 	# Pântano: campo de lama aberto com um LAGO central (intransponível). A rota entra
 	# pela esquerda e CONTORNA o lago pela borda inferior/direita (nunca pela água).
@@ -32,12 +32,12 @@ const PATHS_BY_THEME := {
 		Vector2(655, 602), Vector2(850, 545), Vector2(955, 405), Vector2(985, 285),
 		Vector2(1150, 250), Vector2(1330, 248),
 	],
-	# Desfiladeiro: a arte tem um ANEL de terra em volta da fortaleza murada. Portal à
-	# ESQUERDA, castelo à DIREITA; os inimigos contornam a fortaleza por cima ou por
-	# baixo (ver MULTI). Esta é a rota principal (arco superior). Traçado sobre a terra.
+	# Desfiladeiro: estrada DESENHADA atravessando o pátio de basalto aberto (entra no
+	# topo-esquerda, passa por baixo do altar central e sai embaixo). Caminho claro e
+	# bem visível; os heróis posicionam no basalto ao lado.
 	"desfiladeiro": [
-		Vector2(150, 360), Vector2(255, 128), Vector2(560, 96), Vector2(975, 110),
-		Vector2(1150, 300), Vector2(1170, 372),
+		Vector2(280, 210), Vector2(380, 360), Vector2(520, 462), Vector2(720, 480),
+		Vector2(880, 442), Vector2(820, 560), Vector2(720, 596),
 	],
 	# Olimpo: planalto nevado com templo (topo-dir), praça/fonte (centro-esq) e piscina
 	# (centro-dir). A rota desce pela neve aberta CONTORNANDO o templo e a piscina pela
@@ -68,17 +68,6 @@ const MULTI_PATHS_BY_THEME := {
 		[Vector2(560, 178), Vector2(350, 196), Vector2(220, 256), Vector2(170, 362),
 			Vector2(216, 466), Vector2(370, 558), Vector2(620, 588)],
 	],
-	# Desfiladeiro: anel de terra em volta da fortaleza. Portal à esquerda, castelo à
-	# direita; os inimigos contornam os muros por cima (arco superior) ou por baixo
-	# (arco inferior) e convergem no castelo à direita.
-	"desfiladeiro": [
-		# arco SUPERIOR: esquerda -> topo -> direita
-		[Vector2(150, 360), Vector2(255, 128), Vector2(560, 96), Vector2(975, 110),
-			Vector2(1150, 300), Vector2(1170, 372)],
-		# arco INFERIOR: esquerda -> baixo -> direita
-		[Vector2(150, 360), Vector2(305, 595), Vector2(600, 632), Vector2(950, 600),
-			Vector2(1130, 470), Vector2(1170, 372)],
-	],
 }
 
 # Temas cujo CAMINHO já está PINTADO na arte do mapa (estilo Kingdom Rush) E cujos
@@ -86,10 +75,10 @@ const MULTI_PATHS_BY_THEME := {
 # código — os inimigos andam direto na terra pintada (visual 100% integrado). Os
 # demais mapas ainda usam a estrada-código até serem traçados sobre a arte.
 const PATH_IN_ART := {
-	"elis": true,
-	"nemeia": true,
-	"desfiladeiro": true,
-	"olimpo": true,
+	"elis": true,    # oval de terra clara na arte — inimigos andam direto nela
+	"nemeia": true,  # trilha de terra clara na arte
+	# pantano/desfiladeiro/olimpo: NÃO têm estrada pintada clara, então DESENHAMOS uma
+	# estrada nítida (por área aberta) para o caminho ficar óbvio (saber onde posicionar).
 }
 
 # Pontos de torre: gerados automaticamente AO LADO da trilha (perpendicular a cada
@@ -148,9 +137,10 @@ const DECO_SPOTS := [
 const PATH_COLORS := {
 	"elis": [Color(0.46, 0.36, 0.24), Color(0.82, 0.70, 0.47)],
 	"nemeia": [Color(0.34, 0.26, 0.15), Color(0.60, 0.48, 0.30)],
-	"pantano": [Color(0.30, 0.30, 0.22), Color(0.55, 0.54, 0.38)],
-	"desfiladeiro": [Color(0.50, 0.30, 0.20), Color(0.80, 0.56, 0.40)],
-	"olimpo": [Color(0.55, 0.55, 0.60), Color(0.88, 0.86, 0.84)],
+	# Desenhados (estes 3): terra/areia bonita que combina com o bioma e dá contraste.
+	"pantano": [Color(0.33, 0.25, 0.16), Color(0.55, 0.44, 0.29)],       # lama marrom
+	"desfiladeiro": [Color(0.42, 0.33, 0.22), Color(0.70, 0.58, 0.40)],  # areia s/ basalto escuro
+	"olimpo": [Color(0.58, 0.50, 0.38), Color(0.84, 0.76, 0.60)],        # pedra/areia clara na neve
 }
 
 # Conjunto de decorações por tema (ids de assets/map). Verdes usam árvore/arbusto;
@@ -255,6 +245,8 @@ func _ready() -> void:
 
 	# Portal por ENTRADA distinta (1º ponto de cada rota) e UM castelo no destino
 	# comum (último ponto da rota principal). Tudo grampeado p/ dentro da tela.
+	# Portal/castelo grampeados ACIMA da barra de heróis (y<=600) p/ nunca saírem da
+	# tela / ficarem escondidos atrás da barra de baixo.
 	var seen_entries: Array = []
 	for route in paths:
 		var e: Vector2 = route[0]
@@ -266,11 +258,11 @@ func _ready() -> void:
 		if dup:
 			continue
 		seen_entries.append(e)
-		var portal_pos := Vector2(clampf(e.x, 36, 1244), clampf(e.y, 30, 690))
+		var portal_pos := Vector2(clampf(e.x, 36, 1244), clampf(e.y, 30, 600))
 		_add_shadow(portal_pos + Vector2(0, 38), 56, 20, -6)
 		_add_sprite(Art.map("portal"), portal_pos, 0.46, -5)
 	var wp: Array = paths[0]
-	var castle_pos := Vector2(clampf(wp[-1].x, 40, 1240), clampf(wp[-1].y, 40, 680)) + Vector2(0, -8)
+	var castle_pos := Vector2(clampf(wp[-1].x, 40, 1240), clampf(wp[-1].y, 40, 596)) + Vector2(0, -8)
 	_add_shadow(castle_pos + Vector2(0, 56), 80, 28, -2)
 	_add_sprite(Art.map("castle"), castle_pos, 0.70, -1)
 

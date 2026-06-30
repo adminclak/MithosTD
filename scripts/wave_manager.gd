@@ -28,8 +28,9 @@ var _seen: Dictionary = {} ## ids de inimigo já apresentados nesta partida
 var _route_rr: int = 0     ## round-robin: distribui os inimigos entre as rotas
 
 # Acessado por nó (não pelo identificador global) para a classe COMPILAR fora do jogo
-# (testes headless com -s), onde o autoload GameState não está registrado.
+# (testes headless com -s), onde os autoloads não estão registrados.
 @onready var _state: Node = get_node_or_null(^"/root/GameState")
+@onready var _prog: Node = get_node_or_null(^"/root/Progression")
 
 
 ## Chamado pelo botão do jogador: inicia a 1ª onda (sai da prep) ou antecipa a
@@ -95,9 +96,13 @@ func _spawn(enemy_id: String) -> void:
 	var d := GreekBestiary.by_id(enemy_id)
 	if d == null:
 		return
-	# Card "Novo Inimigo" (estilo KR) na primeira vez que este tipo aparece.
-	if not _seen.has(enemy_id):
+	# Card "Novo Inimigo" (estilo KR) só na PRIMEIRA vez que o jogador vê este tipo —
+	# uma vez descoberto (bestiário persistente), não aparece mais em partidas futuras.
+	var known: bool = _seen.has(enemy_id) or (_prog != null and _prog.is_enemy_discovered(enemy_id))
+	if not known:
 		_seen[enemy_id] = true
+		if _prog != null:
+			_prog.discover_enemy(enemy_id) # persiste (salvo no fim da partida)
 		new_enemy_type.emit(d)
 	var e := Enemy.new()
 	e.apply_data(d, enemy_hp_mult)

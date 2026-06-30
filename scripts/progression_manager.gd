@@ -43,6 +43,7 @@ var stats: Dictionary = {"wins": 0, "gacha": 0, "evolves": 0}
 var daily: Dictionary = {"wins": 0, "gacha": 0}
 var quests_claimed: Array = []
 var last_daily: String = ""
+var discovered_enemies: Array = [] ## ids de inimigos já vistos (bestiário): pop "Novo Inimigo" só 1x
 
 
 func _ready() -> void:
@@ -677,6 +678,7 @@ func reset() -> void:
 	daily = {"wins": 0, "gacha": 0}
 	quests_claimed = []
 	last_daily = Time.get_date_string_from_system()
+	discovered_enemies = []
 	_ensure_defaults()
 	emit_signal("progress_changed")
 
@@ -712,6 +714,7 @@ func save_to(path: String) -> void:
 		"daily": daily,
 		"quests_claimed": quests_claimed,
 		"last_daily": last_daily,
+		"discovered_enemies": discovered_enemies,
 	}
 	var f := FileAccess.open(path, FileAccess.WRITE)
 	if f != null:
@@ -803,4 +806,18 @@ func load_from(path: String) -> void:
 	for qid in data.get("quests_claimed", []):
 		quests_claimed.append(str(qid))
 	last_daily = str(data.get("last_daily", ""))
+	discovered_enemies = []
+	for eid in data.get("discovered_enemies", []):
+		discovered_enemies.append(str(eid))
 	_ensure_defaults() # garante personagens novos que não estavam no save
+
+
+## Bestiário: o inimigo já foi visto alguma vez? (controla o pop "Novo Inimigo").
+func is_enemy_discovered(enemy_id: String) -> bool:
+	return discovered_enemies.has(enemy_id)
+
+
+## Marca um inimigo como descoberto (persiste no save no fim da partida).
+func discover_enemy(enemy_id: String) -> void:
+	if enemy_id != "" and not discovered_enemies.has(enemy_id):
+		discovered_enemies.append(enemy_id)
