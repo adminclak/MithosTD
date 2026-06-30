@@ -18,15 +18,19 @@ const PATHS_BY_THEME := {
 		Vector2(560, 178), Vector2(770, 186), Vector2(950, 230), Vector2(1078, 340),
 		Vector2(1045, 472), Vector2(872, 556), Vector2(620, 588),
 	],
-	# Nemeia: caminho horizontal ondulado, da borda esquerda à direita (centro aberto).
+	# Nemeia: a arte tem uma TRILHA de terra sinuosa do topo-esquerdo até embaixo.
+	# Os inimigos seguem essa trilha (portal no topo, castelo embaixo). Traçado sobre
+	# a terra pintada — caminho único (a arte não tem bifurcação limpa).
 	"nemeia": [
-		Vector2(-40, 320), Vector2(230, 290), Vector2(450, 380), Vector2(660, 320),
-		Vector2(880, 390), Vector2(1080, 330), Vector2(1330, 360),
+		Vector2(400, 120), Vector2(452, 212), Vector2(516, 272), Vector2(560, 346),
+		Vector2(576, 442), Vector2(606, 536), Vector2(622, 628), Vector2(616, 700),
 	],
-	# Pântano: sobe em S da esquerda-baixo até a direita (centro aberto).
+	# Pântano: campo de lama aberto com um LAGO central (intransponível). A rota entra
+	# pela esquerda e CONTORNA o lago pela borda inferior/direita (nunca pela água).
 	"pantano": [
-		Vector2(-40, 610), Vector2(210, 560), Vector2(400, 450), Vector2(580, 500),
-		Vector2(770, 380), Vector2(980, 330), Vector2(1330, 310),
+		Vector2(-40, 415), Vector2(185, 405), Vector2(265, 520), Vector2(430, 588),
+		Vector2(655, 602), Vector2(850, 545), Vector2(955, 405), Vector2(985, 285),
+		Vector2(1150, 250), Vector2(1330, 248),
 	],
 	# Desfiladeiro (garganta vulcânica): entra no topo e desce curvando até a direita.
 	"desfiladeiro": [
@@ -60,14 +64,6 @@ const MULTI_PATHS_BY_THEME := {
 		[Vector2(560, 178), Vector2(350, 196), Vector2(220, 256), Vector2(170, 362),
 			Vector2(216, 466), Vector2(370, 558), Vector2(620, 588)],
 	],
-	# Nemeia: a partir da 2ª curva uma rota sobe (arco superior) e a outra desce
-	# (rota principal ondulada); ambas chegam ao mesmo castelo à direita.
-	"nemeia": [
-		[Vector2(-40, 320), Vector2(230, 290), Vector2(450, 380), Vector2(660, 320),
-			Vector2(880, 390), Vector2(1080, 330), Vector2(1330, 360)],
-		[Vector2(-40, 320), Vector2(230, 290), Vector2(450, 230), Vector2(660, 200),
-			Vector2(880, 240), Vector2(1080, 300), Vector2(1330, 360)],
-	],
 }
 
 # Temas cujo CAMINHO já está PINTADO na arte do mapa (estilo Kingdom Rush) E cujos
@@ -76,6 +72,7 @@ const MULTI_PATHS_BY_THEME := {
 # demais mapas ainda usam a estrada-código até serem traçados sobre a arte.
 const PATH_IN_ART := {
 	"elis": true,
+	"nemeia": true,
 }
 
 # Pontos de torre: gerados automaticamente AO LADO da trilha (perpendicular a cada
@@ -89,7 +86,9 @@ const SLOTS_BY_THEME := {}
 # faixa de construção. Conservador de propósito: melhor bloquear um pouco a mais
 # perto de um prédio do que deixar um herói flutuando sobre ele.
 const BLOCKED_BY_THEME := {
-	# Pântano é lama (não parede/água profunda) — centro fica livre p/ construir.
+	"pantano": [
+		Rect2(465, 205, 375, 360),    # lago central (água profunda) — não dá p/ construir
+	],
 	"desfiladeiro": [
 		Rect2(650, 16, 210, 196),     # torre de vigia (topo-centro)
 		Rect2(946, 446, 176, 176),    # poço/estrutura (canto inferior-direito)
