@@ -28,6 +28,7 @@ var fragments: Dictionary = {}      ## id -> quantidade de fragmentos (evoluem e
 var inventory: Array = []           ## ids de equipamentos possuídos (sem repetição)
 var equipped: Dictionary = {}       ## char_id -> { slot_index: item_id }
 var blessings: Dictionary = {}      ## Bênçãos do Olimpo: id -> nível (gasta Essência)
+var stage_stars: Dictionary = {}    ## estrelas por fase: str(index) -> melhor (0..3)
 
 # Até 3 equipes salvas. teams[i] = lista de ids; team_ults[i] = id do Poder Supremo.
 var teams: Array = [[], [], []]
@@ -549,6 +550,37 @@ func bless_ult_charge_mult() -> float:
 	return maxf(0.4, 1.0 - blessing_value("ult") / 100.0)
 
 
+# --- Estrelas por fase (endgame: 0..3 conforme vidas restantes) ---
+const STARS_PER_STAGE := 3
+
+
+func stars_for_stage(index: int) -> int:
+	return int(stage_stars.get(str(index), 0))
+
+
+func total_stars() -> int:
+	var sum := 0
+	for v in stage_stars.values():
+		sum += int(v)
+	return sum
+
+
+func max_total_stars() -> int:
+	return StageList.count() * STARS_PER_STAGE
+
+
+## Registra as estrelas de uma fase (guarda só o MELHOR resultado já obtido).
+## Retorna { best, improved, gained } para a tela de resultado.
+func record_stars(index: int, stars: int) -> Dictionary:
+	var prev := stars_for_stage(index)
+	var best := maxi(prev, clampi(stars, 0, STARS_PER_STAGE))
+	var improved := best > prev
+	if improved:
+		stage_stars[str(index)] = best
+		emit_signal("progress_changed")
+	return {"best": best, "improved": improved, "gained": maxi(0, best - prev)}
+
+
 # --- Recompensas de fim de fase ---
 func grant_rewards(stage_index: int, victory: bool) -> Dictionary:
 	_ensure_defaults()
@@ -597,6 +629,7 @@ func reset() -> void:
 	inventory = []
 	equipped = {}
 	blessings = {}
+	stage_stars = {}
 	teams = [[], [], []]
 	team_ults = ["", "", ""]
 	team_champions = ["", "", ""]
@@ -630,6 +663,7 @@ func save_to(path: String) -> void:
 		"inventory": inventory,
 		"equipped": equipped,
 		"blessings": blessings,
+		"stage_stars": stage_stars,
 		"teams": teams,
 		"team_ults": team_ults,
 		"team_champions": team_champions,
@@ -684,6 +718,10 @@ func load_from(path: String) -> void:
 	var saved_bless: Dictionary = data.get("blessings", {})
 	for bid in saved_bless.keys():
 		blessings[bid] = int(saved_bless[bid])
+	stage_stars = {}
+	var saved_stars: Dictionary = data.get("stage_stars", {})
+	for sid in saved_stars.keys():
+		stage_stars[str(sid)] = int(saved_stars[sid])
 	equipped = {}
 	var saved_eq: Dictionary = data.get("equipped", {})
 	for cid in saved_eq.keys():

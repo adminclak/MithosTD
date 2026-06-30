@@ -66,7 +66,8 @@ func _ready() -> void:
 		var state := 0
 		if not locked:
 			state = 2 if s.index < Progression.highest_stage_unlocked else 1
-		overlay.nodes.append({"pos": NODES[i], "idx": s.index, "state": state})
+		overlay.nodes.append({"pos": NODES[i], "idx": s.index, "state": state,
+			"stars": Progression.stars_for_stage(s.index)})
 		# Botão transparente só para captar o clique.
 		var b := Button.new()
 		b.size = Vector2(80, 80)

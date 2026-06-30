@@ -158,20 +158,27 @@ func _on_start_stage(stage: StageData, squad_ids: Array, ult_id: String = "", au
 	_switch_to(game)
 
 
-func _on_game_finished(victory: bool, stage: StageData, squad_ids: Array) -> void:
-	print("Fim da fase %d - vitoria: %s" % [stage.index, victory])
+func _on_game_finished(victory: bool, stars: int, stage: StageData, squad_ids: Array) -> void:
+	print("Fim da fase %d - vitoria: %s (%d estrelas)" % [stage.index, victory, stars])
 	if victory:
 		Progression.record_win()
 	var xp: int = stage.xp_reward if victory else int(round(stage.xp_reward * 0.3))
 	var summary := Progression.grant_squad_xp(squad_ids, xp)
 	var rewards := Progression.grant_rewards(stage.index, victory)
 	var newly: Array = []
+	var star_info := {}
 	if victory:
 		newly = Progression.mark_stage_cleared(stage.index)
+		star_info = Progression.record_stars(stage.index, stars)
+		# Bônus de Essência por NOVAS estrelas (incentivo a refazer melhor).
+		var gained: int = star_info.get("gained", 0)
+		if gained > 0:
+			rewards["essence"] = int(rewards.get("essence", 0)) + gained * 3
+			Progression.add_essence(gained * 3)
 	Progression.save_game()
 
 	var result := ResultScreen.new()
-	result.setup(victory, xp, summary, newly, rewards)
+	result.setup(victory, xp, summary, newly, rewards, stars, star_info)
 	result.continue_pressed.connect(_show_title)
 	_switch_to(result)
 

@@ -108,9 +108,9 @@ func _ready() -> void:
 	res.size = Vector2(1280, 30)
 	res.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	res.add_theme_color_override("font_color", Color(1.0, 0.9, 0.5))
-	res.text = "Ouro %d     Ambrosia %d     Fase liberada %d/%d     Herois %d/%d" % [
-		Progression.meta_gold, Progression.ambrosia, Progression.highest_stage_unlocked,
-		StageList.count(), Progression.unlocked_ids().size(), Roster.count()]
+	res.text = "Ouro %d     Ambrosia %d     Estrelas %d/%d     Herois %d/%d" % [
+		Progression.meta_gold, Progression.ambrosia, Progression.total_stars(),
+		Progression.max_total_stars(), Progression.unlocked_ids().size(), Roster.count()]
 	add_child(res)
 
 

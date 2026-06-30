@@ -5,7 +5,7 @@ extends Node2D
 ## cinza (bloqueada), o número da fase e 3 estrelas de conquista acima (estilo
 ## Kingdom Rush). Os cliques ficam em Buttons transparentes por cima.
 
-var nodes: Array = [] ## [{pos:Vector2, idx:int, state:int}] state: 0=lock 1=next 2=clear
+var nodes: Array = [] ## [{pos:Vector2, idx:int, state:int, stars:int}] state: 0=lock 1=next 2=clear
 var _t: float = 0.0
 
 
@@ -38,10 +38,11 @@ func _draw() -> void:
 		var label := str(n["idx"]) if st != 0 else "?"
 		draw_string(font, p + Vector2(-9, 10), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 28,
 			Color(0.2, 0.15, 0.05) if st == 2 else Color(1, 1, 1))
-		# 3 estrelas de conquista acima.
+		# 3 estrelas de conquista acima (preenchidas = conquistadas na fase).
+		var earned: int = n.get("stars", 0)
 		for s in 3:
 			var sp := p + Vector2((s - 1) * 20.0, -r - 16.0)
-			_star(sp, 9.0, 4.0, st == 2)
+			_star(sp, 9.0, 4.0, s < earned)
 
 
 func _star(c: Vector2, ro: float, ri: float, filled: bool) -> void:

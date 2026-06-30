@@ -11,14 +11,18 @@ var _xp: int = 0
 var _summary: Dictionary = {}
 var _newly: Array = []
 var _rewards: Dictionary = {}
+var _stars: int = 0
+var _star_info: Dictionary = {}
 
 
-func setup(victory: bool, xp: int, summary: Dictionary, newly: Array, rewards: Dictionary = {}) -> void:
+func setup(victory: bool, xp: int, summary: Dictionary, newly: Array, rewards: Dictionary = {}, stars: int = 0, star_info: Dictionary = {}) -> void:
 	_victory = victory
 	_xp = xp
 	_summary = summary
 	_newly = newly
 	_rewards = rewards
+	_stars = stars
+	_star_info = star_info
 
 
 func _ready() -> void:
@@ -38,6 +42,16 @@ func _ready() -> void:
 	title.add_theme_font_size_override("font_size", 48)
 	title.add_theme_color_override("font_color", Color(0.4, 0.9, 0.4) if _victory else Color(0.9, 0.4, 0.4))
 	box.add_child(title)
+
+	# Estrelas conquistadas (3 = sem perder vidas). Mostradas só na vitória.
+	if _victory:
+		box.add_child(_stars_row())
+		if _star_info.get("improved", false):
+			var rec := Label.new()
+			rec.text = "Novo recorde de estrelas!  (+%d essencia)" % (int(_star_info.get("gained", 0)) * 3)
+			rec.add_theme_font_size_override("font_size", 18)
+			rec.add_theme_color_override("font_color", Color(0.6, 0.95, 0.7))
+			box.add_child(rec)
 
 	var xp_label := Label.new()
 	xp_label.text = "XP concedido ao esquadrao: +%d cada" % _xp
@@ -78,6 +92,20 @@ func _ready() -> void:
 	cont.text = "Continuar"
 	cont.pressed.connect(func(): continue_pressed.emit())
 	box.add_child(cont)
+
+
+## Fileira de 3 estrelas (preenchidas = conquistadas nesta partida).
+func _stars_row() -> Label:
+	var l := Label.new()
+	var s := ""
+	for i in 3:
+		s += "★" if i < _stars else "☆"
+	l.text = s
+	l.add_theme_font_size_override("font_size", 44)
+	l.add_theme_color_override("font_color", Color(1.0, 0.86, 0.3))
+	l.add_theme_color_override("font_outline_color", Color(0.25, 0.16, 0.03))
+	l.add_theme_constant_override("outline_size", 4)
+	return l
 
 
 ## Card de destaque do herói conquistado na campanha (retrato + nome + classe).

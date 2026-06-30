@@ -24,6 +24,7 @@ func _initialize() -> void:
 	_test_build_menu_ui()
 	_test_progression()
 	_test_blessings()
+	_test_stars()
 	_test_gacha()
 	_test_quests()
 	_test_squad_uniqueness()
@@ -510,6 +511,43 @@ func _test_blessings() -> void:
 	_check(pr.blessing_level("dano") == 0, "reset zera as bencaos")
 	pr.load_from(tmp)
 	_check(pr.blessing_level("dano") == lvl, "load restaura as bencaos")
+	if FileAccess.file_exists(tmp):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(tmp))
+
+
+func _test_stars() -> void:
+	print("\nEstrelas por fase (endgame: melhor resultado por fase):")
+	var pr = root.get_node_or_null(^"/root/Progression")
+	if pr == null:
+		_check(false, "Progression acessivel"); return
+	pr.reset()
+	_check(pr.stars_for_stage(1) == 0, "fase sem jogar = 0 estrelas")
+	_check(pr.total_stars() == 0, "total comeca em 0")
+	_check(pr.max_total_stars() == StageList.count() * 3, "teto = fases x 3")
+
+	var r1 = pr.record_stars(1, 2)
+	_check(r1["best"] == 2 and r1["improved"] and r1["gained"] == 2, "1a vez: registra 2 estrelas")
+	_check(pr.stars_for_stage(1) == 2, "fase 1 = 2 estrelas")
+
+	# Pior resultado NAO rebaixa o recorde.
+	var r2 = pr.record_stars(1, 1)
+	_check(not r2["improved"] and pr.stars_for_stage(1) == 2, "resultado pior nao rebaixa")
+
+	# Melhor resultado sobe o recorde e conta so o ganho.
+	var r3 = pr.record_stars(1, 3)
+	_check(r3["improved"] and r3["gained"] == 1 and pr.stars_for_stage(1) == 3, "melhora soma so o ganho (1)")
+
+	pr.record_stars(2, 3)
+	_check(pr.total_stars() == 6, "total soma todas as fases (3+3)")
+	_check(pr.record_stars(1, 9)["best"] == 3, "estrelas saturam em 3 (clamp)")
+
+	# Save/load preserva as estrelas.
+	var tmp = "user://test_stars_%d.json" % Time.get_ticks_usec()
+	pr.save_to(tmp)
+	pr.reset()
+	_check(pr.stars_for_stage(1) == 0, "reset zera as estrelas")
+	pr.load_from(tmp)
+	_check(pr.stars_for_stage(1) == 3 and pr.stars_for_stage(2) == 3, "load restaura as estrelas")
 	if FileAccess.file_exists(tmp):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(tmp))
 

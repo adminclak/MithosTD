@@ -6,7 +6,7 @@ extends Node2D
 ## Botões: lançar onda, pause, velocidade (x1/x2) e abandonar.
 ## Emite finished(victory) quando a partida acaba.
 
-signal finished(victory: bool)
+signal finished(victory: bool, stars: int)
 
 const START_HP := Balance.START_HP
 const START_GOLD := Balance.START_GOLD ## ~3 torres iniciais; kills + bônus financiam o resto
@@ -16,6 +16,7 @@ var _ult_charge_time: float = ULT_CHARGE_TIME ## ajustado pela bênção Trovão
 
 var auto_start: bool = false ## smoke test: começa as ondas sozinho
 var _prep_timer: float = PREP_TIME
+var _start_hp: int = Balance.START_HP ## vida inicial real (com bênção) p/ cálculo de estrelas
 
 var _stage: StageData
 var _squad: Array = []
@@ -51,8 +52,8 @@ func setup(stage: StageData, squad_datas: Array, ult_char_id: String = "") -> vo
 
 func _ready() -> void:
 	# Bênçãos do Olimpo (permanentes): +vida da base e +ouro inicial.
-	GameState.reset_run(START_HP + Progression.bless_base_hp_bonus(),
-		START_GOLD + Progression.bless_start_gold_bonus())
+	_start_hp = START_HP + Progression.bless_base_hp_bonus()
+	GameState.reset_run(_start_hp, START_GOLD + Progression.bless_start_gold_bonus())
 	_ult_charge_time = ULT_CHARGE_TIME * Progression.bless_ult_charge_mult()
 
 	var level := Level.new()
@@ -331,16 +332,30 @@ func _do_abandon() -> void:
 		return
 	_ended = true
 	_restore_run_state()
-	finished.emit(false)
+	finished.emit(false, 0)
+
+
+## Estrelas da fase (estilo Kingdom Rush): 3 = sem perder vidas, 2 = >=60% das
+## vidas, 1 = venceu, 0 = derrota.
+func _compute_stars(victory: bool) -> int:
+	if not victory:
+		return 0
+	var frac := float(GameState.base_hp) / float(maxi(1, _start_hp))
+	if frac >= 1.0:
+		return 3
+	if frac >= 0.6:
+		return 2
+	return 1
 
 
 func _on_game_over(victory: bool) -> void:
 	if _ended:
 		return
 	_ended = true
+	var stars := _compute_stars(victory)
 	_restore_run_state()
 	await get_tree().create_timer(1.2).timeout
-	finished.emit(victory)
+	finished.emit(victory, stars)
 
 
 func _restore_run_state() -> void:
