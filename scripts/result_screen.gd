@@ -71,14 +71,65 @@ func _ready() -> void:
 		box.add_child(line)
 
 	for id in _newly:
-		var ch := Roster.by_id(id)
-		var line := Label.new()
-		line.text = "NOVO PERSONAGEM desbloqueado: %s!" % (ch.display_name if ch != null else id)
-		line.add_theme_color_override("font_color", Color(0.5, 0.85, 1.0))
-		box.add_child(line)
+		box.add_child(_unlock_card(id))
 
 	var cont := Button.new()
 	cont.custom_minimum_size = Vector2(180, 38)
 	cont.text = "Continuar"
 	cont.pressed.connect(func(): continue_pressed.emit())
 	box.add_child(cont)
+
+
+## Card de destaque do herói conquistado na campanha (retrato + nome + classe).
+func _unlock_card(id: String) -> PanelContainer:
+	const CLASS_NAMES := ["Arqueiro", "Mago", "Guerreiro", "Sacerdote"]
+	var ch := Roster.by_id(id)
+	var card := PanelContainer.new()
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.10, 0.12, 0.20, 0.95)
+	sb.set_corner_radius_all(10)
+	sb.set_border_width_all(3)
+	sb.border_color = Color(1.0, 0.82, 0.35)
+	sb.shadow_color = Color(1.0, 0.8, 0.3, 0.35)
+	sb.shadow_size = 10
+	card.add_theme_stylebox_override("panel", sb)
+	var m := MarginContainer.new()
+	for s in ["left", "right", "top", "bottom"]:
+		m.add_theme_constant_override("margin_" + s, 10)
+	card.add_child(m)
+	var hb := HBoxContainer.new()
+	hb.add_theme_constant_override("separation", 14)
+	m.add_child(hb)
+
+	var art := TextureRect.new()
+	art.custom_minimum_size = Vector2(84, 84)
+	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	var tex := Art.hero(id)
+	if tex != null:
+		art.texture = tex
+	hb.add_child(art)
+
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 2)
+	hb.add_child(v)
+	var tag := Label.new()
+	tag.text = "★ NOVO HERÓI CONQUISTADO!"
+	tag.add_theme_font_size_override("font_size", 16)
+	tag.add_theme_color_override("font_color", Color(1.0, 0.85, 0.35))
+	v.add_child(tag)
+	var nm := Label.new()
+	nm.text = ch.display_name if ch != null else id
+	nm.add_theme_font_size_override("font_size", 26)
+	var ff := UiTheme.fancy_font()
+	if ff != null:
+		nm.add_theme_font_override("font", ff)
+	v.add_child(nm)
+	if ch != null:
+		var sub := Label.new()
+		var el := Elements.of_character(id)
+		sub.text = "%s · %s · %s" % [ch.mythology, CLASS_NAMES[ch.tower_class], Elements.name_of(el)]
+		sub.add_theme_font_size_override("font_size", 14)
+		sub.add_theme_color_override("font_color", Color(0.8, 0.85, 0.95))
+		v.add_child(sub)
+	return card

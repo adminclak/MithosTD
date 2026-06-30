@@ -11,9 +11,11 @@ const MYTHOLOGIES := ["Grega", "Nordica", "Japonesa", "Brasileira", "Egipcia", "
 
 enum Rarity { COMMON, RARE, EPIC, LEGENDARY }
 
-## FOCO GREGO: por enquanto o jogo é só dos 8 personagens gregos, todos liberados.
+## FOCO GREGO: 8 personagens gregos. Começa com 3 (um por classe principal:
+## Arqueiro/Guerreiro/Mago) e CONQUISTA o resto concluindo as fases (ver
+## Progression.STAGE_UNLOCKS). Zeus é o capstone (fase 5).
 ## (O roster completo das 7 mitologias está preservado em defs_all() para o futuro.)
-const STARTERS := ["artemis", "hermes", "hercules", "ares", "atena", "apolo", "medusa"]
+const STARTERS := ["artemis", "hercules", "medusa"]
 
 
 static func is_starter(id: String) -> bool:

@@ -15,7 +15,9 @@ const LEVEL_CAP := {1: 10, 2: 20, 3: 30}
 signal progress_changed
 
 const GACHA_COST := 100 ## Ambrosia por giro
-const STAGE_UNLOCKS := {5: "zeus"} ## foco grego: concluir a fase 5 (Olimpo) libera Zeus
+## Heróis conquistados pela campanha: concluir cada fase libera 1 grego (começa com
+## 3 iniciais, ver Roster.STARTERS). Zeus é o capstone na última fase.
+const STAGE_UNLOCKS := {1: "atena", 2: "ares", 3: "hermes", 4: "apolo", 5: "zeus"}
 
 var highest_stage_unlocked: int = 1 ## maior fase liberada para jogar
 var meta_essence: int = 0           ## recurso secundário (loja)

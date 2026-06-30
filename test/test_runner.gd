@@ -485,7 +485,10 @@ func _test_progression() -> void:
 	# Foco grego: 8 personagens; comeca com os iniciais.
 	_check(Roster.count() == 8, "roster grego tem 8 personagens")
 	_check(pr.unlocked_ids().size() == Roster.STARTERS.size(), "comeca com os iniciais")
-	_check(pr.is_unlocked("artemis") == true, "Artemis (inicial) desbloqueada")
+	_check(Roster.STARTERS.size() == 3, "comeca com 3 herois (1 por classe principal)")
+	_check(pr.is_unlocked("artemis") and pr.is_unlocked("hercules") and pr.is_unlocked("medusa"),
+		"iniciais sao Artemis/Hercules/Medusa")
+	_check(not pr.is_unlocked("atena") and not pr.is_unlocked("ares"), "demais herois comecam bloqueados")
 	_check(pr.is_unlocked("zeus") == false, "Zeus comeca bloqueado")
 	_check(pr.highest_stage_unlocked == 1, "comeca com a fase 1 liberada")
 
@@ -495,8 +498,9 @@ func _test_progression() -> void:
 	_check(s["artemis"]["new_level"] == pr.level_of("artemis"), "resumo bate com o nivel novo")
 
 	# Concluir a fase 1 libera a fase 2; concluir a 5 desbloqueia Zeus (campanha).
-	pr.mark_stage_cleared(1)
+	var newly1 = pr.mark_stage_cleared(1)
 	_check(pr.highest_stage_unlocked == 2, "fase 2 liberada apos concluir a 1")
+	_check(newly1.has("atena") and pr.is_unlocked("atena"), "fase 1 desbloqueia Atena (campanha)")
 	var newly = pr.mark_stage_cleared(5)
 	_check(newly.has("zeus"), "fase 5 (Olimpo) desbloqueia Zeus")
 
