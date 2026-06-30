@@ -44,6 +44,30 @@ var last_daily: String = ""
 func _ready() -> void:
 	load_game()
 	_check_daily_reset()
+	ensure_starting_team()
+
+
+## Jogador novo não pode entrar numa fase com a equipe vazia (ficaria sem campeão
+## e só com torres genéricas). Se TODAS as equipes estiverem vazias, monta a
+## Equipe 1 com os heróis desbloqueados (até SQUAD_MAX) e define ult/campeão.
+func ensure_starting_team() -> void:
+	_ensure_defaults()
+	for t in teams:
+		if not t.is_empty():
+			return ## jogador já tem equipe montada — não mexe
+	var ids := unlocked_ids()
+	if ids.is_empty():
+		return
+	var t0: Array = []
+	for id in ids:
+		if t0.size() >= SQUAD_MAX:
+			break
+		t0.append(id)
+	teams[0] = t0
+	team_ults[0] = t0[0]
+	team_champions[0] = t0[0]
+	active_team = 0
+	save_game()
 
 
 # --- Consultas ---

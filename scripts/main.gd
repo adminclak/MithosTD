@@ -12,6 +12,13 @@ func _ready() -> void:
 	# Atalho de smoke test: "-- --auto-stage" inicia a fase 1 direto com os
 	# personagens iniciais, exercitando o fluxo Partida -> Resultado sem input.
 	var args := OS.get_cmdline_user_args()
+	# Teste: zera o progresso (heróis, moedas, fases) para experimentar a campanha
+	# do começo. Uso: Godot --path . -- --reset-save
+	if args.has("--reset-save"):
+		Progression.reset()
+		Progression.ensure_starting_team()
+		Progression.save_game()
+		print("Progresso resetado (--reset-save).")
 	if args.has("--shot"):
 		_shot_mode(args)
 		return
