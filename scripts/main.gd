@@ -60,10 +60,11 @@ func _ready() -> void:
 func _shot_mode(args: Array) -> void:
 	var which := "title"
 	for a in args:
-		if a in ["title", "worldmap", "heroes", "collection", "gacha", "quests", "game", "blessings", "picker", "build", "teamselect", "result", "bestiary"]:
+		if a in ["title", "worldmap", "heroes", "collection", "gacha", "quests", "game", "blessings", "picker", "build", "teamselect", "result", "bestiary", "equip"]:
 			which = a
 	match which:
 		"bestiary": _show_bestiary()
+		"equip": _show_equipment()
 		"result":
 			var rs := ResultScreen.new()
 			var summary := {
@@ -128,7 +129,7 @@ func _show_title() -> void:
 func _goto_section(id: String) -> void:
 	match id:
 		"herois": _show_heroes()
-		"equip": _show_heroes()        # equipamento é gerido dentro de Heróis (por ora)
+		"equip": _show_equipment()
 		"bestiario": _show_bestiary()
 		"loja": _show_collection()
 		"missoes": _show_quests()
@@ -140,6 +141,13 @@ func _goto_section(id: String) -> void:
 func _show_bestiary() -> void:
 	var screen := BestiaryScreen.new()
 	screen.back_pressed.connect(_show_title)
+	screen.section_selected.connect(_goto_section)
+	_switch_to(screen)
+
+
+func _show_equipment() -> void:
+	var screen := EquipmentScreen.new()
+	screen.closed.connect(_show_title)
 	screen.section_selected.connect(_goto_section)
 	_switch_to(screen)
 
