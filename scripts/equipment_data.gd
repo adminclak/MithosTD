@@ -8,7 +8,7 @@ extends Resource
 ## adição direta p/ crit/esquiva/cdr/lifesteal; contagem p/ penetração/bloqueio.
 
 enum Slot { HELMET, ARMOR, LEGS, BOOTS, WEAPON, SHIELD, AMULET, RING }
-enum Rarity { COMMON, RARE, EPIC, LEGENDARY }
+enum Rarity { COMMON, UNCOMMON, RARE, EPIC, LEGENDARY, MYTHIC }
 enum Stat {
 	DAMAGE, RANGE, FIRE_RATE, MAX_HP, DEFENSE, CRIT, PENETRATION,
 	DODGE, LIFESTEAL, REGEN, AURA_POWER, CDR, BLOCK,
@@ -127,16 +127,25 @@ static func slot_name(s: int) -> String:
 static func rarity_name(r: int) -> String:
 	match r:
 		Rarity.COMMON: return "Comum"
+		Rarity.UNCOMMON: return "Incomum"
 		Rarity.RARE: return "Raro"
 		Rarity.EPIC: return "Epico"
 		Rarity.LEGENDARY: return "Lendario"
+		Rarity.MYTHIC: return "Mitico"
 	return "?"
 
 
 static func rarity_color(r: int) -> Color:
 	match r:
 		Rarity.COMMON: return Color(0.80, 0.80, 0.82)
+		Rarity.UNCOMMON: return Color(0.45, 0.85, 0.45)
 		Rarity.RARE: return Color(0.35, 0.65, 1.0)
 		Rarity.EPIC: return Color(0.75, 0.40, 1.0)
 		Rarity.LEGENDARY: return Color(1.0, 0.72, 0.22)
+		Rarity.MYTHIC: return Color(1.0, 0.34, 0.40)
 	return Color.WHITE
+
+
+## Ordem das raridades (para filtros/ordenação): Comum -> ... -> Mítico.
+static func rarity_order() -> Array:
+	return [Rarity.COMMON, Rarity.UNCOMMON, Rarity.RARE, Rarity.EPIC, Rarity.LEGENDARY, Rarity.MYTHIC]

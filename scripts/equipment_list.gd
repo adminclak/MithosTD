@@ -39,15 +39,15 @@ const MATS := [
 	["couro", "de Couro", R.COMMON, 0.10],
 	["bronze", "de Bronze", R.COMMON, 0.13],
 	["osso", "de Osso", R.COMMON, 0.12],
-	["ferro", "de Ferro", R.RARE, 0.18],
-	["aco", "de Aco", R.RARE, 0.23],
+	["ferro", "de Ferro", R.UNCOMMON, 0.18],
+	["aco", "de Aco", R.UNCOMMON, 0.23],
 	["viking", "Viking", R.RARE, 0.21],
 	["ouro", "de Ouro", R.RARE, 0.20],
 	["prata", "de Prata", R.EPIC, 0.30],
 	["cobalto", "de Cobalto", R.EPIC, 0.36],
-	["obsidiana", "de Obsidiana", R.EPIC, 0.38],
-	["dragao", "de Dragao", R.EPIC, 0.41],
-	["mithril", "de Mithril", R.EPIC, 0.44],
+	["obsidiana", "de Obsidiana", R.LEGENDARY, 0.38],
+	["dragao", "de Dragao", R.LEGENDARY, 0.41],
+	["mithril", "de Mithril", R.MYTHIC, 0.44],
 ]
 
 # Slots defensivos: base id, nome, stat principal.
@@ -142,7 +142,7 @@ static func _legendaries() -> Array:
 	# mk(id, nome, slot, LEGENDARY, [stats], [valores], icon=id)
 	return [
 		# --- Grega ---
-		EquipmentData.mk("raio_zeus", "Raio de Zeus", S.WEAPON, R.LEGENDARY, [T.DAMAGE, T.CRIT], [0.45, 0.12], "raio_zeus"),
+		EquipmentData.mk("raio_zeus", "Raio de Zeus", S.WEAPON, R.MYTHIC, [T.DAMAGE, T.CRIT], [0.45, 0.12], "raio_zeus"),
 		EquipmentData.mk("tridente_poseidon", "Tridente de Poseidon", S.WEAPON, R.LEGENDARY, [T.DAMAGE, T.RANGE], [0.38, 0.20], "tridente_poseidon"),
 		EquipmentData.mk("arco_artemis", "Arco de Artemis", S.WEAPON, R.LEGENDARY, [T.DAMAGE, T.FIRE_RATE], [0.32, 0.25], "arco_artemis"),
 		EquipmentData.mk("harpe_perseu", "Harpe de Perseu", S.WEAPON, R.LEGENDARY, [T.DAMAGE, T.PENETRATION], [0.34, 5.0], "harpe_perseu"),
@@ -155,7 +155,7 @@ static func _legendaries() -> Array:
 		EquipmentData.mk("velocino_ouro", "Velocino de Ouro", S.AMULET, R.LEGENDARY, [T.MAX_HP, T.REGEN], [0.25, 5.0], "velocino_ouro"),
 		EquipmentData.mk("coroa_louros", "Coroa de Louros", S.HELMET, R.LEGENDARY, [T.AURA_POWER, T.MAX_HP], [0.30, 0.18], "coroa_louros"),
 		# --- Nordica ---
-		EquipmentData.mk("mjolnir", "Mjolnir", S.WEAPON, R.LEGENDARY, [T.DAMAGE, T.CRIT], [0.42, 0.14], "mjolnir"),
+		EquipmentData.mk("mjolnir", "Mjolnir", S.WEAPON, R.MYTHIC, [T.DAMAGE, T.CRIT], [0.42, 0.14], "mjolnir"),
 		EquipmentData.mk("gungnir", "Gungnir", S.WEAPON, R.LEGENDARY, [T.DAMAGE, T.PENETRATION], [0.36, 6.0], "gungnir"),
 		EquipmentData.mk("olho_odin", "Olho de Odin", S.AMULET, R.LEGENDARY, [T.RANGE, T.CRIT], [0.22, 0.12], "olho_odin"),
 		EquipmentData.mk("draupnir", "Draupnir", S.RING, R.LEGENDARY, [T.DAMAGE, T.FIRE_RATE], [0.18, 0.15], "draupnir"),
@@ -165,20 +165,20 @@ static func _legendaries() -> Array:
 		EquipmentData.mk("botas_vidar", "Botas de Vidar", S.BOOTS, R.LEGENDARY, [T.DEFENSE, T.DODGE], [0.22, 0.15], "botas_vidar"),
 		# --- Egipcia ---
 		EquipmentData.mk("olho_horus", "Olho de Horus", S.AMULET, R.LEGENDARY, [T.RANGE, T.CRIT], [0.25, 0.12], "olho_horus"),
-		EquipmentData.mk("olho_ra", "Olho de Ra", S.WEAPON, R.LEGENDARY, [T.DAMAGE, T.RANGE], [0.40, 0.18], "olho_ra"),
+		EquipmentData.mk("olho_ra", "Olho de Ra", S.WEAPON, R.MYTHIC, [T.DAMAGE, T.RANGE], [0.40, 0.18], "olho_ra"),
 		EquipmentData.mk("khopesh_real", "Khopesh Real", S.WEAPON, R.LEGENDARY, [T.DAMAGE, T.LIFESTEAL], [0.34, 0.12], "khopesh_real"),
 		EquipmentData.mk("cetro_uas", "Cetro Uas", S.WEAPON, R.LEGENDARY, [T.AURA_POWER, T.CDR], [0.30, 0.15], "cetro_uas"),
 		EquipmentData.mk("ankh_vida", "Ankh da Vida", S.AMULET, R.LEGENDARY, [T.REGEN, T.MAX_HP], [6.0, 0.20], "ankh_vida"),
 		EquipmentData.mk("coroa_pschent", "Coroa Pschent", S.HELMET, R.LEGENDARY, [T.AURA_POWER, T.DEFENSE], [0.28, 0.20], "coroa_pschent"),
 		EquipmentData.mk("escudo_anubis", "Escudo de Anubis", S.SHIELD, R.LEGENDARY, [T.DEFENSE, T.PENETRATION], [0.30, 4.0], "escudo_anubis"),
 		# --- Chinesa ---
-		EquipmentData.mk("ruyi_jingu", "Bastao Ruyi Jingu", S.WEAPON, R.LEGENDARY, [T.DAMAGE, T.BLOCK], [0.40, 1.0], "ruyi_jingu"),
+		EquipmentData.mk("ruyi_jingu", "Bastao Ruyi Jingu", S.WEAPON, R.MYTHIC, [T.DAMAGE, T.BLOCK], [0.40, 1.0], "ruyi_jingu"),
 		EquipmentData.mk("perola_dragao", "Perola do Dragao", S.AMULET, R.LEGENDARY, [T.AURA_POWER, T.CDR], [0.30, 0.16], "perola_dragao"),
 		EquipmentData.mk("arco_houyi", "Arco de Hou Yi", S.WEAPON, R.LEGENDARY, [T.DAMAGE, T.RANGE], [0.36, 0.22], "arco_houyi"),
 		EquipmentData.mk("rodas_nezha", "Rodas de Vento e Fogo", S.BOOTS, R.LEGENDARY, [T.FIRE_RATE, T.DODGE], [0.24, 0.14], "rodas_nezha"),
 		EquipmentData.mk("armadura_guanyu", "Armadura de Guan Yu", S.ARMOR, R.LEGENDARY, [T.DEFENSE, T.MAX_HP], [0.34, 0.30], "armadura_guanyu"),
 		# --- Japonesa ---
-		EquipmentData.mk("kusanagi", "Kusanagi-no-Tsurugi", S.WEAPON, R.LEGENDARY, [T.DAMAGE, T.CRIT], [0.40, 0.12], "kusanagi"),
+		EquipmentData.mk("kusanagi", "Kusanagi-no-Tsurugi", S.WEAPON, R.MYTHIC, [T.DAMAGE, T.CRIT], [0.40, 0.12], "kusanagi"),
 		EquipmentData.mk("espelho_yata", "Espelho Yata", S.SHIELD, R.LEGENDARY, [T.DEFENSE, T.AURA_POWER], [0.28, 0.22], "espelho_yata"),
 		EquipmentData.mk("joia_yasakani", "Joia Yasakani", S.AMULET, R.LEGENDARY, [T.AURA_POWER, T.REGEN], [0.26, 4.0], "joia_yasakani"),
 		EquipmentData.mk("oyoroi", "Armadura O-yoroi", S.ARMOR, R.LEGENDARY, [T.DEFENSE, T.MAX_HP], [0.36, 0.28], "oyoroi"),
@@ -187,10 +187,10 @@ static func _legendaries() -> Array:
 		EquipmentData.mk("gorro_saci", "Gorro do Saci", S.HELMET, R.LEGENDARY, [T.FIRE_RATE, T.DODGE], [0.22, 0.16], "gorro_saci"),
 		EquipmentData.mk("pes_virados", "Pes Virados do Curupira", S.BOOTS, R.LEGENDARY, [T.DODGE, T.FIRE_RATE], [0.20, 0.18], "pes_virados"),
 		EquipmentData.mk("olhos_boitata", "Olhos do Boitata", S.AMULET, R.LEGENDARY, [T.DAMAGE, T.CRIT], [0.24, 0.12], "olhos_boitata"),
-		EquipmentData.mk("couraca_mapinguari", "Couraca do Mapinguari", S.ARMOR, R.LEGENDARY, [T.MAX_HP, T.DEFENSE], [0.42, 0.26], "couraca_mapinguari"),
+		EquipmentData.mk("couraca_mapinguari", "Couraca do Mapinguari", S.ARMOR, R.MYTHIC, [T.MAX_HP, T.DEFENSE], [0.42, 0.26], "couraca_mapinguari"),
 		EquipmentData.mk("muiraquita", "Muiraquita", S.AMULET, R.LEGENDARY, [T.REGEN, T.LIFESTEAL], [5.0, 0.10], "muiraquita"),
 		# --- Asteca ---
-		EquipmentData.mk("macuahuitl", "Macuahuitl", S.WEAPON, R.LEGENDARY, [T.DAMAGE, T.PENETRATION], [0.38, 5.0], "macuahuitl"),
+		EquipmentData.mk("macuahuitl", "Macuahuitl", S.WEAPON, R.MYTHIC, [T.DAMAGE, T.PENETRATION], [0.38, 5.0], "macuahuitl"),
 		EquipmentData.mk("chimalli_quetzal", "Chimalli de Quetzalcoatl", S.SHIELD, R.LEGENDARY, [T.DEFENSE, T.AURA_POWER], [0.30, 0.20], "chimalli_quetzal"),
 		EquipmentData.mk("espelho_fumegante", "Espelho Fumegante", S.AMULET, R.LEGENDARY, [T.CRIT, T.CDR], [0.12, 0.14], "espelho_fumegante"),
 		EquipmentData.mk("penacho_moctezuma", "Penacho de Moctezuma", S.HELMET, R.LEGENDARY, [T.AURA_POWER, T.RANGE], [0.26, 0.16], "penacho_moctezuma"),
@@ -202,9 +202,11 @@ static func _legendaries() -> Array:
 static func price(rarity: int) -> int:
 	match rarity:
 		R.COMMON: return 120
-		R.RARE: return 300
+		R.UNCOMMON: return 200
+		R.RARE: return 320
 		R.EPIC: return 700
 		R.LEGENDARY: return 1800
+		R.MYTHIC: return 3600
 	return 999999
 
 
@@ -216,9 +218,11 @@ static func random_drop_id(stage_index: int) -> String:
 		var weight := 1
 		match e.rarity:
 			R.COMMON: weight = 8
+			R.UNCOMMON: weight = 6
 			R.RARE: weight = 3 + stage_index
 			R.EPIC: weight = max(0, stage_index - 1)
 			R.LEGENDARY: weight = max(0, stage_index - 3)
+			R.MYTHIC: weight = max(0, stage_index - 4)
 		for i in weight:
 			pool.append(e.id)
 	if pool.is_empty():

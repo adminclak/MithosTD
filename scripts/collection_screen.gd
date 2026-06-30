@@ -26,6 +26,13 @@ var _bubble_lbl: Label
 var _res_lbl: Label
 var _tab_btns: Array = []
 
+# Filtros da aba "Relíquias & Armas": slot (-1 = todas) e raridade (-1 = todas).
+var _filter_slot: int = -1
+var _filter_rarity: int = -1
+var _filter_box: VBoxContainer
+var _cat_btns: Array = []
+var _rar_btns: Array = []
+
 
 func _ready() -> void:
 	layer = 5
@@ -156,9 +163,17 @@ func _build_right() -> void:
 	for s in ["left", "right", "top", "bottom"]:
 		pmar.add_theme_constant_override("margin_" + s, 16)
 	panel.add_child(pmar)
+	var outer := VBoxContainer.new()
+	outer.add_theme_constant_override("separation", 8)
+	pmar.add_child(outer)
+	# Barra de filtros (categoria por ícone + raridade) — só visível na aba de itens.
+	_filter_box = _build_filter_bar()
+	outer.add_child(_filter_box)
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	pmar.add_child(scroll)
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	outer.add_child(scroll)
 	_content = VBoxContainer.new()
 	_content.add_theme_constant_override("separation", 8)
 	_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -170,7 +185,73 @@ func _select_tab(i: int) -> void:
 	_bubble_lbl.text = GREETINGS[i]
 	for k in _tab_btns.size():
 		(_tab_btns[k] as Button).disabled = (k == i) ## aba ativa fica "afundada"
+	_filter_box.visible = (i == 0) ## filtros só fazem sentido na loja de itens
 	_rebuild_content()
+
+
+# --- Barra de filtros (categoria + raridade) ---
+func _build_filter_bar() -> VBoxContainer:
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 4)
+
+	# Linha 1: categorias (slots) com ícones.
+	var cat := HBoxContainer.new()
+	cat.add_theme_constant_override("separation", 4)
+	box.add_child(cat)
+	_cat_btns = []
+	cat.add_child(_cat_button("Todas", -1, null))
+	for s in range(EquipmentData.SLOT_NAMES.size()):
+		var icon: Texture2D = Art.item("slot_" + EquipmentData.SLOT_KEYS[s])
+		cat.add_child(_cat_button(EquipmentData.SLOT_NAMES[s], s, icon))
+
+	# Linha 2: raridades (coloridas).
+	var rar := HBoxContainer.new()
+	rar.add_theme_constant_override("separation", 4)
+	box.add_child(rar)
+	_rar_btns = []
+	rar.add_child(_rar_button("Todas", -1))
+	for r in EquipmentData.rarity_order():
+		rar.add_child(_rar_button(EquipmentData.rarity_name(r), r))
+	return box
+
+
+func _cat_button(label: String, slot: int, icon: Texture2D) -> Button:
+	var b := Button.new()
+	b.toggle_mode = true
+	b.tooltip_text = label
+	if icon != null:
+		b.icon = icon
+		b.expand_icon = true
+		b.custom_minimum_size = Vector2(44, 40)
+	else:
+		b.text = label
+		b.custom_minimum_size = Vector2(64, 40)
+	b.button_pressed = (slot == _filter_slot)
+	b.pressed.connect(func(): _filter_slot = slot; _sync_filter_buttons(); _rebuild_content())
+	_cat_btns.append({"btn": b, "slot": slot})
+	return b
+
+
+func _rar_button(label: String, r: int) -> Button:
+	var b := Button.new()
+	b.toggle_mode = true
+	b.text = label
+	b.custom_minimum_size = Vector2(88, 34)
+	b.add_theme_font_size_override("font_size", 13)
+	if r >= 0:
+		b.add_theme_color_override("font_color", EquipmentData.rarity_color(r))
+	b.button_pressed = (r == _filter_rarity)
+	b.pressed.connect(func(): _filter_rarity = r; _sync_filter_buttons(); _rebuild_content())
+	_rar_btns.append({"btn": b, "rar": r})
+	return b
+
+
+## Mantém só um botão "pressionado" por linha (comportamento de rádio).
+func _sync_filter_buttons() -> void:
+	for e in _cat_btns:
+		(e["btn"] as Button).button_pressed = (int(e["slot"]) == _filter_slot)
+	for e in _rar_btns:
+		(e["btn"] as Button).button_pressed = (int(e["rar"]) == _filter_rarity)
 
 
 func _rebuild_content() -> void:
@@ -184,11 +265,25 @@ func _rebuild_content() -> void:
 
 # --- Aba 0: Relíquias & Armas (loja de itens) ---
 func _fill_items() -> void:
+	var shown: Array = []
+	for item in EquipmentList.all():
+		if _filter_slot >= 0 and item.slot != _filter_slot:
+			continue
+		if _filter_rarity >= 0 and item.rarity != _filter_rarity:
+			continue
+		shown.append(item)
+
 	var head := Label.new()
-	head.text = "%d relíquias e armas à venda (pagas em Ouro meta)" % EquipmentList.count()
+	head.text = "%d itens à venda (pagos em Ouro meta)" % shown.size()
 	head.add_theme_color_override("font_color", Color(0.75, 0.7, 0.6))
 	_content.add_child(head)
-	for item in EquipmentList.all():
+	if shown.is_empty():
+		var none := Label.new()
+		none.text = "Nada nesta categoria/raridade."
+		none.add_theme_color_override("font_color", Color(0.7, 0.7, 0.72))
+		_content.add_child(none)
+		return
+	for item in shown:
 		var row := PanelContainer.new()
 		row.add_theme_stylebox_override("panel", _row_box())
 		var hb := HBoxContainer.new()
