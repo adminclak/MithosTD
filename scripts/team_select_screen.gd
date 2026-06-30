@@ -150,12 +150,16 @@ func _hero_card(id: String) -> Control:
 
 	if ch != null:
 		var el := Elements.of_character(id)
+		var row := HBoxContainer.new()
+		row.alignment = BoxContainer.ALIGNMENT_CENTER
+		row.add_theme_constant_override("separation", 5)
+		v.add_child(row)
+		row.add_child(ClassBadge.new(ch.tower_class, 20.0))
 		var info := Label.new()
-		info.text = "%s · %s" % [CLASS_NAMES[ch.tower_class], Elements.name_of(el)]
-		info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		info.text = "%s · %s" % [ClassBadge.name_of(ch.tower_class), Elements.name_of(el)]
 		info.add_theme_font_size_override("font_size", 11)
 		info.add_theme_color_override("font_color", Color(0.75, 0.8, 0.9))
-		v.add_child(info)
+		row.add_child(info)
 
 	var btn := Button.new()
 	btn.flat = true

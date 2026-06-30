@@ -48,7 +48,9 @@ func open_build(world_pos: Vector2, entries: Array, gold: int) -> void:
 		var b := Button.new()
 		b.custom_minimum_size = Vector2(0, 30)
 		var suffix := ("  [%s]" % reason) if (not allowed and reason != "") else ""
-		b.text = "%s   %d%s" % [data.display_name, data.cost, suffix]
+		# Mostra a CLASSE no texto (ajuda a saber guerreiro/mago/sacerdote/arqueiro).
+		var cls := ClassBadge.name_of(data.tower_class)
+		b.text = "%s (%s)   %d%s" % [data.display_name, cls, data.cost, suffix]
 		b.add_theme_color_override("font_color", data.body_color)
 		b.disabled = (gold < data.cost) or (not allowed)
 		b.pressed.connect(func(): build_requested.emit(data))

@@ -584,6 +584,10 @@ func _draw() -> void:
 	for i in level:
 		draw_rect(Rect2(Vector2(-18 + i * 8, -32), Vector2(6, 5)), Color(1.0, 0.9, 0.3))
 
+	# Emblema da classe (guerreiro/mago/sacerdote/arqueiro) no canto do herói.
+	if not _is_building and data.char_id != "":
+		ClassBadge.paint(self, data.tower_class, Vector2(16, -20), 17.0)
+
 	# Anel de seleção (unidade escolhida pelo jogador para mover/gerir).
 	if selected:
 		draw_arc(Vector2(0, 6), 24.0, 0.0, TAU, 28, Color(1.0, 0.95, 0.55, 0.9), 2.5)
