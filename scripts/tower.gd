@@ -21,6 +21,13 @@ var waypoints: Array = []
 var level: int = 1
 var invested_gold: int = 0
 
+# Reposicionamento manual (modelo "heróis móveis"): anda até o ponto comandado e
+# volta a agir (estático) ao chegar. selected = unidade escolhida pelo jogador.
+const MOVE_SPEED := 115.0
+var _moving: bool = false
+var _move_target: Vector2 = Vector2.ZERO
+var selected: bool = false
+
 var _cooldown: float = 0.0
 var _aura_damage_mult: float = 1.0
 var _aura_fire_rate_mult: float = 1.0
@@ -58,6 +65,17 @@ func setup(d: TowerData) -> void:
 	_hp = d.max_hp
 
 
+## Reposiciona a unidade: anda até `pos` e fica estática lá (volta a lutar). Solta
+## inimigos que estava travando ao começar a andar.
+func move_to(pos: Vector2) -> void:
+	_move_target = pos
+	_moving = true
+	for e in _melee_targets:
+		if is_instance_valid(e) and e.has_method("release"):
+			e.release()
+	_melee_targets.clear()
+
+
 func _ready() -> void:
 	add_to_group("towers")
 	if data != null:
@@ -86,6 +104,17 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if data == null or (_state != null and _state.is_over()):
 		return
+	# Reposicionamento manual: anda até o ponto e fica estático lá (não ataca andando).
+	if _moving:
+		var to: Vector2 = _move_target - global_position
+		if to.length() <= 3.0:
+			_moving = false
+		else:
+			global_position += to.normalized() * MOVE_SPEED * delta
+			_face = to.normalized()
+			_idle += delta * 3.2
+			queue_redraw()
+			return
 	if _ability_cd > 0.0:
 		_ability_cd -= delta
 	if _temp_buff_timer > 0.0:
@@ -502,6 +531,10 @@ func _draw() -> void:
 			draw_arc(Vector2.ZERO, 22.0, 0.0, TAU, 24, Color(1.0, 0.95, 0.5), 2.0)
 	for i in level:
 		draw_rect(Rect2(Vector2(-18 + i * 8, -32), Vector2(6, 5)), Color(1.0, 0.9, 0.3))
+
+	# Anel de seleção (unidade escolhida pelo jogador para mover/gerir).
+	if selected:
+		draw_arc(Vector2(0, 6), 24.0, 0.0, TAU, 28, Color(1.0, 0.95, 0.55, 0.9), 2.5)
 
 
 ## True = estilo escudeiro (tanque); False = espadachim. Sem atributos, usa a

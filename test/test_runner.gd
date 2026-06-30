@@ -451,37 +451,41 @@ func _test_economy() -> void:
 	bm2.free()
 
 ## Modelo "heróis são as unidades": o slot lista os heróis do esquadrão (não as 4
-## classes), exclui o campeão móvel e os já em campo; cada herói é único.
+## classes); cada herói é único e some da lista ao entrar em campo. Heróis móveis:
+## move_to reposiciona a unidade.
 func _test_hero_placement() -> void:
-	print("\nConstrucao por HEROI (herois sao as unidades):")
+	print("\nConstrucao por HEROI (herois sao as unidades, moveis):")
 	var gs = root.get_node_or_null(^"/root/GameState")
 	if gs == null:
 		_check(false, "GameState acessivel"); return
 	gs.reset_run(20, 1000)
 	var h1 = TowerData.archer(); h1.char_id = "art"; h1.cost = 100
 	var h2 = TowerData.warrior(); h2.char_id = "her"; h2.cost = 100
-	var champ = TowerData.mage(); champ.char_id = "zeus"; champ.cost = 100
+	var h3 = TowerData.mage(); h3.char_id = "zeus"; h3.cost = 100
 	var slots := [Vector2(200, 440), Vector2(400, 440), Vector2(600, 440)]
 	var bm = BuildManager.new()
-	bm.setup([Vector2(0, 300), Vector2(1200, 300)], [h1, h2, champ], slots)
-	bm.champion_id = "zeus"
+	bm.setup([Vector2(0, 300), Vector2(1200, 300)], [h1, h2, h3], slots)
 	root.add_child(bm)
 
 	var av = bm.placeable()
-	_check(av.size() == 2, "campeao fica fora dos slots (3 herois -> 2 posicionaveis)")
-	var ids := []
-	for d in av:
-		ids.append(d.char_id)
-	_check(ids.has("art") and ids.has("her"), "lista os herois nao-campeao")
-	_check(not ids.has("zeus"), "o campeao (zeus) nao aparece nos slots")
+	_check(av.size() == 3, "todos os herois do esquadrao sao posicionaveis (3)")
 
 	_check(bm.try_place(slots[0], h1), "posiciona o heroi escolhido")
 	var av2 = bm.placeable()
-	_check(av2.size() == 1, "heroi ja em campo some da lista (unico)")
+	_check(av2.size() == 2, "heroi ja em campo some da lista (unico)")
 	var ids2 := []
 	for d in av2:
 		ids2.append(d.char_id)
-	_check(not ids2.has("art") and ids2.has("her"), "so resta o heroi ainda fora de campo")
+	_check(not ids2.has("art"), "o heroi posicionado nao reaparece na lista")
+
+	# Heróis móveis: move_to leva a unidade até o ponto comandado.
+	var t = bm._tower_at(slots[0])
+	_check(t != null, "encontra o heroi posicionado")
+	if t != null:
+		t.move_to(Vector2(300, 440))
+		for _i in 60:
+			t._process(0.05)
+		_check(t.global_position.distance_to(Vector2(300, 440)) < 6.0, "move_to leva o heroi ate o destino")
 	bm.free()
 
 
@@ -509,7 +513,7 @@ func _test_build_menu_ui() -> void:
 	root.add_child(t)
 	menu3.open_manage(Vector2(200, 300), t, 300)
 	_check(menu3._panel.visible == true, "open_manage mostra o painel")
-	_check(menu3._box.get_child_count() == 4, "manage mostra titulo + upar + vender + fechar")
+	_check(menu3._box.get_child_count() == 5, "manage mostra titulo + mover + upar + vender + fechar")
 
 	menu.free(); menu2.free(); menu3.free(); t.free()
 

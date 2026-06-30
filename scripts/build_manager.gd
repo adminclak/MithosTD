@@ -17,12 +17,13 @@ var waypoints: Array = []
 var squad: Array = []
 var slots: Array = [] ## Vector2 dos pontos estratégicos
 var damage_mult: float = 1.0 ## bênção Fúria de Ares (futuras torres utilitárias)
-var champion_id: String = "" ## herói que anda pelo mapa: não ocupa slot
 
 var _towers: Array = []
 var _menu: BuildMenu = null
 var _pending_slot: int = -1
 var _pending_tower: Tower = null
+var _selected: Tower = null  ## herói escolhido (anel) para gerir/mover
+var _move_mode: bool = false ## aguardando o toque de destino do herói selecionado
 
 @onready var _state: Node = get_node_or_null(^"/root/GameState")
 
@@ -40,33 +41,65 @@ func _ready() -> void:
 	_menu.build_requested.connect(_on_build_requested)
 	_menu.upgrade_requested.connect(_on_upgrade_requested)
 	_menu.sell_requested.connect(_on_sell_requested)
+	_menu.move_requested.connect(_on_move_requested)
 	queue_redraw()
 
 
-# --- Entrada: tocar slot (posicionar herói) ou unidade (gerir) ---
+# --- Entrada: posicionar herói (slot) / gerir / mover (todos os heróis são móveis) ---
 func _unhandled_input(event: InputEvent) -> void:
 	if _state != null and _state.is_over():
 		return
 	if not (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT):
 		return
-	# Painel aberto: um clique fora apenas fecha (não posiciona no mesmo toque).
-	if _menu != null and _menu.is_open():
-		_menu.close()
+	var pos := get_global_mouse_position()
+	# 1) Modo mover: o próximo toque manda o herói selecionado andar até ali.
+	if _move_mode and is_instance_valid(_selected):
+		_selected.move_to(pos)
+		_clear_selection()
 		get_viewport().set_input_as_handled()
 		return
-	var pos := get_global_mouse_position()
-	var si := _slot_at(pos)
-	if si < 0:
+	# 2) Painel aberto: um toque fora fecha e limpa a seleção.
+	if _menu != null and _menu.is_open():
+		_menu.close()
+		_clear_selection()
+		get_viewport().set_input_as_handled()
 		return
-	if _tower_near(slots[si]) != null:
-		_open_manage(si)
-	else:
+	# 3) Tocou num herói posicionado (em qualquer lugar): gerir (Mover/Melhorar/Vender).
+	var t := _tower_at(pos)
+	if t != null:
+		_select(t)
+		_pending_tower = t
+		_menu.open_manage(t.global_position, t, _gold())
+		get_viewport().set_input_as_handled()
+		return
+	# 4) Tocou num slot vazio: posicionar um herói do esquadrão.
+	var si := _slot_at(pos)
+	if si >= 0 and _tower_near(slots[si]) == null:
 		_open_build(si)
-	get_viewport().set_input_as_handled()
+		get_viewport().set_input_as_handled()
 
 
-## Heróis do esquadrão que ainda podem entrar: fora de campo e que não sejam o
-## campeão móvel (esse anda pelo mapa, não ocupa slot).
+func _select(t: Tower) -> void:
+	_clear_selection()
+	_selected = t
+	if is_instance_valid(t):
+		t.selected = true
+
+
+func _clear_selection() -> void:
+	if is_instance_valid(_selected):
+		_selected.selected = false
+	_selected = null
+	_move_mode = false
+
+
+func _on_move_requested() -> void:
+	if is_instance_valid(_selected):
+		_move_mode = true ## próximo toque no mapa define o destino
+	_menu.close()
+
+
+## Heróis do esquadrão que ainda podem entrar (fora de campo). Cada herói é único.
 func _available_squad() -> Array:
 	var in_field := {}
 	for t in _towers:
@@ -74,7 +107,7 @@ func _available_squad() -> Array:
 			in_field[t.data.char_id] = true
 	var out: Array = []
 	for d in squad:
-		if d.char_id == "" or d.char_id == champion_id:
+		if d.char_id == "":
 			continue
 		if not in_field.has(d.char_id):
 			out.append(d)
@@ -92,15 +125,6 @@ func _open_build(si: int) -> void:
 	_menu.open_build(slots[si], _available_squad(), _gold())
 
 
-func _open_manage(si: int) -> void:
-	var t: Tower = _tower_near(slots[si])
-	if t == null:
-		return
-	_pending_slot = si
-	_pending_tower = t
-	_menu.open_manage(t.global_position, t, _gold())
-
-
 func _on_build_requested(data: TowerData) -> void:
 	if _pending_slot < 0:
 		return
@@ -114,6 +138,7 @@ func _on_upgrade_requested() -> void:
 	if _pending_tower != null and is_instance_valid(_pending_tower):
 		try_upgrade(_pending_tower)
 	_menu.close()
+	_clear_selection()
 	_pending_tower = null
 
 
@@ -122,6 +147,7 @@ func _on_sell_requested() -> void:
 		sell(_pending_tower)
 		queue_redraw()
 	_menu.close()
+	_clear_selection()
 	_pending_tower = null
 
 

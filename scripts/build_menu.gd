@@ -9,6 +9,7 @@ extends CanvasLayer
 signal build_requested(data: TowerData)
 signal upgrade_requested
 signal sell_requested
+signal move_requested
 signal closed
 
 const PANEL_WIDTH := 196.0
@@ -61,6 +62,12 @@ func open_build(world_pos: Vector2, entries: Array, gold: int) -> void:
 func open_manage(world_pos: Vector2, tower: Tower, gold: int) -> void:
 	_clear()
 	_add_title("%s  Nv %d" % [tower.data.display_name, tower.level])
+	var mv := Button.new()
+	mv.custom_minimum_size = Vector2(0, 30)
+	mv.text = "Mover"
+	mv.add_theme_color_override("font_color", Color(0.6, 0.85, 1.0))
+	mv.pressed.connect(func(): move_requested.emit())
+	_box.add_child(mv)
 	if tower.can_upgrade():
 		var cost := tower.upgrade_cost()
 		var up := Button.new()

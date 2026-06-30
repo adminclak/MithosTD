@@ -32,12 +32,10 @@ var _ult: UltimateData = null
 var _ult_charge: float = 1.0 ## começa carregado para a 1ª investida
 var _ult_layer: CanvasLayer = null
 var _aimer: UltAimer = null
-var _champion: Champion = null
 var _enemies_root: Node2D = null
 var _aim_mode: String = ""
 var _power2_charge: float = 1.0 ## Reforços (2º poder), começa pronto
 const POWER2_CHARGE_TIME := 18.0
-var _joystick: TouchJoystick = null
 var _popup: ScrollPopup = null
 
 
@@ -69,27 +67,11 @@ func _ready() -> void:
 	_enemies_root = enemies_root
 
 	_build_manager = BuildManager.new()
-	# Limita os slots ao TETO da fase (menor que o esquadrão): o jogador escolhe
-	# quais heróis posicionar. Espalha o subconjunto ao longo do caminho.
-	var cap: int = _stage.slots if _stage != null else 99
-	var build_slots := _pick_slots(level.get_build_slots(), cap)
+	# Modelo "heróis móveis": você posiciona TODOS os heróis do esquadrão nos slots
+	# e cada um pode ser movido depois. Garante ao menos `_squad` slots disponíveis.
+	var build_slots := _ensure_min_slots(level.get_build_slots(), _squad.size())
 	_build_manager.setup(level.get_waypoints(), _squad, build_slots, Progression.bless_damage_mult())
 	add_child(_build_manager)
-
-	# Campeão (1 por partida): o herói escolhido anda pelo mapa (clique no chão = mover).
-	if not _squad.is_empty():
-		var champ_id := Progression.current_champion()
-		var champ_data: TowerData = _squad[0]
-		for d in _squad:
-			if d.char_id == champ_id:
-				champ_data = d
-				break
-		_champion = Champion.new()
-		_champion.setup(champ_data)
-		_champion.position = Vector2(620, 400)
-		enemies_root.add_child(_champion)
-		# O campeão anda pelo mapa: não deve aparecer na lista de heróis dos slots.
-		_build_manager.champion_id = champ_data.char_id
 
 	var hud := Hud.new()
 	add_child(hud)
@@ -139,40 +121,42 @@ func _ready() -> void:
 	_aimer.aimed.connect(_on_aimed)
 	_ult_layer.add_child(_aimer)
 
-	# Joystick virtual (mobile / arraste no PC) — camada abaixo do Poder Supremo.
-	var joy_layer := CanvasLayer.new()
-	joy_layer.layer = 10
-	add_child(joy_layer)
-	_joystick = TouchJoystick.new()
-	joy_layer.add_child(_joystick)
-
 	if auto_start:
 		_auto_place_demo()
 		_wave_manager.player_advance()
 
 
-## Seleciona até `n` slots dos disponíveis, espalhados uniformemente ao longo do
-## caminho (os slots já vêm ordenados por segmento). Se houver `n` ou menos,
-## devolve todos.
-func _pick_slots(all_slots: Array, n: int) -> Array:
-	if n <= 0:
-		return []
-	if all_slots.size() <= n:
-		return all_slots.duplicate()
-	var out: Array = []
-	var used := {}
-	for i in n:
-		var idx: int = int(floor(float(i) * all_slots.size() / float(n)))
-		idx = clampi(idx, 0, all_slots.size() - 1)
-		while used.has(idx) and idx < all_slots.size() - 1:
-			idx += 1
-		used[idx] = true
-		out.append(all_slots[idx])
+## Garante pelo menos `n` slots para caber todos os heróis do esquadrão. Se o mapa
+## gerou menos, adiciona pontos extras ao lado do caminho (próximos dos waypoints).
+func _ensure_min_slots(all_slots: Array, n: int) -> Array:
+	var out: Array = all_slots.duplicate()
+	if out.size() >= n or _stage == null:
+		return out
+	# Reaproveita os waypoints como base p/ slots extras (deslocados, sem sobrepor).
+	var wps: Array = _build_waypoints_fallback()
+	var i := 0
+	while out.size() < n and i < wps.size():
+		var cand: Vector2 = wps[i] + Vector2(0, -70 if i % 2 == 0 else 70)
+		var ok := true
+		for s in out:
+			if cand.distance_to(s) < 60.0:
+				ok = false
+				break
+		if ok:
+			out.append(cand)
+		i += 1
 	return out
 
 
-## Demo automática (smoke / auto-stage): posiciona os HERÓIS do esquadrão (fora o
-## campeão) nos slots disponíveis, para exercitar o combate sem input.
+## Pontos ao longo do caminho da fase (fallback p/ slots extras).
+func _build_waypoints_fallback() -> Array:
+	return [Vector2(360, 300), Vector2(560, 240), Vector2(760, 360),
+		Vector2(520, 460), Vector2(900, 280), Vector2(680, 500),
+		Vector2(440, 200), Vector2(820, 460)]
+
+
+## Demo automática (smoke / auto-stage): posiciona os HERÓIS do esquadrão nos slots
+## disponíveis, para exercitar o combate sem input.
 func _auto_place_demo() -> void:
 	GameState.add_gold(1500) # ouro extra apenas para a demo
 	var avail: Array = _build_manager.placeable()
@@ -182,10 +166,6 @@ func _auto_place_demo() -> void:
 
 
 func _process(delta: float) -> void:
-	# Joystick comanda o campeão (direção 0 = volta ao comportamento automático).
-	if _champion != null and not _ended:
-		_champion.set_move_dir(_joystick.direction())
-
 	# Contagem regressiva da preparação (só antes da 1ª onda).
 	if _wave_manager != null and _wave_manager.is_in_prep() and not _ended:
 		_prep_timer -= delta
@@ -209,34 +189,6 @@ func _process(delta: float) -> void:
 		if _power2_charge < 1.0:
 			_power2_charge = min(1.0, _power2_charge + delta / POWER2_CHARGE_TIME)
 		_match_hud.set_power2_charge(_power2_charge)
-
-
-## Controle do campeão (eventos não consumidos por slot/UI):
-## - Desktop: botão DIREITO = vai até o ponto clicado (e aguarda lá).
-## - Mobile/PC: TOQUE/arraste = joystick flutuante (clique sem arraste não move).
-func _unhandled_input(event: InputEvent) -> void:
-	if _champion == null or _ended:
-		return
-	# Desktop: clique-para-mover no botão direito.
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
-		_champion.move_to(get_global_mouse_position())
-		return
-	# Joystick por toque (mobile).
-	if event is InputEventScreenTouch:
-		if event.pressed:
-			_joystick.start(event.position)
-		else:
-			_joystick.stop()
-	elif event is InputEventScreenDrag:
-		_joystick.update(event.position)
-	# Joystick por arraste do botão esquerdo (permite testar no PC).
-	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.pressed:
-			_joystick.start(event.position)
-		else:
-			_joystick.stop()
-	elif event is InputEventMouseMotion and _joystick.active:
-		_joystick.update(event.position)
 
 
 ## Roteia o clique de mira para o poder ativo (ult ou reforços).
