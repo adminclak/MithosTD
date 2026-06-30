@@ -73,17 +73,29 @@ DIRS = {
     "maps": os.path.join(PROJ, "assets", "map"),
     "scenery": os.path.join(PROJ, "assets", "map"),  # props do mapa (portal/castelo), fundo transparente
     "splash": os.path.join(PROJ, "assets", "map"),   # fundo de tela cheia (ex.: menu_bg), 1280x720
+    "logo": os.path.join(PROJ, "assets", "ui"),      # logo do jogo (transparente, wide)
 }
 
-# Fundos de tela cheia (splash art) — ex.: o fundo do menu principal.
-SPLASH_STYLE = ("Kingdom Rush mobile game splash art, hand-painted digital illustration, epic and "
-                "cinematic, vibrant saturated colors, dramatic lighting, highly detailed, "
-                "ancient Greek mythology theme, no characters, no people, no text, no words, no UI")
+# Fundo de tela cheia em CARTOON (mesmo traço dos heróis/mapas — Kingdom Rush), p/ o
+# fundo do menu combinar com os personagens (nada de realista/cinematográfico).
+SPLASH_STYLE = ("flat 2D cartoon game art, Kingdom Rush mobile game art style, hand-painted, bold "
+                "clean black outlines, soft cel shading, vibrant saturated colors, simple clean "
+                "shapes, stylized, ancient Greek mythology theme, no characters, no people, no "
+                "text, no words, no UI, no letters")
 SPLASH_PROMPTS = {
-    "menu_bg": ("a breathtaking view of Mount Olympus, a majestic ancient Greek marble temple with "
-                "tall columns crowning a mountain peak high above a sea of golden clouds at sunset, "
-                "dramatic god rays, lush green slopes, distant blue Aegean sea and islands, grand, "
-                "heroic, awe-inspiring fantasy vista"),
+    "menu_bg": ("a stylized cartoon view of Mount Olympus: a grand ancient Greek marble temple with "
+                "columns on a green mountain peak above fluffy golden clouds at sunset, sun rays, "
+                "distant blue sea, cheerful epic fantasy vista, clean and colorful"),
+}
+
+# Logo do jogo (imagem única transparente, larga). Texto estilizado grego.
+LOGO_STYLE = ("an ornate fantasy mobile game logo emblem, bold readable title, hand-painted cartoon "
+              "style, gold and marble, glowing, centered, plain flat light gray background, no scene, "
+              "no background scenery, high quality, crisp")
+LOGO_PROMPTS = {
+    "logo_mithos": ("the title text \"MITHOS TD\" in big bold ancient Greek letters carved from white "
+                    "marble with shiny gold trim and outline, a golden lightning bolt and laurel "
+                    "leaves as decoration, epic game logo"),
 }
 
 # Props do mapa (portal de entrada, castelo/base). Objeto unico, fundo transparente,
@@ -226,6 +238,11 @@ def save(png_bytes, category, cid):
         # Fundo de tela cheia (sem recorte), 1280x720, arquivo <id>.png.
         im = im.resize((1280, 720), Image.LANCZOS)
         out = os.path.join(DIRS[category], cid + ".png")
+    elif category == "logo":
+        # Logo: recorta o fundo (transparente) e salva 768px, arquivo <id>.png.
+        im = remove_bg(im)
+        im = im.resize((768, 768), Image.LANCZOS)
+        out = os.path.join(DIRS[category], cid + ".png")
     else:
         im = remove_bg(im)
         im = im.resize((OUT_SIZE, OUT_SIZE), Image.LANCZOS)
@@ -246,12 +263,15 @@ def main():
     is_maps = category == "maps"
     is_scenery = category == "scenery"
     is_splash = category == "splash"
+    is_logo = category == "logo"
     if is_maps:
         jobs = MAP_PROMPTS
     elif is_scenery:
         jobs = SCENERY_PROMPTS
     elif is_splash:
         jobs = SPLASH_PROMPTS
+    elif is_logo:
+        jobs = LOGO_PROMPTS
     else:
         jobs = parse_arte()
     ids = list(jobs.keys()) if args[1] == "all" else args[1:]
@@ -261,6 +281,8 @@ def main():
         style = SCENERY_STYLE
     elif is_splash:
         style = SPLASH_STYLE
+    elif is_logo:
+        style = LOGO_STYLE
     else:
         style = STYLE[category]
     print("Modelo:", MODEL, "| categoria:", category, "| itens:", len(ids))

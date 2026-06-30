@@ -60,9 +60,10 @@ func _ready() -> void:
 func _shot_mode(args: Array) -> void:
 	var which := "title"
 	for a in args:
-		if a in ["title", "worldmap", "heroes", "collection", "gacha", "quests", "game", "blessings", "picker", "build", "teamselect", "result"]:
+		if a in ["title", "worldmap", "heroes", "collection", "gacha", "quests", "game", "blessings", "picker", "build", "teamselect", "result", "bestiary"]:
 			which = a
 	match which:
+		"bestiary": _show_bestiary()
 		"result":
 			var rs := ResultScreen.new()
 			var summary := {
@@ -119,12 +120,28 @@ func _shot_mode(args: Array) -> void:
 func _show_title() -> void:
 	var t := TitleScreen.new()
 	t.play_pressed.connect(_show_worldmap)
-	t.heroes_pressed.connect(_show_heroes)
-	t.shop_pressed.connect(_show_collection)
-	t.quests_pressed.connect(_show_quests)
-	t.gacha_pressed.connect(_show_gacha)
-	t.blessings_pressed.connect(_show_blessings)
+	t.section_selected.connect(_goto_section)
 	_switch_to(t)
+
+
+## Roteador central da NavBar padrão (mesmas seções em todas as telas).
+func _goto_section(id: String) -> void:
+	match id:
+		"herois": _show_heroes()
+		"equip": _show_heroes()        # equipamento é gerido dentro de Heróis (por ora)
+		"bestiario": _show_bestiary()
+		"loja": _show_collection()
+		"missoes": _show_quests()
+		"altar": _show_gacha()
+		"bencaos": _show_blessings()
+		_: _show_title()
+
+
+func _show_bestiary() -> void:
+	var screen := BestiaryScreen.new()
+	screen.back_pressed.connect(_show_title)
+	screen.section_selected.connect(_goto_section)
+	_switch_to(screen)
 
 
 func _show_blessings() -> void:
