@@ -469,7 +469,8 @@ func _test_hero_placement() -> void:
 	var av = bm.placeable()
 	_check(av.size() == 3, "todos os herois do esquadrao sao posicionaveis (3)")
 	_check(bm.can_place(p1), "ponto fora da estrada e valido")
-	_check(not bm.can_place(Vector2(300, 305)), "ponto SOBRE a estrada e bloqueado")
+	_check(not bm.can_place(Vector2(300, 305)), "ranged SOBRE a estrada e bloqueado")
+	_check(bm.can_place(Vector2(300, 305), true), "MELEE pode na estrada (e tanque)")
 
 	_check(bm.try_place(p1, h1), "posiciona o heroi escolhido")
 	var av2 = bm.placeable()

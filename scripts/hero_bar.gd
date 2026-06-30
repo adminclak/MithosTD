@@ -11,9 +11,8 @@ const CARD := Vector2(96, 84)
 
 var _bm: BuildManager
 var _row: HBoxContainer
-var _drag: TowerData = null
+var _armed: TowerData = null ## herói selecionado na barra (aguardando clique no mapa)
 var _ghost: TextureRect = null
-var _ghost_ring: Control = null
 
 @onready var _state: Node = get_node_or_null(^"/root/GameState")
 
@@ -65,11 +64,12 @@ func _card(d: TowerData) -> Control:
 	var card := Panel.new()
 	card.custom_minimum_size = CARD
 	card.mouse_filter = Control.MOUSE_FILTER_STOP
+	var armed := _armed != null and _armed.char_id == d.char_id
 	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.16, 0.12, 0.09, 0.9) if afford else Color(0.12, 0.10, 0.10, 0.7)
+	sb.bg_color = Color(0.22, 0.18, 0.10, 0.95) if armed else (Color(0.16, 0.12, 0.09, 0.9) if afford else Color(0.12, 0.10, 0.10, 0.7))
 	sb.set_corner_radius_all(8)
-	sb.set_border_width_all(2)
-	sb.border_color = Color(1.0, 0.82, 0.35) if afford else Color(0.4, 0.35, 0.3)
+	sb.set_border_width_all(3 if armed else 2)
+	sb.border_color = Color(0.6, 0.95, 1.0) if armed else (Color(1.0, 0.82, 0.35) if afford else Color(0.4, 0.35, 0.3))
 	card.add_theme_stylebox_override("panel", sb)
 
 	# Retrato do herói (preenche o card; cinza se sem ouro).
@@ -113,48 +113,58 @@ func _card(d: TowerData) -> Control:
 
 func _on_card_input(event: InputEvent, d: TowerData) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		_start_drag(d)
+		_arm(d)
 
 
-func _start_drag(d: TowerData) -> void:
-	_drag = d
-	_ghost = TextureRect.new()
+## Arma um herói: ele fica SELECIONADO (card destacado) e um fantasma segue o mouse.
+## Depois é só CLICAR no mapa (ou arrastar e soltar) para posicionar.
+func _arm(d: TowerData) -> void:
+	_armed = d
+	if _ghost == null:
+		_ghost = TextureRect.new()
+		_ghost.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		_ghost.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		_ghost.size = Vector2(54, 54)
+		_ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_ghost.z_index = 50
+		add_child(_ghost)
 	_ghost.texture = Art.hero(d.char_id)
-	_ghost.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_ghost.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_ghost.size = Vector2(54, 54)
-	_ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_ghost.z_index = 50
-	add_child(_ghost)
 	_update_ghost(get_viewport().get_mouse_position())
+	refresh()
 
 
 func _input(event: InputEvent) -> void:
-	if _drag == null:
+	if _armed == null:
 		return
 	if event is InputEventMouseMotion:
-		_update_ghost(event.position)
-	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
-		_drop(event.position)
+		_update_ghost((event as InputEventMouseMotion).position)
+	elif event is InputEventMouseButton and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_RIGHT \
+			and (event as InputEventMouseButton).pressed:
+		_cancel() # botão direito cancela a seleção
+	elif event is InputEventMouseButton and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+		# Clique OU soltar sobre o MAPA (acima da barra) -> posiciona.
+		var p: Vector2 = (event as InputEventMouseButton).position
+		if p.y < BAR_TOP:
+			if _bm.place_at(p, _armed):
+				_clear()
+			get_viewport().set_input_as_handled()
 
 
 func _update_ghost(p: Vector2) -> void:
-	if _ghost == null:
+	if _ghost == null or _armed == null:
 		return
 	_ghost.position = p - _ghost.size * 0.5
-	var ok := p.y < BAR_TOP and _bm.can_place(p)
+	var ok := p.y < BAR_TOP and _bm.can_place(p, _armed.is_melee)
 	_ghost.modulate = Color(0.6, 1.0, 0.6, 0.9) if ok else Color(1.0, 0.5, 0.5, 0.8)
 
 
-func _drop(p: Vector2) -> void:
-	var data := _drag
-	_drag = null
+func _cancel() -> void:
+	_clear()
+
+
+func _clear() -> void:
+	_armed = null
 	if _ghost != null:
 		_ghost.queue_free()
 		_ghost = null
-	if data == null:
-		return
-	# Solto sobre o mapa (acima da barra) e em ponto válido -> posiciona.
-	if p.y < BAR_TOP and _bm.can_place(p):
-		_bm.place_at(p, data)
 	refresh()

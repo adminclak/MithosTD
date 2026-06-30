@@ -177,11 +177,12 @@ func _dist_to_seg(p: Vector2, a: Vector2, b: Vector2) -> float:
 	return p.distance_to(a + ab * t)
 
 
-## Pode posicionar um NOVO herói aqui? (no campo, fora da estrada, sem sobrepor)
-func can_place(pos: Vector2) -> bool:
+## Pode posicionar aqui? No campo e sem sobrepor. MELEE (tanques) PODEM ficar na
+## estrada para segurar os inimigos; ranged ficam bloqueados na estrada (frágeis).
+func can_place(pos: Vector2, is_melee: bool = false) -> bool:
 	if not BOUNDS.has_point(pos):
 		return false
-	if _dist_to_path(pos) < PATH_CLEAR:
+	if not is_melee and _dist_to_path(pos) < PATH_CLEAR:
 		return false
 	for t in _towers:
 		if is_instance_valid(t) and t.global_position.distance_to(pos) < MIN_SPACING:
@@ -189,11 +190,11 @@ func can_place(pos: Vector2) -> bool:
 	return true
 
 
-## Pode um herói EXISTENTE parar aqui (ao mover)? Igual a can_place, mas ignora a si.
+## Pode um herói EXISTENTE parar aqui (ao mover)? Como can_place, mas ignora a si.
 func _can_stand(pos: Vector2, who: Tower) -> bool:
 	if not BOUNDS.has_point(pos):
 		return false
-	if _dist_to_path(pos) < PATH_CLEAR:
+	if not who.data.is_melee and _dist_to_path(pos) < PATH_CLEAR:
 		return false
 	for t in _towers:
 		if is_instance_valid(t) and t != who and t.global_position.distance_to(pos) < MIN_SPACING:
@@ -227,7 +228,7 @@ func place_at(pos: Vector2, data: TowerData) -> bool:
 
 
 func try_place(pos: Vector2, data: TowerData) -> bool:
-	if not can_place(pos):
+	if not can_place(pos, data.is_melee):
 		return false
 	if _state == null or not _state.try_spend(data.cost):
 		return false
