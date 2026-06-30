@@ -8,7 +8,7 @@ extends Control
 
 signal selected(id: String)
 
-const BAR_H := 92.0
+const BAR_H := 72.0
 const GOLD := Color(0.95, 0.78, 0.32)
 
 ## Abas PADRÃO do jogo (a mesma barra em todas as telas). id casa com main._goto_section.
@@ -30,6 +30,36 @@ var _hover: int = -1
 func setup(tabs: Array, active_id: String = "") -> void:
 	_tabs = tabs
 	_active = active_id
+
+
+## PADRÃO: adiciona a NavBar (abas padrão) + um botão "Menu" (topo-direita) a uma tela.
+## on_section(id) -> trocar de seção;  on_menu() -> voltar ao menu principal.
+static func add_to(screen: CanvasLayer, active_id: String, on_section: Callable, on_menu: Callable) -> NavBar:
+	var menu := Button.new()
+	menu.text = "Menu"
+	menu.position = Vector2(1092, 26)
+	menu.custom_minimum_size = Vector2(146, 44)
+	menu.add_theme_font_size_override("font_size", 20)
+	var msb := func(bg: Color, bd: Color) -> StyleBoxFlat:
+		var s := StyleBoxFlat.new()
+		s.bg_color = bg
+		s.set_corner_radius_all(10)
+		s.set_border_width_all(2)
+		s.border_color = bd
+		s.set_content_margin_all(6)
+		return s
+	menu.add_theme_stylebox_override("normal", msb.call(Color(0.16, 0.12, 0.08, 0.95), Color(0.92, 0.74, 0.36)))
+	menu.add_theme_stylebox_override("hover", msb.call(Color(0.24, 0.18, 0.11, 0.97), Color(1.0, 0.86, 0.46)))
+	menu.add_theme_stylebox_override("pressed", msb.call(Color(0.12, 0.09, 0.06, 0.95), Color(0.85, 0.68, 0.34)))
+	menu.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	menu.add_theme_color_override("font_color", Color(1.0, 0.92, 0.72))
+	menu.pressed.connect(on_menu)
+	screen.add_child(menu)
+	var nav := NavBar.new()
+	nav.setup(MAIN_TABS, active_id)
+	screen.add_child(nav)
+	nav.selected.connect(on_section)
+	return nav
 
 
 func _ready() -> void:
@@ -74,20 +104,19 @@ func _draw() -> void:
 		var cx := tw * (i + 0.5)
 		# Destaque da aba ativa (placa dourada) / hover (leve).
 		if is_active:
-			var hl := StyleBoxFlat.new()
-			var r := Rect2(Vector2(tw * i + 4, 6), Vector2(tw - 8, BAR_H - 12))
+			var r := Rect2(Vector2(tw * i + 4, 5), Vector2(tw - 8, BAR_H - 9))
 			draw_rect(r, Color(0.95, 0.78, 0.32, 0.18))
 			draw_rect(r, GOLD, false, 2.0)
 		elif is_hover:
-			draw_rect(Rect2(Vector2(tw * i + 4, 6), Vector2(tw - 8, BAR_H - 12)), Color(1, 1, 1, 0.06))
+			draw_rect(Rect2(Vector2(tw * i + 4, 5), Vector2(tw - 8, BAR_H - 9)), Color(1, 1, 1, 0.06))
 		var icol := GOLD if (is_active or is_hover) else Color(0.78, 0.72, 0.60)
-		_draw_icon(t.get("icon", ""), Vector2(cx, 32), 15.0, icol)
+		_draw_icon(t.get("icon", ""), Vector2(cx, 24), 13.0, icol)
 		var label: String = t["label"]
 		var tcol := Color(1.0, 0.95, 0.78) if (is_active or is_hover) else Color(0.80, 0.76, 0.66)
 		if font != null:
-			var fs := 15
+			var fs := 14
 			var tsize := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs)
-			draw_string(font, Vector2(cx - tsize.x * 0.5, 70), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, tcol)
+			draw_string(font, Vector2(cx - tsize.x * 0.5, 56), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, tcol)
 
 
 func _font() -> Font:

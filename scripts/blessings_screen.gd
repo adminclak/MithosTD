@@ -7,6 +7,7 @@ extends CanvasLayer
 ## próxima melhoria. Persiste o progresso e emite closed para voltar ao Hub.
 
 signal closed
+signal section_selected(id: String)
 
 var _content: VBoxContainer
 var _ess_lbl: Label
@@ -42,14 +43,7 @@ func _ready() -> void:
 	_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(_content)
 
-	var back := Button.new()
-	back.position = Vector2(92, 644)
-	back.custom_minimum_size = Vector2(180, 44)
-	back.text = "Voltar"
-	back.pressed.connect(func(): closed.emit())
-	add_child(back)
-
-	add_child(UiTheme.ornate_frame())
+	NavBar.add_to(self, "bencaos", func(id): section_selected.emit(id), func(): closed.emit())
 	_rebuild()
 
 

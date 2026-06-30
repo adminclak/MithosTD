@@ -7,6 +7,7 @@ extends CanvasLayer
 ## (Progression), só ganhou um rosto e tema. Emite closed para voltar ao Hub.
 
 signal closed
+signal section_selected(id: String)
 
 const CLASS_NAMES := ["Arqueiro", "Mago", "Guerreiro", "Sacerdote"]
 const STAR := "*"
@@ -45,8 +46,8 @@ func _ready() -> void:
 
 	_build_left()
 	_build_right()
-	add_child(UiTheme.ornate_frame()) ## moldura de madeira por cima de tudo
 	_select_tab(0)
+	NavBar.add_to(self, "loja", func(id): section_selected.emit(id), func(): closed.emit())
 
 
 # ---------------------------------------------------------------------------
@@ -121,14 +122,6 @@ func _build_left() -> void:
 	_res_lbl.add_theme_font_size_override("font_size", 19)
 	add_child(_res_lbl)
 	_refresh_resources()
-
-	# Voltar (no balcão, abaixo dos recursos).
-	var back := Button.new()
-	back.position = Vector2(120, 600)
-	back.custom_minimum_size = Vector2(170, 40)
-	back.text = "Voltar"
-	back.pressed.connect(func(): closed.emit())
-	add_child(back)
 
 
 func _refresh_resources() -> void:

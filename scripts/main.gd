@@ -147,6 +147,7 @@ func _show_bestiary() -> void:
 func _show_blessings() -> void:
 	var screen := BlessingsScreen.new()
 	screen.closed.connect(_show_title)
+	screen.section_selected.connect(_goto_section)
 	_switch_to(screen)
 
 
@@ -160,6 +161,7 @@ func _show_worldmap() -> void:
 func _show_heroes() -> void:
 	var h := HeroesScreen.new()
 	h.closed.connect(_show_title)
+	h.section_selected.connect(_goto_section)
 	_switch_to(h)
 
 
@@ -176,18 +178,21 @@ func _start_stage_from_map(stage: StageData, diff: int = 0) -> void:
 func _show_collection() -> void:
 	var screen := CollectionScreen.new()
 	screen.closed.connect(_show_title)
+	screen.section_selected.connect(_goto_section)
 	_switch_to(screen)
 
 
 func _show_gacha() -> void:
 	var screen := GachaScreen.new()
 	screen.closed.connect(_show_title)
+	screen.section_selected.connect(_goto_section)
 	_switch_to(screen)
 
 
 func _show_quests() -> void:
 	var screen := QuestsScreen.new()
 	screen.closed.connect(_show_title)
+	screen.section_selected.connect(_goto_section)
 	_switch_to(screen)
 
 

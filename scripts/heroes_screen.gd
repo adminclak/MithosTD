@@ -7,6 +7,7 @@ extends CanvasLayer
 ## atual com um clique para remover. Mostra as sinergias ativas. Tudo salvo.
 
 signal closed
+signal section_selected(id: String)
 
 const CLASS_NAMES := ["Arqueiro", "Mago", "Guerreiro", "Sacerdote"]
 
@@ -30,6 +31,8 @@ func _ready() -> void:
 		var unlocked := Progression.unlocked_ids()
 		_sel_id = sq[0] if not sq.is_empty() else (unlocked[0] if not unlocked.is_empty() else "")
 	_rebuild()
+	# NavBar fora do _root (sobrevive ao _rebuild). Padrão de navegação de todas as telas.
+	NavBar.add_to(self, "herois", func(id): section_selected.emit(id), func(): closed.emit())
 
 
 func _team() -> int:
@@ -221,20 +224,19 @@ func _slot_button(slot: int) -> Button:
 func _build_footer() -> void:
 	var bar := ColorRect.new()
 	bar.color = Color(0, 0, 0, 0.45)
-	bar.position = Vector2(0, 596)
-	bar.size = Vector2(1280, 124)
+	bar.position = Vector2(0, 590)
+	bar.size = Vector2(1280, 58)
 	_root.add_child(bar)
 
 	var team: Array = Progression.teams[_team()]
-	_root.add_child(_label("EQUIPE %d (clique no card para remover):" % (_team() + 1),
-		Vector2(24, 604), 16, Color(1, 0.9, 0.5)))
+	_root.add_child(_label("EQUIPE %d:" % (_team() + 1), Vector2(24, 594), 15, Color(1, 0.9, 0.5)))
 	var hb := HBoxContainer.new()
-	hb.position = Vector2(24, 628)
-	hb.add_theme_constant_override("separation", 6)
+	hb.position = Vector2(150, 600)
+	hb.add_theme_constant_override("separation", 5)
 	_root.add_child(hb)
 	for id in team:
 		var b := Button.new()
-		b.custom_minimum_size = Vector2(64, 64)
+		b.custom_minimum_size = Vector2(42, 42)
 		var tex := Art.hero(id)
 		if tex != null:
 			b.icon = tex
@@ -244,8 +246,9 @@ func _build_footer() -> void:
 		b.pressed.connect(func(i = id): Progression.toggle_in_team(_team(), i); _rebuild())
 		hb.add_child(b)
 	for i in range(team.size(), Progression.SQUAD_MAX):
-		var empty := _label("[ vazio ]", Vector2.ZERO, 14, Color(0.5, 0.5, 0.55))
-		empty.custom_minimum_size = Vector2(64, 64)
+		var empty := _label("·", Vector2.ZERO, 14, Color(0.5, 0.5, 0.55))
+		empty.custom_minimum_size = Vector2(42, 42)
+		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		empty.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		hb.add_child(empty)
 
@@ -254,15 +257,8 @@ func _build_footer() -> void:
 	var syn_names: Array = []
 	for s in syn:
 		syn_names.append(s["name"])
-	var syn_text := "Sinergias: " + (", ".join(syn_names) if not syn_names.is_empty() else "nenhuma (combine mitologia/classe/elemento)")
-	_root.add_child(_label(syn_text, Vector2(560, 604), 14, Color(0.6, 1.0, 0.7)))
-
-	var back := Button.new()
-	back.position = Vector2(1110, 632)
-	back.custom_minimum_size = Vector2(150, 48)
-	back.text = "Voltar"
-	back.pressed.connect(func(): closed.emit())
-	_root.add_child(back)
+	var syn_text := "Sinergias: " + (", ".join(syn_names) if not syn_names.is_empty() else "nenhuma")
+	_root.add_child(_label(syn_text, Vector2(620, 596), 14, Color(0.6, 1.0, 0.7)))
 
 
 func _cycle_slot(slot: int) -> void:
