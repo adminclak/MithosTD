@@ -153,7 +153,8 @@ AUTORIG_PROMPTS = {
     "ares": ("a muscular adult man with short black hair, wearing red and bronze layered plate armor "
              "over a dark tunic and brown strap sandals, bare head"),
     "atena": ("an adult woman with long brown hair, wearing an ornate blue and gold armored chest "
-              "plate over a long flowing white robe and sandals, bare head"),
+              "plate over a SHORT white tunic that ends above the knees so both LEGS are fully "
+              "visible and separated, and strap sandals, bare head"),
     "apolo": ("a handsome young adult man with short curly brown hair and a golden laurel wreath on "
               "his head, wearing a white and gold toga draped over one shoulder and sandals"),
     "medusa": ("a lean adult woman with smooth green scaled skin, glowing yellow eyes, and many small "
@@ -173,6 +174,33 @@ PROP3D_PROMPTS = {
     "helmet_bronze": ("an ancient Greek bronze Corinthian helmet with a tall red horsehair crest "
                       "plume on top, hollow and empty with no head inside, seen from a 3/4 front "
                       "angle, a single object floating centered"),
+    # --- Conjunto LENDÁRIO/MÍTICO (dourado, divino, com brilho) — 1 de cada slot ---
+    "helmet_legend": ("a legendary divine golden ancient Greek Corinthian helmet with a radiant "
+                      "white and red crest and glowing blue gems, ornate laurel engravings, hollow "
+                      "empty with no head inside, seen from a 3/4 front angle, single object floating"),
+    "armor_legend": ("a legendary divine golden ancient Greek muscle cuirass chest breastplate with "
+                     "a glowing sunburst emblem and blue runes, ornate, seen from a 3/4 front angle, "
+                     "single object floating, no body no person"),
+    "legs_legend": ("a pair of legendary divine golden ancient Greek leg greaves armor with laurel "
+                    "engravings and blue glow, seen from a 3/4 front angle, single object floating, "
+                    "no legs no person"),
+    "boots_legend": ("a pair of legendary divine golden ancient Greek winged sandals boots with "
+                     "small white feathered wings and blue glow, seen from a 3/4 front angle, single "
+                     "object floating, no feet no person"),
+    "sword_legend": ("a legendary divine golden ancient Greek short sword xiphos with a glowing blue "
+                     "blade and an ornate jeweled handle, blade pointing up, seen from a 3/4 angle, "
+                     "single object floating, no hand no person"),
+    "shield_legend": ("a legendary divine round golden ancient Greek hoplon shield with an ornate "
+                      "gorgon medusa face emblem and a glowing blue rim, seen from a 3/4 front angle, "
+                      "single object floating, no arm no person"),
+    "amulet_legend": ("a legendary divine golden ancient Greek amulet necklace pendant with a large "
+                      "glowing blue gem and laurel design, seen from a 3/4 front angle, single object "
+                      "floating, no neck no person"),
+    "ring_legend": ("a legendary ornate golden ancient Greek ring with a glowing blue gem, close up, "
+                    "seen from a 3/4 angle, single object floating, no finger no hand no person"),
+    "bow_legend": ("a legendary divine golden ancient Greek longbow with ornate limbs, laurel motifs "
+                   "and a glowing blue string, seen from a 3/4 angle, single object floating, no hand "
+                   "no person"),
 }
 
 # Fundo de tela cheia em CARTOON (mesmo traço dos heróis/mapas — Kingdom Rush), p/ o
