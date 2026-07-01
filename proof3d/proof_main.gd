@@ -13,12 +13,14 @@ const HELMET_GLB := "res://assets/models/props/helmet_bronze.glb"
 const MAP_TEX := "res://assets/map/map_elis.png"
 ## Ajuste fino do elmo sobre a cabeça (tunáveis).
 const HELMET_WIDTH := 0.26   ## largura-alvo (m, eixo X = orelha a orelha)
-const HELMET_YOFFSET := 0.05 ## sobe o elmo p/ assentar no topo da cabeça
-const HELMET_YAW := 0.0      ## giro p/ a abertura do rosto olhar pra câmera
+const HELMET_YOFFSET := 0.13 ## sobe o elmo ao longo do EIXO da cabeça
+const HELMET_YAW := 0.0      ## correção de giro do modelo do elmo
+const HELMET_PITCH := 0.0    ## correção de inclinação do modelo do elmo
 
 var _skel: Skeleton3D = null
 var _anim: AnimationPlayer = null
 var _helm: Node3D = null
+var _helm_scale := 1.0
 var _head_ba: BoneAttachment3D = null
 var _cam: Camera3D = null
 var _live := false  ## --live: janela fica aberta girando a câmera (não captura/sai)
@@ -174,27 +176,26 @@ func _attach_helmet() -> void:
 		print("PROOF: elmo nao encontrado, pulando")
 		return
 	var mi := _first_mesh(helm_root)
+	var wrapper := Node3D.new()
 	if mi != null and mi.mesh != null:
 		var aabb := mi.mesh.get_aabb()
-		# recentraliza: centro da malha no origin do helm_root
+		# recentraliza a malha no origin do wrapper e guarda a escala (largura X).
 		helm_root.position = -aabb.get_center()
-		var wdim: float = maxf(aabb.size.x, 0.001)  # X = largura (orelha a orelha)
-		var s: float = HELMET_WIDTH / wdim
-		var wrapper := Node3D.new()
-		wrapper.add_child(helm_root)
-		wrapper.scale = Vector3(s, s, s)
-		wrapper.rotation_degrees = Vector3(0, HELMET_YAW, 0)
-		add_child(wrapper)
-		_helm = wrapper
-	else:
-		add_child(helm_root)
-		_helm = helm_root
+		_helm_scale = HELMET_WIDTH / maxf(aabb.size.x, 0.001)
+	wrapper.add_child(helm_root)
+	add_child(wrapper)
+	_helm = wrapper
 
 
 func _process(delta: float) -> void:
-	# Mantém o elmo no topo da cabeça (posição do osso + up do mundo).
+	# O elmo segue a ORIENTAÇÃO COMPLETA do osso da cabeça (posição + rotação) ->
+	# fica colado de qualquer ângulo e em qualquer animação. Offset ao longo do
+	# eixo Y do PRÓPRIO osso (topo da cabeça), + correção de giro/inclinação do modelo.
 	if _helm != null and _head_ba != null and is_instance_valid(_helm) and is_instance_valid(_head_ba):
-		_helm.global_position = _head_ba.global_position + Vector3(0, HELMET_YOFFSET, 0)
+		var bt := _head_ba.global_transform.orthonormalized()
+		var corr := Basis.from_euler(Vector3(deg_to_rad(HELMET_PITCH), deg_to_rad(HELMET_YAW), 0.0))
+		var basis := (bt.basis * corr).scaled(Vector3.ONE * _helm_scale)
+		_helm.global_transform = Transform3D(basis, bt.origin + bt.basis.y * HELMET_YOFFSET)
 	# Modo live: gira a câmera devagar em torno do herói pra ver em 3D.
 	if _live and _cam != null:
 		_t += delta
@@ -239,8 +240,19 @@ func _capture_after_frames(n: int) -> void:
 	for _i in n:
 		await get_tree().process_frame
 	await get_tree().process_frame
+	_save("c:/projetos/jogoTD/_shot_proof3d.png")
+	# Ângulo 3/4 lateral p/ conferir o elmo de outro lado.
+	if _cam != null:
+		_cam.position = Vector3(2.5, 2.0, 1.6)
+		_cam.look_at(Vector3(0.0, 1.0, 0.0), Vector3.UP)
+		for _i in 8:
+			await get_tree().process_frame
+		_save("c:/projetos/jogoTD/_shot_proof3d_side.png")
+	get_tree().quit()
+
+
+func _save(path: String) -> void:
 	var img := get_viewport().get_texture().get_image()
 	if img != null:
-		img.save_png("c:/projetos/jogoTD/_shot_proof3d.png")
-		print("PROOF: screenshot salvo em _shot_proof3d.png")
-	get_tree().quit()
+		img.save_png(path)
+		print("PROOF: screenshot -> ", path)

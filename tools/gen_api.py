@@ -33,6 +33,8 @@ import re
 import sys
 import time
 import random
+import base64
+import zipfile
 
 import requests
 try:
@@ -124,21 +126,40 @@ RIG_PROMPTS = {
                   "no crown, no weapon no staff no stick, full body head to toe centered, front view"),
 }
 
-# ENTRADA PARA AUTO-RIG (God Mode AI -> Spine). A IA de auto-rig segmenta o corpo em
-# ossos a partir de UMA imagem: ela precisa do herói de CORPO INTEIRO, FRENTE, pose A
-# NEUTRA com os membros AFASTADOS do tronco (vão entre braços/pernas), traço chapado,
-# fundo limpo. Cabeça nua + mãos vazias p/ depois sobrepor as skins de equipamento.
-AUTORIG_STYLE = ("Kingdom Rush 2D cartoon game character, tall adult heroic proportions (NOT chibi), "
-                 "hand-painted, bold clean black outlines, flat cel shading, vibrant colors, even "
-                 "flat lighting, single character centered, full body head to toe, strict symmetric "
-                 "FRONT view, plain solid white background, no text")
+# ENTRADA PARA MODELAGEM 3D (Meshy image-to-3D). Bloco PADRÃO de POSE/composição —
+# o VISUAL (traço/cor/estilo) vem do RECRAFT_STYLE_ID (estilo criado a partir da
+# Medusa), então aqui só definimos a pose mais fácil p/ o 3D entender: personagem de
+# FRENTE, pose A neutra e simétrica, corpo inteiro, mãos vazias, fundo limpo.
+# Os prompts de cada herói dizem SÓ as características físicas (sem nomes/mitologia).
+AUTORIG_STYLE = ("a single character in a clean 2D CARTOON mobile-game ILLUSTRATION style (modern "
+                 "hand-drawn RPG hero, flat 2D art NOT a 3d render): smooth soft cel shading, bold "
+                 "clean dark outlines, vibrant colors, semi-stylized proportions (not photorealistic, "
+                 "not chibi), ONE consistent uniform art style. The character stands facing FORWARD "
+                 "toward the viewer, symmetric and still, in a relaxed T-pose with both arms out to "
+                 "the sides and both hands OPEN and EMPTY holding nothing, unarmed, no sword no shield "
+                 "no spear no bow no staff no wand no objects at all, full body from head to feet "
+                 "visible and centered, plain solid white background, no text, no shadow")
+# Cada herói = SÓ características físicas (sem nome/mitologia). Combina com AUTORIG_STYLE
+# (pose de frente p/ 3D) e com o RECRAFT_STYLE_ID (visual coeso igual à Medusa).
 AUTORIG_PROMPTS = {
-    "hercules": ("a clothing mannequin reference of a tall very muscular adult Greek man with short "
-                 "brown hair and short brown beard, standing perfectly straight upright and still in "
-                 "a calm symmetric T-pose facing the camera, both arms held straight out to the "
-                 "sides, empty open relaxed hands holding nothing, wearing only a plain simple short "
-                 "brown tunic and sandals, bare head no helmet no hood, no weapon no club no shield "
-                 "no spear, calm blank expression, full body head to toe centered, plain front view"),
+    "hercules": ("a tall very muscular adult man with short brown hair and a short brown beard, "
+                 "wearing a light beige sleeveless tunic with a brown leather belt, brown leather "
+                 "wrist wraps and brown strap sandals, bare head"),
+    "artemis": ("a slim athletic adult woman with long blonde hair tied back in a ponytail, wearing a "
+                "short white and gold sleeveless tunic and brown strap sandals, bare head"),
+    "hermes": ("a lean athletic adult man with short brown hair, small white feathered wings on his "
+               "upper back and small wings on his ankles, wearing a short blue and white tunic and "
+               "sandals, bare head"),
+    "ares": ("a muscular adult man with short black hair, wearing red and bronze layered plate armor "
+             "over a dark tunic and brown strap sandals, bare head"),
+    "atena": ("an adult woman with long brown hair, wearing an ornate blue and gold armored chest "
+              "plate over a long flowing white robe and sandals, bare head"),
+    "apolo": ("a handsome young adult man with short curly brown hair and a golden laurel wreath on "
+              "his head, wearing a white and gold toga draped over one shoulder and sandals"),
+    "medusa": ("a lean adult woman with smooth green scaled skin, glowing yellow eyes, and many small "
+               "green snakes instead of hair, wearing a teal wrap top and a short teal skirt, barefoot"),
+    "zeus": ("a stocky old adult man with long white hair and a long full white beard, wearing a plain "
+             "white toga draped over one shoulder and sandals, bare head"),
 }
 
 # ENTRADA PARA IMAGE-TO-3D DE PROPS/EQUIPAMENTO (Meshy). Objeto UNICO isolado, em
@@ -226,6 +247,10 @@ MODEL = os.environ.get("FAL_MODEL", "fal-ai/recraft-v3")
 # Estilo do Recraft (so usado quando MODEL e recraft). digital_illustration = cartoon
 # nitido; realistic_image = mais realista. Substilos: digital_illustration/hand_drawn etc.
 RECRAFT_STYLE = os.environ.get("RECRAFT_STYLE", "digital_illustration")
+# ESTILO POR REFERENCIA: id de um estilo custom do Recraft (criado com `gen_api.py style
+# <ref>` a partir de uma imagem de referencia). Quando definido, TODA geracao recraft usa
+# esse estilo -> visual COESO e igual a referencia (ex.: a Medusa). Vence o RECRAFT_STYLE.
+RECRAFT_STYLE_ID = os.environ.get("RECRAFT_STYLE_ID", "")
 OUT_SIZE = 512  # salva quadrado; o jogo redimensiona
 
 # Estilo FIXO (coeso entre todos). Cartoon pintado HD, igual aos mapas / Kingdom Rush.
@@ -266,7 +291,12 @@ def parse_arte():
 def fal_generate(prompt, landscape=False, size=None):
     """Chama a fal.ai (REST sincrono) e devolve os bytes do PNG gerado.
     `size` sobrescreve o image_size (ex.: 'portrait_4_3' p/ corpo inteiro do auto-rig)."""
-    url = "https://fal.run/" + MODEL
+    is_recraft = "recraft" in MODEL
+    # Com estilo por referencia, usa o endpoint text-to-image que aceita style_id.
+    if is_recraft and RECRAFT_STYLE_ID:
+        url = "https://fal.run/fal-ai/recraft/v3/text-to-image"
+    else:
+        url = "https://fal.run/" + MODEL
     headers = {"Authorization": "Key " + FAL_KEY, "Content-Type": "application/json"}
     seed_env = os.environ.get("SEED")
     body = {
@@ -282,8 +312,12 @@ def fal_generate(prompt, landscape=False, size=None):
         body["seed"] = int(seed_env)
     else:
         body["seed"] = random.randint(1, 2_000_000_000)
-    if "recraft" in MODEL:
-        body["style"] = RECRAFT_STYLE  # cartoon nitido / consistencia de estilo
+    if is_recraft:
+        # style e style_id NAO podem ir juntos. Referencia (style_id) tem prioridade.
+        if RECRAFT_STYLE_ID:
+            body["style_id"] = RECRAFT_STYLE_ID
+        else:
+            body["style"] = RECRAFT_STYLE
     r = requests.post(url, json=body, headers=headers, timeout=180)
     if r.status_code != 200:
         raise RuntimeError("fal.ai %d: %s" % (r.status_code, r.text[:300]))
@@ -291,6 +325,40 @@ def fal_generate(prompt, landscape=False, size=None):
     img = (data.get("images") or [data.get("image")])[0]
     img_url = img["url"] if isinstance(img, dict) else img
     return requests.get(img_url, timeout=120).content
+
+
+def fal_upload(data_bytes, content_type, file_name):
+    """Sobe um arquivo pro storage do fal e devolve a URL publica (para inputs *_url)."""
+    init = requests.post(
+        "https://rest.alpha.fal.ai/storage/upload/initiate",
+        json={"content_type": content_type, "file_name": file_name},
+        headers={"Authorization": "Key " + FAL_KEY, "Content-Type": "application/json"},
+        timeout=60)
+    if init.status_code != 200:
+        raise RuntimeError("upload initiate %d: %s" % (init.status_code, init.text[:200]))
+    j = init.json()
+    up = requests.put(j["upload_url"], data=data_bytes,
+                      headers={"Content-Type": content_type}, timeout=180)
+    if up.status_code not in (200, 201, 204):
+        raise RuntimeError("upload put %d: %s" % (up.status_code, up.text[:200]))
+    return j["file_url"]
+
+
+def fal_create_style(png_paths, base_style="digital_illustration"):
+    """Cria um ESTILO custom no Recraft a partir de imagens de referencia (ate 5 PNGs).
+    Zipa os PNGs, sobe pro storage do fal e chama o create-style. Devolve o dict."""
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as z:
+        for p in png_paths:
+            z.write(p, arcname=os.path.basename(p))
+    zip_url = fal_upload(buf.getvalue(), "application/zip", "style_refs.zip")
+    url = "https://fal.run/fal-ai/recraft/v3/create-style"
+    headers = {"Authorization": "Key " + FAL_KEY, "Content-Type": "application/json"}
+    body = {"images_data_url": zip_url, "base_style": base_style}
+    r = requests.post(url, json=body, headers=headers, timeout=180)
+    if r.status_code != 200:
+        raise RuntimeError("create-style %d: %s" % (r.status_code, r.text[:300]))
+    return r.json()
 
 
 def remove_bg(im):
@@ -351,6 +419,20 @@ def main():
         print("ERRO: defina FAL_KEY (sua chave da fal.ai). Veja o cabecalho do arquivo.")
         return
     args = sys.argv[1:]
+    # Comando especial: cria um ESTILO custom no Recraft a partir de imagens de
+    # referencia (em assets/autorig/<id>.png). Uso: python gen_api.py style medusa
+    if args and args[0] == "style":
+        refs = [os.path.join(DIRS["autorig"], a + ".png") for a in (args[1:] or ["medusa"])]
+        refs = [p for p in refs if os.path.exists(p)]
+        if not refs:
+            print("ERRO: nenhuma imagem de referencia encontrada em assets/autorig/")
+            return
+        print("Criando estilo Recraft a partir de:", [os.path.basename(p) for p in refs])
+        res = fal_create_style(refs)
+        sid = res.get("style_id") or res
+        print("STYLE_ID:", sid)
+        print("=> Adicione ao .env:  RECRAFT_STYLE_ID=%s" % sid)
+        return
     if len(args) < 2 or args[0] not in DIRS:
         print("uso: python tools/gen_api.py <heroes|enemies|items> <id ...|all>")
         return
