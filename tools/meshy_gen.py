@@ -37,6 +37,26 @@ except ImportError:
 
 PROJ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 API = "https://api.meshy.ai/openapi/v1"
+
+
+def _load_dotenv():
+    """Le PROJ/.env (KEY=valor por linha), so o que ainda nao esta no ambiente."""
+    path = os.path.join(PROJ, ".env")
+    if not os.path.exists(path):
+        return
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, v = line.split("=", 1)
+            k = k.strip()
+            v = v.strip().strip('"').strip("'")
+            if k and k not in os.environ:
+                os.environ[k] = v
+
+
+_load_dotenv()
 KEY = os.environ.get("MESHY_API_KEY", "")
 
 # ---- RECEITA TRAVADA (a que validamos na mao) ----

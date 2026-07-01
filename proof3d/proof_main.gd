@@ -84,9 +84,8 @@ func _load_model() -> Node3D:
 		return null
 	var n := scene as Node3D
 	if n != null:
-		# Meshy exporta ~1.8m de pé (rotação 180 = de frente p/ a câmera).
-		# CesiumMan (~1.6m) precisa de leve upscale.
-		n.rotation_degrees = Vector3(0, 180, 0)
+		# Rotação 0 = de frente p/ a câmera. CesiumMan (~1.6m) precisa de leve upscale.
+		n.rotation_degrees = Vector3(0, 0, 0)
 		n.scale = Vector3(1.0, 1.0, 1.0) if is_hero else Vector3(1.2, 1.2, 1.2)
 		n.position = Vector3(0, 0, 0)
 	return n
@@ -129,16 +128,23 @@ func _play_walk() -> void:
 func _attach_helmet() -> void:
 	if _skel == null:
 		return
-	# Acha o osso de cabeça/pescoço mais ALTO (CesiumMan não tem "head", só "neck").
+	# 1ª preferência: osso "head" de verdade (NÃO o "head_end", que é o topo do crânio).
 	var head := -1
-	var head_y := -INF
 	for i in _skel.get_bone_count():
 		var nm := _skel.get_bone_name(i).to_lower()
-		if "head" in nm or "neck" in nm or "skull" in nm:
-			var y := _skel.get_bone_global_pose(i).origin.y
-			if y > head_y:
-				head_y = y
-				head = i
+		if "head" in nm and not ("end" in nm):
+			head = i
+			break
+	# Fallback: qualquer head/neck/skull mais alto (ex.: CesiumMan só tem "neck").
+	if head < 0:
+		var head_y := -INF
+		for i in _skel.get_bone_count():
+			var nm := _skel.get_bone_name(i).to_lower()
+			if "head" in nm or "neck" in nm or "skull" in nm:
+				var y := _skel.get_bone_global_pose(i).origin.y
+				if y > head_y:
+					head_y = y
+					head = i
 	if head < 0:
 		head = _topmost_bone()
 	print("PROOF: encaixando capacete no osso [%d] %s" % [head, _skel.get_bone_name(head)])
@@ -155,8 +161,8 @@ func _attach_helmet() -> void:
 	# sem depender da orientação (às vezes torta) do osso do manequim de teste.
 	var helm := MeshInstance3D.new()
 	var sm := SphereMesh.new()
-	sm.radius = 0.17
-	sm.height = 0.30
+	sm.radius = 0.14
+	sm.height = 0.24
 	helm.mesh = sm
 	var hm := StandardMaterial3D.new()
 	hm.albedo_color = Color(1.0, 0.80, 0.25)
@@ -170,7 +176,7 @@ func _attach_helmet() -> void:
 func _process(_delta: float) -> void:
 	# Mantém o capacete no topo da cabeça (posição do osso + up do mundo).
 	if _helm != null and _head_ba != null and is_instance_valid(_helm) and is_instance_valid(_head_ba):
-		_helm.global_position = _head_ba.global_position + Vector3(0, 0.20, 0)
+		_helm.global_position = _head_ba.global_position + Vector3(0, 0.17, 0)
 
 
 func _topmost_bone() -> int:
