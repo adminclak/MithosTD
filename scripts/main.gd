@@ -64,7 +64,10 @@ func _shot_mode(args: Array) -> void:
 			which = a
 	match which:
 		"bestiary": _show_bestiary()
-		"equip": _show_equipment()
+		"equip":
+			_show_equipment()
+			if _current is EquipmentScreen:
+				(_current as EquipmentScreen).select_hero("hercules")
 		"result":
 			var rs := ResultScreen.new()
 			var summary := {

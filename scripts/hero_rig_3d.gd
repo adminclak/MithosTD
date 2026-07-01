@@ -30,6 +30,8 @@ const MOUNT := {
 
 var skeleton: Skeleton3D = null
 var anim: AnimationPlayer = null
+var _body: Node3D = null   ## raiz do herói (p/ idle procedural)
+var _t: float = 0.0
 var _mounts: Array = []  ## [{ba, node, cfg, scale}]
 
 
@@ -39,6 +41,7 @@ func setup(hero_glb: String, play_idle: bool = true) -> bool:
 		push_error("HeroRig3D: falha ao carregar " + hero_glb)
 		return false
 	add_child(root)
+	_body = root
 	skeleton = _find(root, "Skeleton3D")
 	anim = _find(root, "AnimationPlayer")
 	if play_idle and anim != null and anim.get_animation_list().size() > 0:
@@ -87,7 +90,12 @@ func unequip(slot: String) -> void:
 			_mounts.erase(m)
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	# Idle procedural (respiração + leve sway) — dá vida mesmo sem clip de animação.
+	_t += delta
+	if _body != null and is_instance_valid(_body):
+		_body.position.y = sin(_t * 1.8) * 0.012
+		_body.rotation.y = deg_to_rad(sin(_t * 0.8) * 2.5)
 	# Cada item segue a ORIENTAÇÃO COMPLETA do osso (posição + rotação) -> fica colado
 	# de qualquer ângulo e em qualquer animação. Offset no espaço do próprio osso.
 	for m in _mounts:

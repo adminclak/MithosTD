@@ -96,6 +96,14 @@ func _ready() -> void:
 	NavBar.add_to(self, "equip", func(id): section_selected.emit(id), func(): closed.emit())
 
 
+## Seleciona um herói pela id (usado por atalhos/telas externas).
+func select_hero(id: String) -> void:
+	if id in Progression.unlocked_ids():
+		_sel = id
+		_build_hero_list()
+		_rebuild()
+
+
 func _build_hero_list() -> void:
 	for c in _hero_list.get_children():
 		c.queue_free()
@@ -144,15 +152,30 @@ func _rebuild_center() -> void:
 	ped.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_center.add_child(ped)
 
-	# Herói GRANDE e centralizado.
-	var art := TextureRect.new()
-	art.texture = Art.hero(_sel)
-	art.size = Vector2(300, 400)
-	art.position = HERO_CENTER + Vector2(-150, -210)
-	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_center.add_child(art)
+	# Herói GRANDE em 3D — mostra o EQUIPAMENTO VESTIDO no corpo.
+	var worn_now: Dictionary = Progression.equipped_ids(_sel)
+	var v := preload("res://scripts/hero_view_3d.gd").new()
+	if v.setup(_sel, 440):
+		v.position = HERO_CENTER + Vector2(0, 172)  # pés ~ sobre o pedestal
+		_center.add_child(v)
+		# Veste os itens equipados (1 modelo 3D por slot — set lendário como visual).
+		var eq_keys := ["helmet", "armor", "legs", "boots", "weapon", "shield", "amulet", "ring"]
+		for slot_s in worn_now.keys():
+			if str(worn_now[slot_s]) == "":
+				continue  # slot vazio -> não veste nada
+			var si := int(slot_s)
+			if si >= 0 and si < eq_keys.size():
+				v.equip(eq_keys[si], "res://assets/models/props/%s_legend.glb" % eq_keys[si])
+	else:
+		# Fallback: arte 2D se não houver modelo 3D do herói.
+		var art := TextureRect.new()
+		art.texture = Art.hero(_sel)
+		art.size = Vector2(300, 400)
+		art.position = HERO_CENTER + Vector2(-150, -210)
+		art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_center.add_child(art)
 
 	# Slots (botão + rótulo) nas duas colunas.
 	var worn: Dictionary = Progression.equipped_ids(_sel)
