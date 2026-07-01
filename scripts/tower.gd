@@ -47,6 +47,7 @@ var _contact_accum: float = 0.0 ## dano de contato acumulado (heróis ranged exp
 var _shield_timer: float = 0.0
 
 var _sprite: Texture2D = null
+var _hero3d: Node = null ## herói 3D (SubViewport "sprite vivo") quando há modelo; senão usa _sprite 2D
 var _is_building: bool = false ## desenha como prédio (sem balanço, maior)
 var force_building: bool = true ## torre de slot = prédio da classe (mesmo com herói)
 
@@ -105,7 +106,25 @@ func _ready() -> void:
 			_is_building = _sprite != null
 		elif data.char_id != "":
 			_sprite = Art.hero(data.char_id)
+			_setup_hero3d()
 	queue_redraw()
+
+
+## Cria o herói 3D (SubViewport) se existir o modelo; veste o equipamento do herói.
+## Sem modelo, fica NULL e o Tower cai no desenho 2D normal.
+func _setup_hero3d() -> void:
+	var v := preload("res://scripts/hero_view_3d.gd").new()
+	if not v.setup(data.char_id):
+		v.free()
+		return
+	add_child(v)
+	_hero3d = v
+	# Equipa (visual) os slots que o herói tem, usando o set lendário como aproximação.
+	if data.equip_icons != null:
+		var keys := ["helmet", "armor", "legs", "boots", "weapon", "shield", "amulet", "ring"]
+		for slot_i in data.equip_icons.keys():
+			if slot_i >= 0 and slot_i < keys.size():
+				v.equip(keys[slot_i], "res://assets/models/props/%s_legend.glb" % keys[slot_i])
 
 
 func _process(delta: float) -> void:
@@ -576,24 +595,28 @@ func _draw() -> void:
 		c = Color(c.r * 0.4, c.g * 0.4, c.b * 0.4, 0.7)
 		dark = Color(dark.r, dark.g, dark.b, 0.7)
 
-	# Arma/efeito ATRÁS do corpo (ex.: arco) e DEPOIS o corpo por cima.
-	if not _down:
-		_draw_weapon_back(off)
-	if _sprite != null and _is_building:
-		# Prédio: estático, ancorado pela base, maior.
-		var bs := Vector2(78, 92)
-		draw_texture_rect(_sprite, Rect2(Vector2(-bs.x * 0.5, -bs.y + 22), bs), false)
-	elif _sprite != null:
-		var sz := Vector2(62, 62)
-		var dest := Rect2(off + (-sz * 0.5) + Vector2(0, -8), sz)
-		var mod := Color(1, 1, 1, 0.7) if _down else Color.WHITE
-		var lean := _face.x * 9.0 * _atk
-		Anim.draw_swayed(self, _sprite, dest, _idle, 1.4, lean, 0.035, mod)
+	# HERÓI 3D (SubViewport): só posiciona; ele desenha o corpo + equipamento.
+	if _hero3d != null:
+		_hero3d.position = off
 	else:
-		_draw_doll_at(off, c, dark)
-	if not _down:
-		_draw_weapon_front(off)
-		_draw_equipment(off)
+		# Arma/efeito ATRÁS do corpo (ex.: arco) e DEPOIS o corpo por cima (2D).
+		if not _down:
+			_draw_weapon_back(off)
+		if _sprite != null and _is_building:
+			# Prédio: estático, ancorado pela base, maior.
+			var bs := Vector2(78, 92)
+			draw_texture_rect(_sprite, Rect2(Vector2(-bs.x * 0.5, -bs.y + 22), bs), false)
+		elif _sprite != null:
+			var sz := Vector2(62, 62)
+			var dest := Rect2(off + (-sz * 0.5) + Vector2(0, -8), sz)
+			var mod := Color(1, 1, 1, 0.7) if _down else Color.WHITE
+			var lean := _face.x * 9.0 * _atk
+			Anim.draw_swayed(self, _sprite, dest, _idle, 1.4, lean, 0.035, mod)
+		else:
+			_draw_doll_at(off, c, dark)
+		if not _down:
+			_draw_weapon_front(off)
+			_draw_equipment(off)
 
 	# Sobreposições.
 	if not _is_building:

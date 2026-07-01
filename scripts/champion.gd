@@ -26,6 +26,7 @@ var _abil_cd: float = 6.0
 var _engaged: Node2D = null
 var _sprite: Texture2D = null
 var _rig: RiggedActor = null
+var _hero3d: Node = null ## herói 3D (SubViewport) quando há modelo; senão usa _rig 2D
 var _manual_dir: Vector2 = Vector2.ZERO ## comando do joystick (0 = automático)
 
 @onready var _gs: Node = get_node_or_null(^"/root/GameState")
@@ -44,11 +45,25 @@ func _ready() -> void:
 	add_to_group("melee_allies")
 	if data != null:
 		_sprite = Art.hero(data.char_id)
-	if _sprite != null:
+	# Herói 3D (SubViewport) se houver modelo; senão, rig 2D (fallback).
+	var v3 := preload("res://scripts/hero_view_3d.gd").new()
+	if data != null and v3.setup(data.char_id, 104):
+		v3.position = Vector2(0, 12)
+		add_child(v3)
+		_hero3d = v3
+		if data.equip_icons != null:
+			var keys := ["helmet", "armor", "legs", "boots", "weapon", "shield", "amulet", "ring"]
+			for si in data.equip_icons.keys():
+				if si >= 0 and si < keys.size():
+					v3.equip(keys[si], "res://assets/models/props/%s_legend.glb" % keys[si])
+	elif _sprite != null:
+		v3.free()
 		_rig = RiggedActor.new()
 		_rig.setup(_sprite, 54.0) # menor que a torre (~92px)
 		_rig.position = Vector2(0, 12) # pés no chão (junto da sombra)
 		add_child(_rig)
+	else:
+		v3.free()
 	_rally = global_position
 	queue_redraw()
 
