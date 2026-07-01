@@ -7,10 +7,14 @@ extends Node3D
 ## Salva: _shot_proof3d.png e sai.
 
 const MODEL_PATH := "res://proof3d/CesiumMan.glb"
+## Quando o Hércules 3D real (Meshy) existir, a proof usa ELE no lugar do manequim.
+const HERO_GLB := "res://assets/models/hercules/hercules.glb"
 const MAP_TEX := "res://assets/map/map_elis.png"
 
 var _skel: Skeleton3D = null
 var _anim: AnimationPlayer = null
+var _helm: MeshInstance3D = null
+var _head_ba: BoneAttachment3D = null
 
 
 func _ready() -> void:
@@ -65,9 +69,13 @@ func _setup_world() -> void:
 
 
 func _load_model() -> Node3D:
+	# Prefere o Hércules 3D real (Meshy) se já estiver na pasta; senão, o manequim.
+	var is_hero := FileAccess.file_exists(HERO_GLB)
+	var path := HERO_GLB if is_hero else MODEL_PATH
+	print("PROOF: carregando ", path)
 	var doc := GLTFDocument.new()
 	var state := GLTFState.new()
-	var err := doc.append_from_file(MODEL_PATH, state)
+	var err := doc.append_from_file(path, state)
 	if err != OK:
 		push_error("Falha ao carregar glTF: %d" % err)
 		return null
@@ -76,9 +84,10 @@ func _load_model() -> Node3D:
 		return null
 	var n := scene as Node3D
 	if n != null:
-		# CesiumMan já nasce de pé em metros (~1.6m); rotação 0 = de frente p/ a câmera.
-		n.rotation_degrees = Vector3(0, 0, 0)
-		n.scale = Vector3(1.2, 1.2, 1.2)
+		# Meshy exporta ~1.8m de pé (rotação 180 = de frente p/ a câmera).
+		# CesiumMan (~1.6m) precisa de leve upscale.
+		n.rotation_degrees = Vector3(0, 180, 0)
+		n.scale = Vector3(1.0, 1.0, 1.0) if is_hero else Vector3(1.2, 1.2, 1.2)
 		n.position = Vector3(0, 0, 0)
 	return n
 
@@ -137,21 +146,31 @@ func _attach_helmet() -> void:
 	var ba := BoneAttachment3D.new()
 	ba.bone_name = _skel.get_bone_name(head)
 	_skel.add_child(ba)
+	_head_ba = ba
 
 	# "Capacete" = uma cúpula simples bem visível (dourada), provando que o item segue
 	# a cabeça em qualquer pose. Depois isso vira a malha real do elmo por tier.
+	# Fica como filho da CENA (não do osso) e é reposicionado em _process usando a
+	# posição do osso + deslocamento no eixo UP do MUNDO -> assenta certo na cabeça
+	# sem depender da orientação (às vezes torta) do osso do manequim de teste.
 	var helm := MeshInstance3D.new()
 	var sm := SphereMesh.new()
-	sm.radius = 0.16
-	sm.height = 0.26
+	sm.radius = 0.17
+	sm.height = 0.30
 	helm.mesh = sm
 	var hm := StandardMaterial3D.new()
 	hm.albedo_color = Color(1.0, 0.80, 0.25)
 	hm.metallic = 0.8
 	hm.roughness = 0.3
 	helm.material_override = hm
-	helm.position = Vector3(0, 0.22, 0)  # leve offset p/ assentar na cabeça
-	ba.add_child(helm)
+	add_child(helm)
+	_helm = helm
+
+
+func _process(_delta: float) -> void:
+	# Mantém o capacete no topo da cabeça (posição do osso + up do mundo).
+	if _helm != null and _head_ba != null and is_instance_valid(_helm) and is_instance_valid(_head_ba):
+		_helm.global_position = _head_ba.global_position + Vector3(0, 0.20, 0)
 
 
 func _topmost_bone() -> int:

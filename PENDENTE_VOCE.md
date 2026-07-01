@@ -17,25 +17,72 @@ depende de você pra gente continuar.
 4. Mantive o jogo intacto e os **268 testes verdes**. Não mexi na batalha que já
    funciona — isso só depois do seu OK.
 
-## 🟡 Decisão/ação que depende de VOCÊ
-### 1. Escolher e criar conta na ferramenta de geração 3D
-Pra transformar os heróis 2D em 3D (riggados + animados), a recomendação é:
+## 🟢 PLANO ATUAL (você vai assinar o Meshy PRO + eu automatizo pela API)
+O grátis NÃO deixa baixar modelos Meshy 6 (paywall) e a API só existe no PRO.
+Você decidiu assinar. Com o PRO, **eu automatizo tudo pela API** — você não clica
+mais em cada herói. Script pronto e validado (dry-run): **`tools/meshy_gen.py`**.
 
-- **Meshy (meshy.ai)** — RECOMENDADO. Faz imagem→3D + **auto-rig** + **500+
-  animações** + export **GLB** (formato do Godot), tudo num lugar. Tem tier grátis.
-- Alternativa: **Tripo (tripo3d.ai)** — malha mais limpa, mas o rig no GLB tem
-  ressalvas.
+**O que preciso de você (uma vez):**
+1. Assinar o **Meshy PRO** (~US$20/mês; 1.000 créditos/mês — dá pro jogo todo; dá
+   pra cancelar depois). O PRO também dá **licença privada** (sem crédito CC-BY).
+2. No site: **API** (menu do topo) → **Create API key** → copie a chave.
+3. Defina a variável de ambiente **`MESHY_API_KEY`** com essa chave (igual você fez
+   com a `FAL_KEY`, via `setx MESHY_API_KEY <chave>`). **É segredo — não me mande a
+   chave no chat.**
+4. Me avise que está setada.
 
-**O que eu preciso que você faça** (igual fez no God Mode):
-1. Criar conta no **Meshy** (e/ou Tripo) — tier grátis primeiro.
-2. Subir a arte do Hércules pra gerar o 3D. Use uma destas como entrada:
-   - `assets/heroes/hercules.png` (a arte premium do jogo), ou
-   - `assets/autorig/hercules.png` (a versão de corpo inteiro que preparei).
-3. Gerar o modelo 3D, rodar o **Auto-Rig** e (se der) aplicar uma animação de
-   **idle** + **walk** + **attack**.
-4. Exportar em **GLB** e salvar em `c:\projetos\jogoTD\assets\models\hercules\`.
-5. Me dizer: **(a)** quanto custou de crédito, **(b)** se o auto-rig saiu bom,
-   **(c)** se o GLB exportado manteve o rig + animações.
+**Aí EU rodo** (gasta crédito, mas só quando validado):
+```
+python tools/meshy_gen.py hercules            # 1 herói de teste
+python tools/meshy_gen.py ares artemis ...    # o resto em lote
+```
+O script faz: image→3D (Meshy 6, remesh 10K triângulo, textura, **a-pose**) → rig
+humanoide → baixa o GLB em `assets/models/<id>/<id>.glb` (+ animações andar/correr).
+
+**Plano de validação (pra acertar de primeira, sem desperdício):**
+- Antes: eu gero as **imagens de entrada** de cada herói com o fal.ai (barato) e a
+  gente **revisa** — assim todo crédito Meshy cai numa imagem boa.
+- Teste: rodo **1 herói** (Hércules, entrada já provada), baixo, mostro no Godot,
+  você aprova → só então rodo o **lote** dos outros.
+- Custo: ~30 créditos (mesh) + rig por herói → 8 heróis ≈ 300–400 de 1.000. Sobra.
+
+---
+### (FALLBACK MANUAL, se não quiser API) Gerar no site — passo a passo
+Ferramenta: **Meshy (meshy.ai)**. No PRO o download funciona. (No grátis, o Meshy 6
+não baixa.)
+
+**0. Conta:** entre em https://www.meshy.ai e crie a conta grátis.
+
+**1. Image to 3D:**
+   - Menu **"Image to 3D"** → **Upload** e escolha o arquivo:
+     `c:\projetos\jogoTD\assets\autorig\hercules.png`
+     (essa é a melhor entrada — corpo inteiro, de pé, sem arma. NÃO use a
+     `assets/heroes/hercules.png`, que tem pose dinâmica/arma e atrapalha o rig.)
+   - Ligue **"Image Enhancement"** se aparecer.
+   - Clique **Generate** e espere (~1 min). Confira o modelo 3D.
+
+**2. Auto-Rig:**
+   - No modelo gerado, abra **"Rig"** (Rigging).
+   - Tipo de personagem = **Humanoid**. Posicione se pedir e confirme.
+   - Ele cria os ossos sozinho em ~30s.
+
+**3. Animar (se o tier grátis deixar):**
+   - Abra **"Animate"** e adicione uma animação: **Idle** e/ou **Walk**.
+   - ⚠️ No grátis são "20+ animações"; walk/attack podem estar no plano pago.
+     **Se estiver bloqueado, TUDO BEM** — só exporte o modelo riggado (T-pose)
+     que eu aplico animações grátis depois (Mixamo) ou faço no Godot.
+
+**4. Export:**
+   - Exporte em **GLB** (formato nativo do Godot).
+   - Salve em: `c:\projetos\jogoTD\assets\models\hercules\hercules.glb`
+     (a pasta já existe).
+
+**5. Me avise** na volta: **(a)** quanto gastou de crédito, **(b)** se o auto-rig
+   ficou bom, **(c)** se conseguiu animação grátis ou se saiu só riggado (T-pose).
+
+> Alternativa se quiser mais animações de graça: exportar em **FBX** e subir no
+> **Mixamo** (mixamo.com, grátis, conta Adobe) — milhares de animações. Mas comece
+> pelo GLB do Meshy; o resto eu resolvo.
 
 ### 2. (Opcional) Guardar a animação de inimigo do God Mode
 Se ainda estiver aberta a tela do God Mode: baixe **Clean Sprite** + **Bbox JSON**
