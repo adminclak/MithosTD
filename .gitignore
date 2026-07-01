@@ -13,12 +13,20 @@ Godot-Claude-Skills/
 *.env
 !.env.example
 
+# Python (cache do gerador em tools/)
+__pycache__/
+*.pyc
+
 # Sistema / temporários
 *.tmp
 Thumbs.db
 .DS_Store
 _shot_*.png
 _shot_*.png.import
+# Rascunhos de geração/rig (diagnóstico, não versionar)
+_base*.png
+_bases*.png
+_rig_poc*.png
 _grid*.png
 _grid*.png.import
 # Diagnóstico do tracepath/checkpath (gerados, não versionar)

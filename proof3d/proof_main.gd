@@ -9,15 +9,24 @@ extends Node3D
 const MODEL_PATH := "res://proof3d/CesiumMan.glb"
 ## Quando o Hércules 3D real (Meshy) existir, a proof usa ELE no lugar do manequim.
 const HERO_GLB := "res://assets/models/hercules/hercules.glb"
+const HELMET_GLB := "res://assets/models/props/helmet_bronze.glb"
 const MAP_TEX := "res://assets/map/map_elis.png"
+## Ajuste fino do elmo sobre a cabeça (tunáveis).
+const HELMET_WIDTH := 0.26   ## largura-alvo (m, eixo X = orelha a orelha)
+const HELMET_YOFFSET := 0.05 ## sobe o elmo p/ assentar no topo da cabeça
+const HELMET_YAW := 0.0      ## giro p/ a abertura do rosto olhar pra câmera
 
 var _skel: Skeleton3D = null
 var _anim: AnimationPlayer = null
-var _helm: MeshInstance3D = null
+var _helm: Node3D = null
 var _head_ba: BoneAttachment3D = null
+var _cam: Camera3D = null
+var _live := false  ## --live: janela fica aberta girando a câmera (não captura/sai)
+var _t := 0.0
 
 
 func _ready() -> void:
+	_live = OS.get_cmdline_user_args().has("--live")
 	_setup_world()
 	var char_root := _load_model()
 	if char_root != null:
@@ -26,6 +35,8 @@ func _ready() -> void:
 		_print_bones()
 		_play_walk()
 		_attach_helmet()
+	if _live:
+		return  # janela aberta; _process cuida do elmo + giro da câmera
 	# Espera renderizar alguns frames (o renderer real precisa de tempo) e captura.
 	await _capture_after_frames(40)
 
@@ -66,6 +77,7 @@ func _setup_world() -> void:
 	add_child(cam)
 	cam.position = Vector3(0.0, 2.0, 2.7)
 	cam.look_at(Vector3(0.0, 1.05, 0.0), Vector3.UP)
+	_cam = cam
 
 
 func _load_model() -> Node3D:
@@ -154,29 +166,61 @@ func _attach_helmet() -> void:
 	_skel.add_child(ba)
 	_head_ba = ba
 
-	# "Capacete" = uma cúpula simples bem visível (dourada), provando que o item segue
-	# a cabeça em qualquer pose. Depois isso vira a malha real do elmo por tier.
-	# Fica como filho da CENA (não do osso) e é reposicionado em _process usando a
-	# posição do osso + deslocamento no eixo UP do MUNDO -> assenta certo na cabeça
-	# sem depender da orientação (às vezes torta) do osso do manequim de teste.
-	var helm := MeshInstance3D.new()
-	var sm := SphereMesh.new()
-	sm.radius = 0.14
-	sm.height = 0.24
-	helm.mesh = sm
-	var hm := StandardMaterial3D.new()
-	hm.albedo_color = Color(1.0, 0.80, 0.25)
-	hm.metallic = 0.8
-	hm.roughness = 0.3
-	helm.material_override = hm
-	add_child(helm)
-	_helm = helm
+	# ELMO REAL (malha 3D do Meshy) encaixado na cabeça. Fica como filho da CENA e é
+	# reposicionado em _process (posição do osso + up do MUNDO) -> assenta certo sem
+	# depender da orientação do osso. Normaliza escala e recentraliza a malha.
+	var helm_root := _load_glb(HELMET_GLB)
+	if helm_root == null:
+		print("PROOF: elmo nao encontrado, pulando")
+		return
+	var mi := _first_mesh(helm_root)
+	if mi != null and mi.mesh != null:
+		var aabb := mi.mesh.get_aabb()
+		# recentraliza: centro da malha no origin do helm_root
+		helm_root.position = -aabb.get_center()
+		var wdim: float = maxf(aabb.size.x, 0.001)  # X = largura (orelha a orelha)
+		var s: float = HELMET_WIDTH / wdim
+		var wrapper := Node3D.new()
+		wrapper.add_child(helm_root)
+		wrapper.scale = Vector3(s, s, s)
+		wrapper.rotation_degrees = Vector3(0, HELMET_YAW, 0)
+		add_child(wrapper)
+		_helm = wrapper
+	else:
+		add_child(helm_root)
+		_helm = helm_root
 
 
-func _process(_delta: float) -> void:
-	# Mantém o capacete no topo da cabeça (posição do osso + up do mundo).
+func _process(delta: float) -> void:
+	# Mantém o elmo no topo da cabeça (posição do osso + up do mundo).
 	if _helm != null and _head_ba != null and is_instance_valid(_helm) and is_instance_valid(_head_ba):
-		_helm.global_position = _head_ba.global_position + Vector3(0, 0.17, 0)
+		_helm.global_position = _head_ba.global_position + Vector3(0, HELMET_YOFFSET, 0)
+	# Modo live: gira a câmera devagar em torno do herói pra ver em 3D.
+	if _live and _cam != null:
+		_t += delta
+		var r := 3.0
+		_cam.position = Vector3(sin(_t * 0.5) * r, 2.0, cos(_t * 0.5) * r)
+		_cam.look_at(Vector3(0.0, 1.0, 0.0), Vector3.UP)
+
+
+func _load_glb(path: String) -> Node3D:
+	if not FileAccess.file_exists(path):
+		return null
+	var doc := GLTFDocument.new()
+	var state := GLTFState.new()
+	if doc.append_from_file(path, state) != OK:
+		return null
+	return doc.generate_scene(state) as Node3D
+
+
+func _first_mesh(root: Node) -> MeshInstance3D:
+	if root is MeshInstance3D:
+		return root
+	for c in root.get_children():
+		var m := _first_mesh(c)
+		if m != null:
+			return m
+	return null
 
 
 func _topmost_bone() -> int:

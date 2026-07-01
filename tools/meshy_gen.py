@@ -105,20 +105,20 @@ def _poll(url, label):
         time.sleep(5)
 
 
-def image_to_3d(cid, dry=False):
-    img = input_image_for(cid)
+def image_to_3d(cid, dry=False, img_path=None, pose_mode=POSE_MODE, polycount=TARGET_POLYCOUNT):
+    img = img_path or input_image_for(cid)
     if img is None:
-        print("  (sem imagem de entrada p/ %s em assets/autorig|heroes)" % cid)
-        return None
+        print("  (sem imagem de entrada p/ %s)" % cid)
+        return None, None
     body = {
         "image_url": to_data_uri(img),
         "ai_model": AI_MODEL,
         "model_type": MODEL_TYPE,
         "should_texture": SHOULD_TEXTURE,
         "should_remesh": SHOULD_REMESH,
-        "target_polycount": TARGET_POLYCOUNT,
+        "target_polycount": polycount,
         "topology": TOPOLOGY,
-        "pose_mode": POSE_MODE,
+        "pose_mode": pose_mode,
         "target_formats": ["glb"],
     }
     if dry:
@@ -127,7 +127,7 @@ def image_to_3d(cid, dry=False):
             os.path.relpath(img, PROJ), os.path.getsize(img) // 1024)
         print("  [DRY] POST %s/image-to-3d" % API)
         print("        " + json.dumps(show, ensure_ascii=False))
-        return "DRY_TASK_ID"
+        return "DRY_TASK_ID", {}
     r = requests.post(API + "/image-to-3d", headers=_headers(), json=body, timeout=120)
     if r.status_code >= 300:
         raise RuntimeError("image-to-3d %d: %s" % (r.status_code, r.text[:300]))
@@ -137,7 +137,7 @@ def image_to_3d(cid, dry=False):
     if res.get("status") != "SUCCEEDED":
         raise RuntimeError("image-to-3d falhou: %s" % res.get("task_error"))
     print("    creditos gastos (mesh): %s" % res.get("consumed_credits"))
-    return tid
+    return tid, res
 
 
 def rig(cid, input_task_id, dry=False):
@@ -158,10 +158,10 @@ def rig(cid, input_task_id, dry=False):
     return res.get("result", res)
 
 
-def download(url, cid, suffix=""):
-    outdir = os.path.join(PROJ, "assets", "models", cid)
+def download(url, folder, filename):
+    outdir = os.path.join(PROJ, "assets", "models", folder)
     os.makedirs(outdir, exist_ok=True)
-    out = os.path.join(outdir, cid + suffix + ".glb")
+    out = os.path.join(outdir, filename + ".glb")
     r = requests.get(url, timeout=180)
     r.raise_for_status()
     with open(out, "wb") as f:
@@ -170,9 +170,9 @@ def download(url, cid, suffix=""):
     return out
 
 
-def run(cid, dry=False):
-    print("== %s ==" % cid)
-    tid = image_to_3d(cid, dry=dry)
+def run_hero(cid, dry=False):
+    print("== heroi: %s ==" % cid)
+    tid, _ = image_to_3d(cid, dry=dry)
     if tid is None:
         return
     res = rig(cid, tid, dry=dry)
@@ -181,17 +181,38 @@ def run(cid, dry=False):
         return
     glb = res.get("rigged_character_glb_url")
     if glb:
-        download(glb, cid)
+        download(glb, cid, cid)
     # animacoes basicas (andar/correr) que o rig ja devolve
     for name, urls in (res.get("basic_animations") or {}).items():
         u = urls.get("glb") if isinstance(urls, dict) else None
         if u:
-            download(u, cid, suffix="_" + name)
+            download(u, cid, cid + "_" + name)
+
+
+def run_prop(cid, dry=False):
+    """PROP/equipamento: image-to-3D SEM rig. Entrada em assets/prop3d/<id>.png,
+    saida em assets/models/props/<id>.glb."""
+    print("== prop: %s ==" % cid)
+    img = os.path.join(PROJ, "assets", "prop3d", cid + ".png")
+    if not os.path.exists(img):
+        print("  (sem imagem em assets/prop3d/%s.png)" % cid)
+        return
+    tid, res = image_to_3d(cid, dry=dry, img_path=img, pose_mode="", polycount=8000)
+    if dry:
+        print("  [DRY] baixaria model_urls.glb -> assets/models/props/%s.glb" % cid)
+        return
+    glb = (res.get("model_urls") or {}).get("glb")
+    if glb:
+        download(glb, "props", cid)
+    else:
+        print("  (sem model_urls.glb no resultado)")
 
 
 def main():
-    args = [a for a in sys.argv[1:] if not a.startswith("--")]
-    dry = "--dry-run" in sys.argv
+    argv = sys.argv[1:]
+    dry = "--dry-run" in argv
+    is_prop = "--prop" in argv
+    args = [a for a in argv if not a.startswith("--")]
     if not args:
         print(__doc__)
         return
@@ -200,7 +221,10 @@ def main():
         return
     for cid in args:
         try:
-            run(cid, dry=dry)
+            if is_prop:
+                run_prop(cid, dry=dry)
+            else:
+                run_hero(cid, dry=dry)
         except Exception as e:
             print("  FALHA %s -> %s" % (cid, e))
 

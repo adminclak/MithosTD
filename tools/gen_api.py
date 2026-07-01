@@ -76,6 +76,7 @@ DIRS = {
     "logo": os.path.join(PROJ, "assets", "ui"),      # logo do jogo (transparente, wide)
     "rig": os.path.join(PROJ, "assets", "rig"),      # boneco modular: base + pecas encaixaveis
     "autorig": os.path.join(PROJ, "assets", "autorig"),  # entrada p/ auto-rig (God Mode AI -> Spine)
+    "prop3d": os.path.join(PROJ, "assets", "prop3d"),    # entrada p/ image-to-3D de PROPS/equipamento (Meshy)
 }
 
 # Personagens MODULARES (paper-doll): um corpo-BASE em pose neutra (sem capacete/arma)
@@ -138,6 +139,19 @@ AUTORIG_PROMPTS = {
                  "sides, empty open relaxed hands holding nothing, wearing only a plain simple short "
                  "brown tunic and sandals, bare head no helmet no hood, no weapon no club no shield "
                  "no spear, calm blank expression, full body head to toe centered, plain front view"),
+}
+
+# ENTRADA PARA IMAGE-TO-3D DE PROPS/EQUIPAMENTO (Meshy). Objeto UNICO isolado, em
+# vista 3/4 (mostra profundidade -> Meshy infere melhor a malha 3D), fundo limpo,
+# transparente, alta-res. Serve p/ elmo, peitoral, escudo, arma etc. por tier.
+PROP3D_STYLE = ("a single 3D game prop object, Kingdom Rush cartoon style, hand-painted, bold clean "
+                "outlines, soft cel shading, vibrant colors, 3/4 perspective view showing volume and "
+                "depth, single object centered, plain solid white background, no character, no person, "
+                "no hands, no text")
+PROP3D_PROMPTS = {
+    "helmet_bronze": ("an ancient Greek bronze Corinthian helmet with a tall red horsehair crest "
+                      "plume on top, hollow and empty with no head inside, seen from a 3/4 front "
+                      "angle, a single object floating centered"),
 }
 
 # Fundo de tela cheia em CARTOON (mesmo traço dos heróis/mapas — Kingdom Rush), p/ o
@@ -316,9 +330,9 @@ def save(png_bytes, category, cid):
         im = remove_bg(im)
         im = im.resize((512, 512), Image.LANCZOS)
         out = os.path.join(DIRS[category], cid + ".png")
-    elif category == "autorig":
-        # Entrada do auto-rig: fundo transparente, alta-res, SEM forçar quadrado
-        # (preservar a proporção do corpo inteiro). Lado maior = 1024px.
+    elif category in ("autorig", "prop3d"):
+        # Entrada do auto-rig / image-to-3D: fundo transparente, alta-res, SEM forçar
+        # quadrado (preserva a proporção). Lado maior = 1024px.
         im = remove_bg(im)
         w, h = im.size
         scale = 1024.0 / max(w, h)
@@ -347,6 +361,7 @@ def main():
     is_logo = category == "logo"
     is_rig = category == "rig"
     is_autorig = category == "autorig"
+    is_prop3d = category == "prop3d"
     if is_maps:
         jobs = MAP_PROMPTS
     elif is_scenery:
@@ -359,6 +374,8 @@ def main():
         jobs = RIG_PROMPTS
     elif is_autorig:
         jobs = AUTORIG_PROMPTS
+    elif is_prop3d:
+        jobs = PROP3D_PROMPTS
     else:
         jobs = parse_arte()
     ids = list(jobs.keys()) if args[1] == "all" else args[1:]
@@ -374,6 +391,8 @@ def main():
         style = RIG_STYLE
     elif is_autorig:
         style = AUTORIG_STYLE
+    elif is_prop3d:
+        style = PROP3D_STYLE
     else:
         style = STYLE[category]
     print("Modelo:", MODEL, "| categoria:", category, "| itens:", len(ids))
@@ -386,7 +405,7 @@ def main():
         try:
             t0 = time.time()
             png = fal_generate(prompt, landscape=(is_maps or is_splash),
-                               size=("square_hd" if is_autorig else None))
+                               size=("square_hd" if (is_autorig or is_prop3d) else None))
             out = save(png, category, cid)
             print("  OK  %-16s %5.1fs  -> %s" % (cid, time.time() - t0, out))
         except Exception as e:
