@@ -1,48 +1,40 @@
-# Bom dia! 👋 O que rolou na noite
+# Status do 3D — pra você conferir e me dizer o que ajustar
 
-Você mandou: gerar todos os heróis 3D, pôr no mapa, criar os equipamentos lendários,
-validar que tudo encaixa, e deixar pra jogar. Resumo:
+**Tudo commitado e JÁ NO GIT** (github.com/adminclak/MithosTD, branch main).
 
-## ✅ Feito (tudo commitado)
-1. **8 heróis 3D** riggados, no estilo que você aprovou:
-   `assets/models/<id>/<id>.glb` — hercules, artemis, hermes, ares, atena, apolo,
-   medusa, zeus. (A Atena precisou de uma 2ª volta: o robe longo escondia as pernas
-   e o rig falhava; regerei com pernas visíveis e funcionou.)
-2. **Set LENDÁRIO com 1 de cada tipo** (9 itens): elmo, peito, pernas, botas,
-   espada, escudo, amuleto, anel e **arco** — `assets/models/props/*_legend.glb`.
-3. **Encaixe validado em TODOS os heróis.** Veja o mosaico **`_shot_equip_todos.png`**:
-   cada herói com o set completo, tudo na região certa (elmo na cabeça, peito no
-   tronco, espada na mão, escudo no braço, botas nos pés...). Prova que **uma única
-   config de encaixe serve pra todos** (mesmo esqueleto + mesma altura).
-4. **Sistema reutilizável** `scripts/hero_rig_3d.gd` (`HeroRig3D`): carrega herói,
-   toca idle e equipa por SLOT no osso certo (tabela `MOUNT`). É a base da tela de
-   Equipar e da batalha.
+## ✅ Resolvido nesta rodada (seu feedback)
+1. **Tela de Equipar agora é 3D** e mostra o **equipamento vestido no corpo**
+   (elmo na cabeça, arma na mão etc.). Corrigi um bug que "vestia tudo" em todo
+   herói — agora só aparece o que está realmente equipado.
+2. **Consistência de design:** gerei **retratos 3D** de cada herói
+   (`assets/portraits/*.png`) e o jogo passou a usá-los na **lista, ícones e cards**.
+   Agora a lista, a tela de Equipar e a batalha usam o **mesmo visual 3D**.
+3. **Animação:** adicionei um **idle procedural** (respiração + leve balanço) —
+   os heróis não ficam mais estáticos. (Animação de andar/atacar de verdade: ver
+   pendências abaixo.)
+4. **Batalha:** os heróis 3D continuam na partida; o equipamento equipado aparece
+   (o elmo é o mais visível no tamanho pequeno da batalha).
 
-## ▶️ COMO VER/JOGAR AGORA (duplo-clique)
-Abra **`VER_HEROIS_3D.bat`** (na raiz do projeto) → abre os **8 heróis equipados no
-mapa da fase 1**, em 3D.
-- Câmera: **setas ← →** giram, **↑ ↓** dão zoom, **ESC** fecha.
-- Print: `_shot_showcase.png`.
+## ▶️ Como testar (duplo-clique)
+- **`JOGAR.bat`** → jogo completo. Vá em **Equipar** pra ver o herói 3D girando com
+  o equipamento; entre numa fase pra ver os heróis 3D no mapa.
+- **`VER_HEROIS_3D.bat`** → showcase dos 8 no mapa.
 
-## 🎯 Sobre "quero jogar" — a real (honesto)
-O que está pronto é o **showcase 3D no mapa** (você vê/gira os heróis equipados). A
-**batalha 2.5D jogável de verdade** (inimigos, torres, waves, combate com os heróis
-3D) é o **próximo passo grande** — NÃO fiz de madrugada porque é uma reescrita
-pesada da tela de partida e seria arriscado mexer sozinho sem quebrar o jogo 2D que
-já funciona. **O jogo 2D atual continua 100% jogável** (rode pelo Godot normal).
+## 🟡 Pendências / decisões pra quando voltar
+1. **Animações reais (andar/atacar):** os modelos do Meshy vieram só com pose base
+   (1 clip). Pra ter walk/attack de verdade, o caminho é **Mixamo (grátis)** ou a
+   **API de animação do Meshy (gasta crédito)** — os créditos do mês estão quase no
+   fim. Me diga se quer que eu vá por Mixamo (te passo o passo a passo) no próximo ciclo.
+2. **Equipamento por tier real:** hoje uso **1 modelo 3D por slot** (o set lendário
+   dourado) como visual de qualquer item daquele slot. Então um "Capacete de Couro"
+   aparece como o elmo lendário. Pra cada tier ter seu visual, precisaria gerar mais
+   modelos (crédito). Funciona como está, mas o acabamento fino é isso.
+3. **Ajuste fino de encaixe** (offsets em `scripts/hero_rig_3d.gd` → `MOUNT`):
+   espada meio de lado, greaves de perna assentam perto do quadril. Rápido de refinar.
+4. **Segurança:** regenere a `MESHY_API_KEY` (apareceu no terminal antes) — eu atualizo o `.env`.
 
-## ⚠️ Detalhes / pendências
-- **Créditos Meshy:** usei a maior parte do mês (heróis + retries + 9 itens). Sobra
-  pouco — novas gerações grandes só no próximo ciclo mensal.
-- **Segurança:** regenere a `MESHY_API_KEY` no site (ela apareceu no terminal 1x) —
-  eu atualizo o `.env`.
-- **Ajustes finos de encaixe** (rápidos, offsets em `hero_rig_3d.gd` → `MOUNT`):
-  a espada fica meio horizontal (grip não perfeito); as greaves de perna assentam
-  perto do quadril. Dá pra refinar por slot quando quiser.
-
-## ❓ Me diga ao voltar
-1. **Próximo passo = construir a batalha 2.5D jogável?** (é o grande, mas com o
-   pipeline pronto fica bem mais tranquilo.)
-2. Quer ajustar algum herói/equipamento específico?
-
-Detalhes técnicos: `NOTAS_3D.md`.
+## Arquitetura (pra referência)
+- `scripts/hero_rig_3d.gd` (HeroRig3D): carrega herói, idle, `equip(slot, glb)` no osso.
+- `scripts/hero_view_3d.gd` (HeroView3D): herói 3D como "sprite vivo" (SubViewport) na batalha 2D.
+- `assets/models/<id>/<id>.glb` (8 heróis) + `assets/models/props/*_legend.glb` (9 itens).
+- 268 testes verdes. Detalhes em `NOTAS_3D.md`.
